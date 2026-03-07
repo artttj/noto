@@ -26,6 +26,32 @@ async function captureSnippet(text: string, url: string, title: string, source: 
   void chrome.runtime.sendMessage({ type: MSG.SNIPPET_ADDED }).catch(() => {});
 }
 
+const GENERATE_PROMPT =
+  `You receive browsing data. Pick ONE well-known topic from it and share ONE verified fact. 1-2 sentences max.\n\n` +
+  `## RULES\n` +
+  `- ONLY write about things you are 100% certain about. If not sure, output a classic proverb instead.\n` +
+  `- NEVER describe or define what something is. Share a lesser-known detail, origin story, or surprising connection.\n` +
+  `- NEVER make claims about people unless globally famous. If you don't recognize a name, skip them.\n` +
+  `- NEVER invent biographies, credentials, achievements, books, studies, quotes, or sources.\n` +
+  `- If the data is too obscure, fall back to a well-known Japanese, Arabic, Persian, or African proverb. Name the culture.\n\n` +
+  `## STYLE\n` +
+  `- Write like a short text from a friend. No labels, no "Fun fact:", no "Did you know".\n` +
+  `- Period or comma only. No em dashes.\n` +
+  `- No AI words: "delve," "tapestry," "vibrant," "pivotal," "underscore," "testament," "nestled," "landscape," "renowned," "notable."\n` +
+  `- No puffery: "fascinating," "remarkable," "extraordinary," "stunning."\n` +
+  `- Don't reference "your browsing" or "your history."`;
+
+const VALIDATE_PROMPT =
+  `You are a strict fact-checker. You will receive a short claim or statement.\n\n` +
+  `Your job:\n` +
+  `1. Is every fact in it verifiably true? Check names, dates, origins, attributions.\n` +
+  `2. Does it make claims about a person? If so, is that person globally famous and is the claim accurate?\n` +
+  `3. Does it mention a book, study, or quote? If so, does it really exist and is it attributed correctly?\n\n` +
+  `Respond with EXACTLY one of these formats:\n` +
+  `- If the statement is factually correct: PASS\n` +
+  `- If it contains errors or you're unsure: FAIL: <a corrected 1-2 sentence version that fixes the issues, or a well-known proverb if the original is unsalvageable>\n\n` +
+  `Be strict. If you have any doubt, respond with FAIL and provide a replacement.`;
+
 async function generateInsight(
   snippetSample: { text: string; title: string; source: string }[],
   previousInsights: string[] = [],
@@ -41,44 +67,53 @@ async function generateInsight(
   const strategy = getProviderStrategy(settings.llmProvider);
   const model = settings.llmProvider === 'gemini' ? settings.geminiModel : settings.openaiModel;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const doNotRepeat = previousInsights.length > 0
+    ? `\n\n## DO NOT REPEAT\n${previousInsights.map((p) => `- ${p}`).join('\n')}`
+    : '';
 
-  const systemPrompt =
-    `You receive browsing data. Pick ONE well-known topic from it and share ONE verified fact. 1-2 sentences max.\n\n` +
+  const controller1 = new AbortController();
+  const timer1 = setTimeout(() => controller1.abort(), 15000);
 
-    `## RULES\n` +
-    `- ONLY write about things you are 100% certain about. If you are not sure, output a classic proverb instead.\n` +
-    `- NEVER describe or define what something is. The user already knows. Share a lesser-known detail, origin story, or surprising connection.\n` +
-    `- NEVER make claims about people unless they are globally famous (e.g. Linus Torvalds, Steve Jobs). If you see a person's name you don't recognize with certainty, skip them.\n` +
-    `- NEVER invent biographies, credentials, or achievements. If you don't know someone, don't write about them.\n` +
-    `- NEVER fabricate books, studies, quotes, or sources. Everything must be real and verifiable.\n` +
-    `- If the data is too obscure or sparse, fall back to a well-known Japanese, Arabic, Persian, or African proverb. Name the culture.\n\n` +
-
-    `## STYLE\n` +
-    `- Write like a short text from a friend. No labels, no "Fun fact:", no "Did you know".\n` +
-    `- Period or comma only. No em dashes.\n` +
-    `- No AI words: "delve," "tapestry," "vibrant," "pivotal," "underscore," "testament," "nestled," "landscape," "renowned," "notable."\n` +
-    `- No puffery: "fascinating," "remarkable," "extraordinary," "stunning."\n` +
-    `- Don't reference "your browsing" or "your history."\n\n` +
-
-    (previousInsights.length > 0
-      ? `## DO NOT REPEAT\n${previousInsights.map((p) => `- ${p}`).join('\n')}`
-      : '');
-
+  let draft: string;
   try {
-    return await strategy.chat({
+    draft = await strategy.chat({
       apiKey: key,
       model,
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: GENERATE_PROMPT + doNotRepeat },
         { role: 'user', content: `My saved data:\n${context}` },
       ],
-      signal: controller.signal,
+      signal: controller1.signal,
     });
   } finally {
-    clearTimeout(timer);
+    clearTimeout(timer1);
   }
+
+  const controller2 = new AbortController();
+  const timer2 = setTimeout(() => controller2.abort(), 15000);
+
+  let verdict: string;
+  try {
+    verdict = await strategy.chat({
+      apiKey: key,
+      model,
+      messages: [
+        { role: 'system', content: VALIDATE_PROMPT },
+        { role: 'user', content: draft },
+      ],
+      signal: controller2.signal,
+    });
+  } finally {
+    clearTimeout(timer2);
+  }
+
+  const trimmed = verdict.trim();
+  if (trimmed === 'PASS') return draft;
+
+  const failMatch = /^FAIL:\s*(.+)/s.exec(trimmed);
+  if (failMatch) return failMatch[1].trim();
+
+  return draft;
 }
 
 const HISTORY_ALARM = 'sonto-history-sync';
