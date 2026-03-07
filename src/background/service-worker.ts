@@ -46,7 +46,8 @@ async function syncHistory(startTime?: number): Promise<void> {
     if (!url || !title.trim()) continue;
     if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
     if (await hasSnippetForUrl(url)) continue;
-    pending.push({ text: title.trim(), url, title });
+    const embedText = `${title.trim()} — ${url}`;
+    pending.push({ text: embedText, url, title });
   }
 
   if (pending.length === 0) return;

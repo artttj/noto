@@ -1,4 +1,4 @@
-export type ProviderName = 'openai' | 'gemini' | 'grok';
+export type ProviderName = 'openai' | 'gemini';
 
 export type AppLanguage = 'en' | 'de';
 
@@ -8,7 +8,6 @@ export interface AppSettings {
   llmProvider: ProviderName;
   openaiModel: string;
   geminiModel: string;
-  grokModel: string;
   language: AppLanguage;
 }
 

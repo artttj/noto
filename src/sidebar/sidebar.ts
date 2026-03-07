@@ -1,5 +1,5 @@
 import { MSG } from '../shared/messages';
-import { getSettings, getOpenAIKey, getGeminiKey, getGrokKey } from '../shared/storage';
+import { getSettings, getOpenAIKey, getGeminiKey } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';
 import type { ChatMessage, QueryResult, Snippet } from '../shared/types';
 
@@ -25,15 +25,17 @@ async function getActiveKey(): Promise<string> {
   const settings = await getSettings();
   const provider = settings.llmProvider;
   if (provider === 'gemini') return getGeminiKey();
-  if (provider === 'grok') return getGrokKey();
   return getOpenAIKey();
 }
 
 function buildPrompt(query: string, results: QueryResult[]): ChatMessage[] {
   const snippetContext = results
     .map((r, i) => {
-      const source = r.snippet.title ? `${r.snippet.title} (${truncateUrl(r.snippet.url)})` : truncateUrl(r.snippet.url);
-      return `[${i + 1}] Source: ${source}\n${r.snippet.text}`;
+      const title = r.snippet.title || '';
+      const url = r.snippet.url || '';
+      const source = r.snippet.source === 'history' ? 'browsing history' : 'saved snippet';
+      const header = title ? `${title}\nURL: ${url}` : url;
+      return `[${i + 1}] (${source}) ${header}\n${r.snippet.text}`;
     })
     .join('\n\n---\n\n');
 
@@ -41,11 +43,15 @@ function buildPrompt(query: string, results: QueryResult[]): ChatMessage[] {
     {
       role: 'system',
       content:
-        'You are a helpful assistant. Answer the user question using only the provided snippet context. If the context does not contain enough information, say so clearly. Be concise and direct.',
+        `You are a knowledgeable assistant with access to the user's saved snippets and browsing history. ` +
+        `Use the provided context to answer questions. The context includes both manually saved text snippets and page titles from browsing history. ` +
+        `For history entries, the page title and URL are the main signals — use them to infer what the user was reading about. ` +
+        `When the context is thin (just page titles), summarize what topics the user browsed and connect them to the question. ` +
+        `If you genuinely cannot answer from the context, say so. Be concise but helpful.`,
     },
     {
       role: 'user',
-      content: `Context from saved snippets:\n\n${snippetContext}\n\n---\n\nQuestion: ${query}`,
+      content: `Context from my saved data:\n\n${snippetContext}\n\n---\n\nQuestion: ${query}`,
     },
   ];
 }
@@ -219,12 +225,9 @@ class SontoSidebar {
 
       const messages = buildPrompt(query, queryResponse.results);
 
-      const model =
-        settings.llmProvider === 'gemini'
-          ? settings.geminiModel
-          : settings.llmProvider === 'grok'
-            ? settings.grokModel
-            : settings.openaiModel;
+      const model = settings.llmProvider === 'gemini'
+        ? settings.geminiModel
+        : settings.openaiModel;
 
       this.abortController = new AbortController();
       const signal = AbortSignal.any([this.abortController.signal, AbortSignal.timeout(30000)]);

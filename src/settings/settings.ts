@@ -6,8 +6,6 @@ import {
   saveOpenAIKey,
   getGeminiKey,
   saveGeminiKey,
-  getGrokKey,
-  saveGrokKey,
 } from '../shared/storage';
 import type { ProviderName } from '../shared/types';
 
@@ -75,7 +73,7 @@ async function init(): Promise<void> {
   initTabs();
 
   const settings = await getSettings();
-  const [openaiKey, geminiKey, grokKey] = await Promise.all([getOpenAIKey(), getGeminiKey(), getGrokKey()]);
+  const [openaiKey, geminiKey] = await Promise.all([getOpenAIKey(), getGeminiKey()]);
 
   let selectedProvider: ProviderName = settings.llmProvider;
   let selectedLanguage = settings.language;
@@ -88,30 +86,24 @@ async function init(): Promise<void> {
 
   populateModelSelect('openai-model', 'openai', settings.openaiModel);
   populateModelSelect('gemini-model', 'gemini', settings.geminiModel);
-  populateModelSelect('grok-model', 'grok', settings.grokModel);
 
   updateKeyBadge('badge-openai', !!openaiKey);
   updateKeyBadge('badge-gemini', !!geminiKey);
-  updateKeyBadge('badge-grok', !!grokKey);
 
   const openaiInput = qs<HTMLInputElement>('#openai-key');
   const geminiInput = qs<HTMLInputElement>('#gemini-key');
-  const grokInput = qs<HTMLInputElement>('#grok-key');
 
   if (openaiKey) openaiInput.value = openaiKey;
   if (geminiKey) geminiInput.value = geminiKey;
-  if (grokKey) grokInput.value = grokKey;
 
   document.getElementById('btn-save-settings')!.addEventListener('click', async () => {
     const openaiModel = qs<HTMLSelectElement>('#openai-model').value;
     const geminiModel = qs<HTMLSelectElement>('#gemini-model').value;
-    const grokModel = qs<HTMLSelectElement>('#grok-model').value;
 
     await saveSettings({
       llmProvider: selectedProvider,
       openaiModel,
       geminiModel,
-      grokModel,
       language: selectedLanguage,
     });
     showStatus('settings-status');
@@ -143,19 +135,6 @@ async function init(): Promise<void> {
     showStatus('keys-status');
   });
 
-  document.getElementById('btn-save-grok')!.addEventListener('click', async () => {
-    await saveGrokKey(grokInput.value.trim());
-    updateKeyBadge('badge-grok', !!grokInput.value.trim());
-    showStatus('keys-status');
-  });
-
-  document.getElementById('btn-clear-grok')!.addEventListener('click', async () => {
-    await saveGrokKey('');
-    grokInput.value = '';
-    updateKeyBadge('badge-grok', false);
-    showStatus('keys-status');
-  });
-
   const versionEl = document.getElementById('about-version');
   if (versionEl) {
     versionEl.textContent = chrome.runtime.getManifest().version;
@@ -175,11 +154,11 @@ async function init(): Promise<void> {
   const chatModelEl = document.getElementById('about-chat-model');
   if (chatModelEl) {
     const provider = settings.llmProvider;
-    const model = provider === 'gemini' ? settings.geminiModel : provider === 'grok' ? settings.grokModel : settings.openaiModel;
+    const model = provider === 'gemini' ? settings.geminiModel : settings.openaiModel;
     chatModelEl.textContent = `${model} (${provider})`;
   }
 
-  const hasAnyKey = !!openaiKey || !!geminiKey || !!grokKey;
+  const hasAnyKey = !!openaiKey || !!geminiKey;
   const navWarning = document.getElementById('nav-ai-warning');
   if (navWarning && !hasAnyKey) navWarning.classList.remove('hidden');
 }

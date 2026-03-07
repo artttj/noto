@@ -78,7 +78,6 @@
             <div class="segmented" id="provider-segmented">
               <button class="seg-btn" data-value="openai" type="button">OpenAI</button>
               <button class="seg-btn" data-value="gemini" type="button">Gemini</button>
-              <button class="seg-btn" data-value="grok" type="button">Grok</button>
             </div>
           </div>
 
@@ -160,26 +159,6 @@
           </div>
         </div>
 
-        <div class="provider-card">
-          <div class="provider-header">
-            <div class="provider-info">
-              <div class="provider-name">Grok</div>
-              <select id="grok-model" class="provider-model-select setting-select setting-select--sm"></select>
-            </div>
-            <span id="badge-grok" class="status-badge unconfigured">Not Configured</span>
-          </div>
-          <div class="provider-key-row">
-            <input id="grok-key" type="password" class="key-input" placeholder="xai-..." autocomplete="off" spellcheck="false" />
-          </div>
-          <div class="provider-footer">
-            <span class="provider-hint">Sent only to <code>api.x.ai</code></span>
-            <div class="provider-btns">
-              <button id="btn-save-grok" class="btn btn-primary btn-sm" type="button">Save</button>
-              <button id="btn-clear-grok" class="btn btn-ghost btn-sm" type="button">Clear</button>
-            </div>
-          </div>
-        </div>
-
         <span id="keys-status" class="saved-msg hidden">Saved</span>
       </section>
 
@@ -239,7 +218,7 @@
             <div class="rag-step-number">5</div>
             <div class="rag-step-content">
               <div class="rag-step-title">Answer</div>
-              <div class="rag-step-desc">The relevant snippets are sent as context along with your question to the selected chat model (OpenAI, Gemini, or Grok). The AI generates an answer grounded in your saved data.</div>
+              <div class="rag-step-desc">The relevant snippets are sent as context along with your question to the selected chat model (OpenAI or Gemini). The AI generates an answer grounded in your saved data.</div>
             </div>
           </div>
         </div>
@@ -311,7 +290,6 @@
             <ul class="privacy-provider-list">
               <li><a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI Privacy Policy</a></li>
               <li><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Google AI Terms of Service</a></li>
-              <li><a href="https://x.ai/legal/privacy-policy/" target="_blank" rel="noopener">xAI (Grok) Privacy Policy</a></li>
             </ul>
           </div>
 
