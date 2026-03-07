@@ -27,30 +27,37 @@ async function captureSnippet(text: string, url: string, title: string, source: 
 }
 
 const GENERATE_PROMPT =
-  `You receive browsing data. Pick ONE well-known topic from it and share ONE verified fact. 1-2 sentences max.\n\n` +
+  `You receive browsing data. Pick ONE well-known topic from it and share ONE verified fact about that specific topic. 1-2 sentences max.\n\n` +
   `## RULES\n` +
-  `- ONLY write about things you are 100% certain about. If not sure, output a classic proverb instead.\n` +
-  `- NEVER describe or define what something is. Share a lesser-known detail, origin story, or surprising connection.\n` +
+  `- ONLY write about things you are 100% certain about.\n` +
+  `- The fact MUST be directly about the topic you picked. No loose metaphors, no "this fits because..." connections.\n` +
+  `- NEVER describe or define what something is. NEVER say "X is a tool/platform/system that does Y." The user already knows what it is. Share a lesser-known detail, origin story, or surprising connection instead.\n` +
   `- NEVER make claims about people unless globally famous. If you don't recognize a name, skip them.\n` +
   `- NEVER invent biographies, credentials, achievements, books, studies, quotes, or sources.\n` +
-  `- If the data is too obscure, fall back to a well-known Japanese, Arabic, Persian, or African proverb. Name the culture.\n\n` +
+  `- NEVER mention or reference the user's browsing, history, reading, or data. Don't say "if you're exploring" or "fitting for your interest in." Just state the fact.\n` +
+  `- NEVER try to connect or relate the fact back to the browsing data. The output should stand alone.\n` +
+  `- If you can't find a topic you're certain about, output ONLY a well-known proverb with its culture of origin. Do not explain why you chose it or how it relates to anything.\n\n` +
   `## STYLE\n` +
-  `- Write like a short text from a friend. No labels, no "Fun fact:", no "Did you know".\n` +
+  `- Write like a short text from a friend. No labels, no "Fun fact:", no "Did you know", no "Here's a".\n` +
   `- Period or comma only. No em dashes.\n` +
   `- No AI words: "delve," "tapestry," "vibrant," "pivotal," "underscore," "testament," "nestled," "landscape," "renowned," "notable."\n` +
   `- No puffery: "fascinating," "remarkable," "extraordinary," "stunning."\n` +
-  `- Don't reference "your browsing" or "your history."`;
+  `- Just state the fact or proverb. Nothing else.`;
 
 const VALIDATE_PROMPT =
-  `You are a strict fact-checker. You will receive a short claim or statement.\n\n` +
-  `Your job:\n` +
-  `1. Is every fact in it verifiably true? Check names, dates, origins, attributions.\n` +
-  `2. Does it make claims about a person? If so, is that person globally famous and is the claim accurate?\n` +
-  `3. Does it mention a book, study, or quote? If so, does it really exist and is it attributed correctly?\n\n` +
-  `Respond with EXACTLY one of these formats:\n` +
-  `- If the statement is factually correct: PASS\n` +
-  `- If it contains errors or you're unsure: FAIL: <a corrected 1-2 sentence version that fixes the issues, or a well-known proverb if the original is unsalvageable>\n\n` +
-  `Be strict. If you have any doubt, respond with FAIL and provide a replacement.`;
+  `You are a strict fact-checker and style editor. You will receive a short statement.\n\n` +
+  `Check ALL of these:\n` +
+  `1. Is every fact verifiably true? Check names, dates, origins, attributions.\n` +
+  `2. Does it claim something about a person? Is that person globally famous and is the claim accurate?\n` +
+  `3. Does it mention a book, study, or quote? Does it really exist?\n` +
+  `4. Does it reference the user's browsing, history, or interests? (e.g. "fitting if you're exploring...", "given your interest in...") This is NOT allowed.\n` +
+  `5. Does it try to explain why it chose a topic or connect a proverb to browsing data? This is NOT allowed.\n` +
+  `6. Does it start with "Here's a" or contain labels like "Fun fact:"? This is NOT allowed.\n` +
+  `7. Is it just a definition? (e.g. "X is a tool/platform/system that does Y.") Definitions are NOT allowed. It must share a non-obvious detail.\n\n` +
+  `Respond with EXACTLY one of these:\n` +
+  `- PASS (only if all checks pass)\n` +
+  `- FAIL: <a clean 1-2 sentence replacement that states a verified fact or proverb with no commentary>\n\n` +
+  `Be strict. Any doubt means FAIL.`;
 
 async function generateInsight(
   snippetSample: { text: string; title: string; source: string }[],
