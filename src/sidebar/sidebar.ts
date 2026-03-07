@@ -254,39 +254,37 @@ class SontoSidebar {
 
   private async startZen(): Promise<void> {
     this.stopZen();
+    this.ensureZenSpacers();
 
     try {
       const cached = await chrome.storage.session.get('sonto_zen_feed');
       const items = (cached?.sonto_zen_feed as string[]) ?? [];
       if (items.length > 0) {
-        this.zenFeed.innerHTML = '';
+        this.clearZenBubbles();
         for (const text of items) {
-          this.appendZenBubbleElement(text);
+          this.appendZenBubbleElement(text, false);
         }
+        this.updateSpacerHeights();
         this.highlightBubble(0);
         this.startSpotlightTimer();
-        this.zenDripTimer = setInterval(() => {
-          void this.dripZen();
-        }, ZEN_DRIP_MS);
+        this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
         return;
       }
     } catch {}
 
-    this.zenFeed.innerHTML = '';
+    this.clearZenBubbles();
     this.zenUsedIds.clear();
 
     this.showZenLoader();
     const samples = Array.from({ length: ZEN_INITIAL_BATCH }, () => this.pickSample());
     await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
     this.hideZenLoader();
-
+    this.updateSpacerHeights();
     this.highlightBubble(0);
     this.startSpotlightTimer();
 
     if (this.mode === 'zen') {
-      this.zenDripTimer = setInterval(() => {
-        void this.dripZen();
-      }, ZEN_DRIP_MS);
+      this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
     }
   }
 
@@ -301,6 +299,7 @@ class SontoSidebar {
     }
 
     await this.addZenBubble();
+    this.updateSpacerHeights();
 
     const bubbles = this.zenFeed.querySelectorAll('.zen-bubble');
     this.highlightBubble(bubbles.length - 1);
@@ -326,6 +325,32 @@ class SontoSidebar {
     }
   }
 
+  private ensureZenSpacers(): void {
+    if (!this.zenFeed.querySelector('.zen-spacer-top')) {
+      const top = document.createElement('div');
+      top.className = 'zen-spacer zen-spacer-top';
+      this.zenFeed.prepend(top);
+    }
+    if (!this.zenFeed.querySelector('.zen-spacer-bottom')) {
+      const bottom = document.createElement('div');
+      bottom.className = 'zen-spacer zen-spacer-bottom';
+      this.zenFeed.appendChild(bottom);
+    }
+  }
+
+  private updateSpacerHeights(): void {
+    const feedH = this.zenFeed.clientHeight;
+    const spacerH = Math.max(0, (feedH / 2) - 40);
+    const top = this.zenFeed.querySelector<HTMLElement>('.zen-spacer-top');
+    const bottom = this.zenFeed.querySelector<HTMLElement>('.zen-spacer-bottom');
+    if (top) top.style.height = `${spacerH}px`;
+    if (bottom) bottom.style.height = `${spacerH}px`;
+  }
+
+  private clearZenBubbles(): void {
+    this.zenFeed.querySelectorAll('.zen-bubble, .zen-loading').forEach((el) => el.remove());
+  }
+
   private highlightBubble(index: number): void {
     const bubbles = this.zenFeed.querySelectorAll<HTMLElement>('.zen-bubble');
     if (bubbles.length === 0) return;
@@ -346,10 +371,13 @@ class SontoSidebar {
     this.zenSpotlightTimer = setInterval(() => this.advanceSpotlight(), ZEN_SPOTLIGHT_MS);
   }
 
-  private appendZenBubbleElement(text: string): HTMLElement {
+  private appendZenBubbleElement(text: string, animate = true): HTMLElement {
     const bubble = document.createElement('div');
-    bubble.className = 'zen-bubble';
+    bubble.className = animate ? 'zen-bubble entering' : 'zen-bubble';
     bubble.innerHTML = `<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="6" r="4"/><path d="M6.5 10v1.5a1.5 1.5 0 0 0 3 0V10" stroke-linecap="round"/><path d="M8 14v.5" stroke-linecap="round"/></svg><span>${escapeHtml(text)}</span>`;
+    if (animate) {
+      bubble.addEventListener('animationend', () => bubble.classList.remove('entering'), { once: true });
+    }
     bubble.addEventListener('click', () => {
       const bubbles = Array.from(this.zenFeed.querySelectorAll('.zen-bubble'));
       const idx = bubbles.indexOf(bubble);
@@ -358,7 +386,12 @@ class SontoSidebar {
         this.startSpotlightTimer();
       }
     });
-    this.zenFeed.appendChild(bubble);
+    const bottomSpacer = this.zenFeed.querySelector('.zen-spacer-bottom');
+    if (bottomSpacer) {
+      this.zenFeed.insertBefore(bubble, bottomSpacer);
+    } else {
+      this.zenFeed.appendChild(bubble);
+    }
     return bubble;
   }
 
@@ -368,7 +401,12 @@ class SontoSidebar {
       loader = document.createElement('div');
       loader.className = 'zen-loading';
       loader.innerHTML = '<div class="spinner"></div>';
-      this.zenFeed.appendChild(loader);
+      const bottomSpacer = this.zenFeed.querySelector('.zen-spacer-bottom');
+      if (bottomSpacer) {
+        this.zenFeed.insertBefore(loader, bottomSpacer);
+      } else {
+        this.zenFeed.appendChild(loader);
+      }
     }
   }
 
