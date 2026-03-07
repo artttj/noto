@@ -161,6 +161,24 @@ async function init(): Promise<void> {
     versionEl.textContent = chrome.runtime.getManifest().version;
   }
 
+  const embeddingModelEl = document.getElementById('about-embedding-model');
+  if (embeddingModelEl) {
+    if (openaiKey) {
+      embeddingModelEl.textContent = 'text-embedding-3-small (OpenAI)';
+    } else if (geminiKey) {
+      embeddingModelEl.textContent = 'text-embedding-004 (Gemini)';
+    } else {
+      embeddingModelEl.textContent = 'Not configured';
+    }
+  }
+
+  const chatModelEl = document.getElementById('about-chat-model');
+  if (chatModelEl) {
+    const provider = settings.llmProvider;
+    const model = provider === 'gemini' ? settings.geminiModel : provider === 'grok' ? settings.grokModel : settings.openaiModel;
+    chatModelEl.textContent = `${model} (${provider})`;
+  }
+
   const hasAnyKey = !!openaiKey || !!geminiKey || !!grokKey;
   const navWarning = document.getElementById('nav-ai-warning');
   if (navWarning && !hasAnyKey) navWarning.classList.remove('hidden');

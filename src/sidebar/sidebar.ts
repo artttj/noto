@@ -66,7 +66,6 @@ class SontoSidebar {
   private chatMessages = qs<HTMLElement>('#chat-messages');
   private chatInput = qs<HTMLTextAreaElement>('#chat-input');
   private sendBtn = qs<HTMLButtonElement>('#btn-send');
-  private chatInitializing = qs<HTMLElement>('#chat-initializing');
 
   async init(): Promise<void> {
     qs<HTMLButtonElement>('#btn-settings').addEventListener('click', () => {
@@ -86,7 +85,6 @@ class SontoSidebar {
     });
 
     await this.loadSnippets();
-    this.readyChat();
   }
 
   private setMode(mode: 'browse' | 'chat'): void {
@@ -95,13 +93,6 @@ class SontoSidebar {
     this.chatBtn.classList.toggle('active', mode === 'chat');
     this.viewBrowse.classList.toggle('hidden', mode !== 'browse');
     this.viewChat.classList.toggle('hidden', mode !== 'chat');
-  }
-
-  private readyChat(): void {
-    this.chatInitializing.classList.add('hidden');
-    this.chatInput.disabled = false;
-    this.sendBtn.disabled = false;
-    this.chatInput.placeholder = 'Ask anything about your saved snippets...';
   }
 
   private async loadSnippets(): Promise<void> {
@@ -136,10 +127,13 @@ class SontoSidebar {
     for (const snippet of this.snippets) {
       const card = document.createElement('div');
       card.className = 'snippet-card';
+      const source = snippet.source ?? 'manual';
+      const badgeLabel = source === 'history' ? 'History' : 'Saved';
       card.innerHTML = `
         <div class="snippet-text">${escapeHtml(snippet.text)}</div>
         <div class="snippet-meta">
           <div class="snippet-source">
+            <span class="source-badge ${source}">${badgeLabel}</span>
             <a href="${escapeHtml(snippet.url)}" target="_blank" rel="noopener" title="${escapeHtml(snippet.title || snippet.url)}">
               ${escapeHtml(truncateUrl(snippet.url))}
             </a>
@@ -176,11 +170,16 @@ class SontoSidebar {
   }
 
   private appendChatMessage(role: 'user' | 'assistant' | 'error', text: string): void {
+    const icons: Record<string, string> = {
+      user: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>',
+      assistant: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M5.5 6.5h1M9.5 6.5h1M6 10c.6.6 1.3 1 2 1s1.4-.4 2-1"/></svg>',
+      error: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M8 5v4M8 11v.5"/></svg>',
+    };
     const roleLabel = role === 'user' ? 'You' : role === 'assistant' ? 'Sonto' : 'Error';
     const div = document.createElement('div');
     div.className = `chat-msg ${role}`;
     div.innerHTML = `
-      <div class="chat-msg-role">${roleLabel}</div>
+      <div class="chat-msg-role">${icons[role] ?? ''}${roleLabel}</div>
       <div class="chat-msg-body">${escapeHtml(text)}</div>
     `;
     this.chatMessages.appendChild(div);

@@ -1,5 +1,5 @@
 import { MSG, type RuntimeMessage } from '../shared/messages';
-import { embed } from '../shared/embeddings/engine';
+import { embed, embedBatch } from '../shared/embeddings/engine';
 import { addSnippet, deleteSnippet, getAllSnippets, search, hasSnippetForUrl } from '../shared/embeddings/vector-store';
 import { MAX_CAPTURE_CHARS, SEARCH_TOP_K } from '../shared/constants';
 import type { Snippet } from '../shared/types';
@@ -25,8 +25,10 @@ async function captureSnippet(text: string, url: string, title: string, source: 
 
 const HISTORY_ALARM = 'sonto-history-sync';
 const HISTORY_SYNC_INTERVAL_MINUTES = 30;
-const HISTORY_INITIAL_DAYS = 7;
-const HISTORY_MAX_RESULTS = 200;
+const HISTORY_INITIAL_DAYS = 30;
+const HISTORY_MAX_RESULTS = 500;
+
+const BATCH_SIZE = 100;
 
 async function syncHistory(startTime?: number): Promise<void> {
   const msPerDay = 86400000;
@@ -37,15 +39,41 @@ async function syncHistory(startTime?: number): Promise<void> {
     maxResults: HISTORY_MAX_RESULTS,
   });
 
+  const pending: { text: string; url: string; title: string }[] = [];
   for (const item of items) {
     const url = item.url ?? '';
     const title = item.title ?? '';
     if (!url || !title.trim()) continue;
     if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
     if (await hasSnippetForUrl(url)) continue;
+    pending.push({ text: title.trim(), url, title });
+  }
 
-    const text = title.trim();
-    await captureSnippet(text, url, title, 'history').catch(() => { /* skip individual failures */ });
+  if (pending.length === 0) return;
+  console.log(`[Sonto] syncing ${pending.length} history items`);
+
+  for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+    const batch = pending.slice(i, i + BATCH_SIZE);
+    try {
+      const embeddings = await embedBatch(batch.map((b) => b.text));
+      for (let j = 0; j < batch.length; j++) {
+        const { text, url, title } = batch[j];
+        const snippet: Snippet = {
+          id: generateId(),
+          text: text.slice(0, MAX_CAPTURE_CHARS),
+          url,
+          title,
+          timestamp: Date.now(),
+          embedding: embeddings[j],
+          source: 'history',
+        };
+        await addSnippet(snippet);
+      }
+      console.log(`[Sonto] embedded batch ${i + 1}-${i + batch.length}`);
+    } catch (err) {
+      console.error('[Sonto] history batch failed:', err);
+      break;
+    }
   }
 }
 
@@ -66,6 +94,9 @@ chrome.runtime.onInstalled.addListener(() => {
   void scheduleHistorySync();
   void syncHistory();
 });
+
+void scheduleHistorySync();
+void syncHistory();
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name !== HISTORY_ALARM) return;

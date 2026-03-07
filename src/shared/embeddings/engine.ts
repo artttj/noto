@@ -1,64 +1,74 @@
-const OFFSCREEN_URL = 'offscreen/offscreen.html';
+import { getOpenAIKey, getGeminiKey } from '../storage';
 
-let offscreenReady = false;
-
-async function ensureOffscreen(): Promise<void> {
-  if (offscreenReady) return;
-
-  const contexts = await chrome.runtime.getContexts({
-    contextTypes: [chrome.runtime.ContextType.OFFSCREEN_DOCUMENT],
-    documentUrls: [chrome.runtime.getURL(OFFSCREEN_URL)],
+async function embedViaOpenAI(text: string, apiKey: string): Promise<number[]> {
+  const res = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: 'text-embedding-3-small', input: text }),
   });
-
-  if (contexts.length === 0) {
-    await chrome.offscreen.createDocument({
-      url: OFFSCREEN_URL,
-      reasons: [chrome.offscreen.Reason.DOM_SCRAPING],
-      justification: 'Run local text embedding model (ONNX/WASM)',
-    });
-  }
-
-  await pingUntilReady();
-  offscreenReady = true;
+  if (!res.ok) throw new Error(`OpenAI embeddings: ${res.status}`);
+  const json = (await res.json()) as { data: { embedding: number[] }[] };
+  return json.data[0].embedding;
 }
 
-function pingUntilReady(attempts = 20, delayMs = 300): Promise<void> {
-  return new Promise((resolve, reject) => {
-    let tries = 0;
-
-    async function attempt() {
-      tries++;
-      try {
-        const res = await chrome.runtime.sendMessage({ type: 'SONTO_PING' }) as { ok: boolean } | undefined;
-        if (res?.ok) {
-          resolve();
-        } else {
-          retry();
-        }
-      } catch {
-        retry();
-      }
-    }
-
-    function retry() {
-      if (tries >= attempts) {
-        reject(new Error('Offscreen document did not become ready in time'));
-        return;
-      }
-      setTimeout(() => void attempt(), delayMs);
-    }
-
-    void attempt();
+async function batchEmbedViaOpenAI(texts: string[], apiKey: string): Promise<number[][]> {
+  const res = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: 'text-embedding-3-small', input: texts }),
   });
+  if (!res.ok) throw new Error(`OpenAI embeddings: ${res.status}`);
+  const json = (await res.json()) as { data: { index: number; embedding: number[] }[] };
+  return json.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
+}
+
+async function embedViaGemini(text: string, apiKey: string): Promise<number[]> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: { parts: [{ text }] } }),
+  });
+  if (!res.ok) throw new Error(`Gemini embeddings: ${res.status}`);
+  const json = (await res.json()) as { embedding: { values: number[] } };
+  return json.embedding.values;
+}
+
+async function batchEmbedViaGemini(texts: string[], apiKey: string): Promise<number[][]> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requests: texts.map((text) => ({
+        model: 'models/text-embedding-004',
+        content: { parts: [{ text }] },
+      })),
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini batch embeddings: ${res.status}`);
+  const json = (await res.json()) as { embeddings: { values: number[] }[] };
+  return json.embeddings.map((e) => e.values);
 }
 
 export async function embed(text: string): Promise<number[]> {
-  await ensureOffscreen();
+  const openaiKey = await getOpenAIKey();
+  if (openaiKey) return embedViaOpenAI(text, openaiKey);
 
-  const response = await chrome.runtime.sendMessage({ type: 'SONTO_EMBED', text }) as
-    | { ok: true; embedding: number[] }
-    | { ok: false; error: string };
+  const geminiKey = await getGeminiKey();
+  if (geminiKey) return embedViaGemini(text, geminiKey);
 
-  if (!response.ok) throw new Error(response.error);
-  return response.embedding;
+  throw new Error('No API key configured. Add an OpenAI or Gemini key in Settings.');
+}
+
+export async function embedBatch(texts: string[]): Promise<number[][]> {
+  if (texts.length === 0) return [];
+
+  const openaiKey = await getOpenAIKey();
+  if (openaiKey) return batchEmbedViaOpenAI(texts, openaiKey);
+
+  const geminiKey = await getGeminiKey();
+  if (geminiKey) return batchEmbedViaGemini(texts, geminiKey);
+
+  throw new Error('No API key configured. Add an OpenAI or Gemini key in Settings.');
 }
