@@ -1,6 +1,7 @@
 import { MSG } from '../shared/messages';
 import { getSettings, getOpenAIKey, getGeminiKey } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';
+import { renderMarkdown } from '../shared/markdown';
 import type { ChatMessage, QueryResult, Snippet, SnippetSource } from '../shared/types';
 
 function qs<T extends HTMLElement>(sel: string): T {
@@ -408,9 +409,10 @@ class SontoSidebar {
     const roleLabel = role === 'user' ? 'You' : role === 'assistant' ? 'Sonto' : 'Error';
     const div = document.createElement('div');
     div.className = `chat-msg ${role}`;
+    const body = role === 'assistant' ? renderMarkdown(text) : escapeHtml(text);
     div.innerHTML = `
       <div class="chat-msg-role">${icons[role] ?? ''}${roleLabel}</div>
-      <div class="chat-msg-body">${escapeHtml(text)}</div>
+      <div class="chat-msg-body">${body}</div>
     `;
     this.chatMessages.appendChild(div);
     div.scrollIntoView({ behavior: 'smooth', block: 'end' });
