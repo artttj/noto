@@ -1,19 +1,27 @@
-import { pipeline, type FeatureExtractionPipeline } from '@huggingface/transformers';
-import { EMBEDDING_MODEL } from '../constants';
+const OFFSCREEN_URL = 'offscreen/offscreen.html';
 
-let pipelineInstance: FeatureExtractionPipeline | null = null;
+async function ensureOffscreen(): Promise<void> {
+  const contexts = await chrome.runtime.getContexts({
+    contextTypes: [chrome.runtime.ContextType.OFFSCREEN_DOCUMENT],
+    documentUrls: [chrome.runtime.getURL(OFFSCREEN_URL)],
+  });
 
-async function getPipeline(): Promise<FeatureExtractionPipeline> {
-  if (!pipelineInstance) {
-    pipelineInstance = await pipeline('feature-extraction', EMBEDDING_MODEL, {
-      device: 'wasm',
-    });
-  }
-  return pipelineInstance;
+  if (contexts.length > 0) return;
+
+  await chrome.offscreen.createDocument({
+    url: OFFSCREEN_URL,
+    reasons: [chrome.offscreen.Reason.DOM_SCRAPING],
+    justification: 'Run local text embedding model (ONNX/WASM)',
+  });
 }
 
 export async function embed(text: string): Promise<number[]> {
-  const extractor = await getPipeline();
-  const output = await extractor(text, { pooling: 'mean', normalize: true });
-  return Array.from(output.data as Float32Array);
+  await ensureOffscreen();
+
+  const response = await chrome.runtime.sendMessage({ type: 'SONTO_EMBED', text }) as
+    | { ok: true; embedding: number[] }
+    | { ok: false; error: string };
+
+  if (!response.ok) throw new Error(response.error);
+  return response.embedding;
 }
