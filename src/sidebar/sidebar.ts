@@ -63,6 +63,35 @@ const ZEN_INITIAL_BATCH = 4;
 const ZEN_DRIP_MS = 30000;
 const ZEN_SPOTLIGHT_MS = 8000;
 
+const SVG_BULB = [
+  '<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">',
+  '<circle cx="8" cy="6" r="4"/>',
+  '<path d="M6.5 10v1.5a1.5 1.5 0 0 0 3 0V10" stroke-linecap="round"/>',
+  '<path d="M8 14v.5" stroke-linecap="round"/>',
+  '</svg>',
+].join('');
+
+const SVG_USER = [
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">',
+  '<circle cx="8" cy="5.5" r="2.5"/>',
+  '<path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>',
+  '</svg>',
+].join('');
+
+const SVG_ASSISTANT = [
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">',
+  '<circle cx="8" cy="8" r="6"/>',
+  '<path d="M5.5 6.5h1M9.5 6.5h1M6 10c.6.6 1.3 1 2 1s1.4-.4 2-1"/>',
+  '</svg>',
+].join('');
+
+const SVG_ERROR = [
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">',
+  '<circle cx="8" cy="8" r="6"/>',
+  '<path d="M8 5v4M8 11v.5"/>',
+  '</svg>',
+].join('');
+
 class SontoSidebar {
   private snippets: Snippet[] = [];
   private filter: FilterMode = 'all';
@@ -374,7 +403,7 @@ class SontoSidebar {
   private appendZenBubbleElement(text: string, animate = true): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = animate ? 'zen-bubble entering' : 'zen-bubble';
-    bubble.innerHTML = `<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="6" r="4"/><path d="M6.5 10v1.5a1.5 1.5 0 0 0 3 0V10" stroke-linecap="round"/><path d="M8 14v.5" stroke-linecap="round"/></svg><span>${escapeHtml(text)}</span>`;
+    bubble.innerHTML = `${SVG_BULB}<span>${escapeHtml(text)}</span>`;
     if (animate) {
       bubble.addEventListener('animationend', () => bubble.classList.remove('entering'), { once: true });
     }
@@ -460,9 +489,9 @@ class SontoSidebar {
 
   private appendChatMessage(role: 'user' | 'assistant' | 'error', text: string): void {
     const icons: Record<string, string> = {
-      user: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>',
-      assistant: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M5.5 6.5h1M9.5 6.5h1M6 10c.6.6 1.3 1 2 1s1.4-.4 2-1"/></svg>',
-      error: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M8 5v4M8 11v.5"/></svg>',
+      user: SVG_USER,
+      assistant: SVG_ASSISTANT,
+      error: SVG_ERROR,
     };
     const roleLabel = role === 'user' ? 'You' : role === 'assistant' ? 'Sonto' : 'Error';
     const div = document.createElement('div');
