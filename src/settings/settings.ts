@@ -7,6 +7,7 @@ import {
   getGeminiKey,
   saveGeminiKey,
 } from '../shared/storage';
+import { setLocale, applyI18n } from '../shared/i18n';
 import type { ProviderName } from '../shared/types';
 
 function qs<T extends HTMLElement>(selector: string): T {
@@ -70,16 +71,24 @@ function initSegmented(containerId: string, onSelect: (value: string) => void): 
 }
 
 async function init(): Promise<void> {
+  const settings = await getSettings();
+
+  setLocale(settings.language);
+  applyI18n();
+
   initTabs();
 
-  const settings = await getSettings();
   const [openaiKey, geminiKey] = await Promise.all([getOpenAIKey(), getGeminiKey()]);
 
   let selectedProvider: ProviderName = settings.llmProvider;
   let selectedLanguage = settings.language;
 
   const setProvider = initSegmented('provider-segmented', (val) => { selectedProvider = val as ProviderName; });
-  const setLanguage = initSegmented('language-segmented', (val) => { selectedLanguage = val as typeof settings.language; });
+  const setLanguage = initSegmented('language-segmented', (val) => {
+    selectedLanguage = val as typeof settings.language;
+    setLocale(selectedLanguage);
+    applyI18n();
+  });
 
   setProvider(settings.llmProvider);
   setLanguage(settings.language);
@@ -138,24 +147,6 @@ async function init(): Promise<void> {
   const versionEl = document.getElementById('about-version');
   if (versionEl) {
     versionEl.textContent = chrome.runtime.getManifest().version;
-  }
-
-  const embeddingModelEl = document.getElementById('about-embedding-model');
-  if (embeddingModelEl) {
-    if (openaiKey) {
-      embeddingModelEl.textContent = 'text-embedding-3-small (OpenAI)';
-    } else if (geminiKey) {
-      embeddingModelEl.textContent = 'text-embedding-004 (Gemini)';
-    } else {
-      embeddingModelEl.textContent = 'Not configured';
-    }
-  }
-
-  const chatModelEl = document.getElementById('about-chat-model');
-  if (chatModelEl) {
-    const provider = settings.llmProvider;
-    const model = provider === 'gemini' ? settings.geminiModel : settings.openaiModel;
-    chatModelEl.textContent = `${model} (${provider})`;
   }
 
   const hasAnyKey = !!openaiKey || !!geminiKey;

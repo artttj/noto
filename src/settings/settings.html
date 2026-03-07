@@ -13,7 +13,7 @@
         <img src="../icons/icon48.png" class="brand-icon" alt="" aria-hidden="true" />
         <div class="brand-text">
           <div class="brand-name">Sonto</div>
-          <div class="brand-sub">Settings</div>
+          <div class="brand-sub" data-i18n="brand_sub">Settings</div>
         </div>
       </div>
 
@@ -23,14 +23,14 @@
             <circle cx="10" cy="10" r="3"/>
             <path d="M10 2v1.5m0 13V18M2 10h1.5m13 0H18M4.4 4.4l1.1 1.1m9 9 1.1 1.1M4.4 15.6l1.1-1.1m9-9 1.1-1.1"/>
           </svg>
-          <span>General</span>
+          <span data-i18n="nav_general">General</span>
         </button>
 
         <button class="nav-item" data-tab="ai-connections" type="button">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M4 14.5a2.5 2.5 0 0 1 0-5h1a4 4 0 0 1 7.9-.8A3.5 3.5 0 0 1 16 12a3.5 3.5 0 0 1-3.5 3.5H4z"/>
           </svg>
-          <span>AI Connections</span>
+          <span data-i18n="nav_ai">AI Connections</span>
           <span id="nav-ai-warning" class="nav-warning hidden" title="No API keys configured">!</span>
         </button>
 
@@ -40,14 +40,14 @@
             <path d="M14.5 12v2.5a2 2 0 0 1-2 2H12"/>
             <circle cx="14.5" cy="14.5" r="2.5" stroke-dasharray="2 2"/>
           </svg>
-          <span>How It Works</span>
+          <span data-i18n="nav_how">How It Works</span>
         </button>
 
         <button class="nav-item" data-tab="privacy" type="button">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M10 2L4 5v5c0 4.4 2.6 8 6 9 3.4-1 6-4.6 6-9V5l-6-3z"/>
           </svg>
-          <span>Privacy</span>
+          <span data-i18n="nav_privacy">Privacy</span>
         </button>
 
         <button class="nav-item" data-tab="about" type="button">
@@ -56,24 +56,24 @@
             <path d="M10 9v5"/>
             <circle cx="10" cy="6.5" r="0.8" fill="currentColor" stroke="none"/>
           </svg>
-          <span>About</span>
+          <span data-i18n="nav_about">About</span>
         </button>
       </nav>
     </aside>
 
     <main class="tab-content">
-      <!-- ═══ GENERAL ═══════════════════════════════════════════════════════ -->
+      <!-- General -->
       <section id="tab-general" class="tab-panel">
         <div class="panel-header">
-          <h1>General</h1>
-          <p>Configure the AI provider and language for chatting with your saved snippets.</p>
+          <h1 data-i18n="general_heading">General</h1>
+          <p data-i18n="general_desc">Configure the AI provider and language for chatting with your saved snippets.</p>
         </div>
 
         <div class="setting-group">
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">AI Provider</div>
-              <div class="setting-desc">Which service answers your questions</div>
+              <div class="setting-title" data-i18n="general_provider">AI Provider</div>
+              <div class="setting-desc" data-i18n="general_provider_desc">Which service answers your questions</div>
             </div>
             <div class="segmented" id="provider-segmented">
               <button class="seg-btn" data-value="openai" type="button">OpenAI</button>
@@ -83,8 +83,8 @@
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Language</div>
-              <div class="setting-desc">Preferred response language</div>
+              <div class="setting-title" data-i18n="general_language">Language</div>
+              <div class="setting-desc" data-i18n="general_language_desc">Preferred response language</div>
             </div>
             <div class="segmented" id="language-segmented">
               <button class="seg-btn" data-value="en" type="button">English</button>
@@ -94,16 +94,16 @@
         </div>
 
         <div class="panel-actions">
-          <button id="btn-save-settings" class="btn btn-primary" type="button">Save Settings</button>
-          <span id="settings-status" class="saved-msg hidden">Saved</span>
+          <button id="btn-save-settings" class="btn btn-primary" type="button" data-i18n="general_save">Save Settings</button>
+          <span id="settings-status" class="saved-msg hidden" data-i18n="general_saved">Saved</span>
         </div>
       </section>
 
-      <!-- ═══ AI CONNECTIONS ═════════════════════════════════════════════════ -->
+      <!-- AI Connections -->
       <section id="tab-ai-connections" class="tab-panel hidden">
         <div class="panel-header">
-          <h1>AI Connections</h1>
-          <p>API keys are stored locally on your device and never sent anywhere except directly to your chosen provider.</p>
+          <h1 data-i18n="ai_heading">AI Connections</h1>
+          <p data-i18n="ai_desc">API keys are stored locally on your device and never sent anywhere except directly to your chosen provider.</p>
         </div>
 
         <div class="privacy-notice" role="note">
@@ -113,10 +113,20 @@
               <line x1="10" y1="8" x2="10" y2="12"/>
               <circle cx="10" cy="15" r="0.6" fill="currentColor" stroke="none"/>
             </svg>
-            Privacy &amp; Data Notice
+            <span data-i18n="ai_notice_title">Privacy & Data Notice</span>
           </div>
-          <p>When you ask a question, relevant snippet text is sent to your chosen AI provider for a response. Embeddings are also generated via API (OpenAI or Gemini) when saving snippets.</p>
-          <p>Your API keys never leave your device except for authentication with that provider. No data is stored on any external server by Sonto.</p>
+          <p data-i18n="ai_notice_p1">When you ask a question, relevant snippet text is sent to your chosen AI provider for a response. Embeddings are generated via API (OpenAI or Gemini) when saving snippets.</p>
+          <ul>
+            <li data-i18n-html="ai_notice_no_storage"><strong>No storage:</strong> This extension stores nothing on any server. API keys and all data stay on your device.</li>
+            <li data-i18n-html="ai_notice_transfer"><strong>Data transfer:</strong> Snippet text leaves your device only when generating embeddings or asking questions. It is processed by your chosen AI provider (OpenAI or Google).</li>
+            <li data-i18n-html="ai_notice_personal"><strong>Personal info:</strong> Avoid saving pages with sensitive health, financial, or private credentials.</li>
+            <li data-i18n-html="ai_notice_responsibility"><strong>Your responsibility:</strong> You are responsible for ensuring compliance with GDPR, CCPA, and other data protection regulations.</li>
+          </ul>
+          <p class="privacy-notice-links">
+            <strong data-i18n="ai_notice_policies">Privacy Policies:</strong>
+            <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI</a> ·
+            <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Google AI</a>
+          </p>
         </div>
 
         <div class="provider-card">
@@ -131,10 +141,10 @@
             <input id="openai-key" type="password" class="key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" />
           </div>
           <div class="provider-footer">
-            <span class="provider-hint">Sent only to <code>api.openai.com</code></span>
+            <span class="provider-hint"><span data-i18n="ai_sent_only">Sent only to</span> <code>api.openai.com</code></span>
             <div class="provider-btns">
-              <button id="btn-save-openai" class="btn btn-primary btn-sm" type="button">Save</button>
-              <button id="btn-clear-openai" class="btn btn-ghost btn-sm" type="button">Clear</button>
+              <button id="btn-save-openai" class="btn btn-primary btn-sm" type="button" data-i18n="ai_save">Save</button>
+              <button id="btn-clear-openai" class="btn btn-ghost btn-sm" type="button" data-i18n="ai_clear">Clear</button>
             </div>
           </div>
         </div>
@@ -151,48 +161,48 @@
             <input id="gemini-key" type="password" class="key-input" placeholder="AIza..." autocomplete="off" spellcheck="false" />
           </div>
           <div class="provider-footer">
-            <span class="provider-hint">Sent only to <code>generativelanguage.googleapis.com</code></span>
+            <span class="provider-hint"><span data-i18n="ai_sent_only">Sent only to</span> <code>generativelanguage.googleapis.com</code></span>
             <div class="provider-btns">
-              <button id="btn-save-gemini" class="btn btn-primary btn-sm" type="button">Save</button>
-              <button id="btn-clear-gemini" class="btn btn-ghost btn-sm" type="button">Clear</button>
+              <button id="btn-save-gemini" class="btn btn-primary btn-sm" type="button" data-i18n="ai_save">Save</button>
+              <button id="btn-clear-gemini" class="btn btn-ghost btn-sm" type="button" data-i18n="ai_clear">Clear</button>
             </div>
           </div>
         </div>
 
-        <span id="keys-status" class="saved-msg hidden">Saved</span>
+        <span id="keys-status" class="saved-msg hidden" data-i18n="general_saved">Saved</span>
       </section>
 
-      <!-- ═══ HOW IT WORKS ═══════════════════════════════════════════════════ -->
+      <!-- How It Works -->
       <section id="tab-how-it-works" class="tab-panel hidden">
         <div class="panel-header">
-          <h1>How It Works</h1>
-          <p>Sonto uses Retrieval-Augmented Generation (RAG) to answer your questions from saved snippets.</p>
+          <h1 data-i18n="how_heading">How It Works</h1>
+          <p data-i18n="how_desc">Sonto uses Retrieval-Augmented Generation (RAG) to answer your questions from saved snippets.</p>
         </div>
 
         <div class="rag-flow">
           <div class="rag-step">
             <div class="rag-step-number">1</div>
             <div class="rag-step-content">
-              <div class="rag-step-title">Capture</div>
-              <div class="rag-step-desc">You highlight text on any webpage and save it via keyboard shortcut (<code>Alt+Shift+C</code>) or right-click context menu. Browser history is also synced automatically every 30 minutes.</div>
+              <div class="rag-step-title" data-i18n="how_step1_title">Capture</div>
+              <div class="rag-step-desc" data-i18n-html="how_step1_desc">You highlight text on any webpage and save it via keyboard shortcut (<code>Alt+Shift+C</code>) or right-click context menu. Browser history is also synced automatically every 30 minutes.</div>
             </div>
           </div>
 
           <div class="rag-step">
             <div class="rag-step-number">2</div>
             <div class="rag-step-content">
-              <div class="rag-step-title">Embed</div>
-              <div class="rag-step-desc">Each snippet is converted into a vector embedding (a list of numbers representing its meaning). Sonto uses your API key to call one of these models:</div>
+              <div class="rag-step-title" data-i18n="how_step2_title">Embed</div>
+              <div class="rag-step-desc" data-i18n="how_step2_desc">Each snippet is converted into a vector embedding (a list of numbers representing its meaning). Sonto uses your API key to call one of these models:</div>
               <div class="model-cards">
                 <div class="model-card">
                   <div class="model-card-name">text-embedding-3-small</div>
                   <div class="model-card-meta">OpenAI &middot; 1536 dimensions</div>
-                  <div class="model-card-note">Used when an OpenAI key is configured. Fast, cheap (~$0.02 per 1M tokens), high quality.</div>
+                  <div class="model-card-note" data-i18n="how_model_openai_note">Used when an OpenAI key is configured. Fast, cheap (~$0.02 per 1M tokens), high quality.</div>
                 </div>
                 <div class="model-card">
                   <div class="model-card-name">text-embedding-004</div>
                   <div class="model-card-meta">Google &middot; 768 dimensions</div>
-                  <div class="model-card-note">Fallback when only a Gemini key is configured. Free tier available.</div>
+                  <div class="model-card-note" data-i18n="how_model_gemini_note">Fallback when only a Gemini key is configured. Free tier available.</div>
                 </div>
               </div>
             </div>
@@ -201,30 +211,30 @@
           <div class="rag-step">
             <div class="rag-step-number">3</div>
             <div class="rag-step-content">
-              <div class="rag-step-title">Store</div>
-              <div class="rag-step-desc">Embeddings and snippet text are stored locally in your browser's IndexedDB. Nothing leaves your device at this point.</div>
+              <div class="rag-step-title" data-i18n="how_step3_title">Store</div>
+              <div class="rag-step-desc" data-i18n="how_step3_desc">Embeddings and snippet text are stored locally in your browser's IndexedDB. Nothing leaves your device at this point.</div>
             </div>
           </div>
 
           <div class="rag-step">
             <div class="rag-step-number">4</div>
             <div class="rag-step-content">
-              <div class="rag-step-title">Search</div>
-              <div class="rag-step-desc">When you ask a question, your query is embedded with the same model. Sonto finds the 5 most relevant snippets using cosine similarity on the stored vectors.</div>
+              <div class="rag-step-title" data-i18n="how_step4_title">Search</div>
+              <div class="rag-step-desc" data-i18n="how_step4_desc">When you ask a question, your query is embedded with the same model. Sonto finds the most relevant snippets using cosine similarity on the stored vectors.</div>
             </div>
           </div>
 
           <div class="rag-step">
             <div class="rag-step-number">5</div>
             <div class="rag-step-content">
-              <div class="rag-step-title">Answer</div>
-              <div class="rag-step-desc">The relevant snippets are sent as context along with your question to the selected chat model (OpenAI or Gemini). The AI generates an answer grounded in your saved data.</div>
+              <div class="rag-step-title" data-i18n="how_step5_title">Answer</div>
+              <div class="rag-step-desc" data-i18n="how_step5_desc">The relevant snippets are sent as context along with your question to the selected chat model (OpenAI or Gemini). The AI generates an answer grounded in your saved data.</div>
             </div>
           </div>
         </div>
 
         <div class="help-section" style="margin-top: 32px;">
-          <div class="help-heading">Keyboard Shortcuts</div>
+          <div class="help-heading" data-i18n="how_shortcuts">Keyboard Shortcuts</div>
           <div class="shortcut-list">
             <div class="shortcut-row">
               <div class="shortcut-keys">
@@ -235,8 +245,8 @@
                 <span class="key">S</span>
               </div>
               <div class="shortcut-info">
-                <div class="shortcut-action">Open Sidebar</div>
-                <div class="shortcut-label">Opens the Sonto side panel</div>
+                <div class="shortcut-action" data-i18n="how_shortcut_open">Open Sidebar</div>
+                <div class="shortcut-label" data-i18n="how_shortcut_open_desc">Opens the Sonto side panel</div>
               </div>
             </div>
             <div class="shortcut-row">
@@ -248,45 +258,45 @@
                 <span class="key">C</span>
               </div>
               <div class="shortcut-info">
-                <div class="shortcut-action">Capture Selection</div>
-                <div class="shortcut-label">Saves highlighted text to your memory</div>
+                <div class="shortcut-action" data-i18n="how_shortcut_capture">Capture Selection</div>
+                <div class="shortcut-label" data-i18n="how_shortcut_capture_desc">Saves highlighted text to your memory</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ═══ PRIVACY ════════════════════════════════════════════════════════ -->
+      <!-- Privacy -->
       <section id="tab-privacy" class="tab-panel hidden">
         <div class="panel-header">
-          <h1>Privacy</h1>
-          <p>How Sonto handles your data.</p>
+          <h1 data-i18n="privacy_heading">Privacy</h1>
+          <p data-i18n="privacy_desc">How Sonto handles your data.</p>
         </div>
 
         <div class="privacy-sections">
           <div class="privacy-section">
-            <div class="privacy-section-heading">Data Collection</div>
-            <p>Sonto collects no personal data. There are no accounts, no analytics, no telemetry, and no tracking of any kind. The extension is fully open source.</p>
+            <div class="privacy-section-heading" data-i18n="privacy_collection_heading">Data Collection</div>
+            <p data-i18n="privacy_collection">Sonto collects no personal data. There are no accounts, no analytics, no telemetry, and no tracking of any kind. The extension is fully open source.</p>
           </div>
 
           <div class="privacy-section">
-            <div class="privacy-section-heading">Local Storage</div>
-            <p>All saved snippets, their vector embeddings, and your settings are stored locally in your browser using IndexedDB and <code>chrome.storage.local</code>. No data is sent to any Sonto server because there is no Sonto server.</p>
+            <div class="privacy-section-heading" data-i18n="privacy_storage_heading">Local Storage</div>
+            <p data-i18n-html="privacy_storage">All saved snippets, their vector embeddings, and your settings are stored locally in your browser using IndexedDB and <code>chrome.storage.local</code>. No data is sent to any Sonto server because there is no Sonto server.</p>
           </div>
 
           <div class="privacy-section">
-            <div class="privacy-section-heading">API Keys</div>
-            <p>Your API keys are stored locally on your device. They are only transmitted to the corresponding provider's API endpoint for authentication. Sonto never reads, logs, or forwards your keys anywhere else.</p>
+            <div class="privacy-section-heading" data-i18n="privacy_keys_heading">API Keys</div>
+            <p data-i18n="privacy_keys">Your API keys are stored locally on your device. They are only transmitted to the corresponding provider's API endpoint for authentication. Sonto never reads, logs, or forwards your keys anywhere else.</p>
           </div>
 
           <div class="privacy-section">
-            <div class="privacy-section-heading">Embeddings</div>
-            <p>When you save a snippet or sync browser history, the text is sent to your configured embedding provider (OpenAI or Gemini) to generate a vector representation. This is a one-time operation per snippet. The text is not stored by the provider beyond what their API terms specify.</p>
+            <div class="privacy-section-heading" data-i18n="privacy_embeddings_heading">Embeddings</div>
+            <p data-i18n="privacy_embeddings">When you save a snippet or sync browser history, the text is sent to your configured embedding provider (OpenAI or Gemini) to generate a vector representation. This is a one-time operation per snippet. The text is not stored by the provider beyond what their API terms specify.</p>
           </div>
 
           <div class="privacy-section">
-            <div class="privacy-section-heading">AI Chat</div>
-            <p>When you ask a question in the sidebar, the query and relevant snippet context (up to 5 matched snippets) are sent to your selected AI provider. The provider generates a response and returns it. Review their privacy policies:</p>
+            <div class="privacy-section-heading" data-i18n="privacy_chat_heading">AI Chat</div>
+            <p data-i18n="privacy_chat">When you ask a question in the sidebar, the query and relevant snippet context are sent to your selected AI provider. The provider generates a response and returns it. Review their privacy policies:</p>
             <ul class="privacy-provider-list">
               <li><a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI Privacy Policy</a></li>
               <li><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Google AI Terms of Service</a></li>
@@ -294,46 +304,38 @@
           </div>
 
           <div class="privacy-section">
-            <div class="privacy-section-heading">Browser History</div>
-            <p>Sonto reads your browser history (last 30 days) to automatically save page titles as searchable snippets. This data never leaves your browser except for the embedding API call. You can delete any history snippet from the sidebar at any time.</p>
+            <div class="privacy-section-heading" data-i18n="privacy_history_heading">Browser History</div>
+            <p data-i18n="privacy_history">Sonto reads your browser history (last 30 days) to automatically save page titles as searchable snippets. This data never leaves your browser except for the embedding API call. You can delete any history snippet from the sidebar at any time.</p>
           </div>
 
           <div class="privacy-section">
-            <div class="privacy-section-heading">Your Responsibility</div>
-            <p>You are responsible for the data you save and the API keys you provide. If you save sensitive content and then ask a question about it, that content will be sent to your chosen AI provider. Consider this before saving confidential information.</p>
+            <div class="privacy-section-heading" data-i18n="privacy_responsibility_heading">Your Responsibility</div>
+            <p data-i18n="privacy_responsibility">You are responsible for the data you save and the API keys you provide. If you save sensitive content and then ask a question about it, that content will be sent to your chosen AI provider. Consider this before saving confidential information.</p>
           </div>
         </div>
 
-        <a href="https://github.com/artttj/sonto" target="_blank" rel="noopener" class="privacy-source-link">View source code on GitHub</a>
+        <a href="https://github.com/artttj/sonto" target="_blank" rel="noopener" class="privacy-source-link" data-i18n="privacy_source">View source code on GitHub</a>
       </section>
 
-      <!-- ═══ ABOUT ══════════════════════════════════════════════════════════ -->
+      <!-- About -->
       <section id="tab-about" class="tab-panel hidden">
         <div class="panel-header">
-          <h1>About Sonto</h1>
-          <p>Your local second brain for the browser.</p>
+          <h1 data-i18n="about_heading">About Sonto</h1>
+          <p data-i18n="about_desc">Your local second brain for the browser.</p>
         </div>
 
         <div class="about-block">
           <div class="about-row">
-            <span class="about-label">Version</span>
+            <span class="about-label" data-i18n="about_version">Version</span>
             <span class="about-value" id="about-version">-</span>
           </div>
           <div class="about-row">
-            <span class="about-label">Author</span>
+            <span class="about-label" data-i18n="about_author">Author</span>
             <span class="about-value">Artem Iagovdik</span>
           </div>
           <div class="about-row">
-            <span class="about-label">Embeddings</span>
-            <span class="about-value about-value--mono" id="about-embedding-model">-</span>
-          </div>
-          <div class="about-row">
-            <span class="about-label">Chat</span>
-            <span class="about-value about-value--mono" id="about-chat-model">-</span>
-          </div>
-          <div class="about-row">
-            <span class="about-label">Storage</span>
-            <span class="about-value">IndexedDB (local)</span>
+            <span class="about-label" data-i18n="about_license">License</span>
+            <span class="about-value" data-i18n="about_license_text">MIT — free to use and modify.</span>
           </div>
         </div>
 
@@ -341,7 +343,7 @@
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="github-icon">
             <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0 1 12 6.844a9.57 9.57 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.744 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
           </svg>
-          View on GitHub
+          <span data-i18n="about_github">View on GitHub</span>
         </a>
       </section>
     </main>
