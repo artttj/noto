@@ -31,6 +31,24 @@ async function minifyCss(srcPath, destPath) {
   fs.writeFileSync(destPath, result.code);
 }
 
+function copyWasmFiles() {
+  const wasmSources = [
+    path.join(root, 'node_modules/@huggingface/transformers/dist'),
+    path.join(root, 'node_modules/onnxruntime-web/dist'),
+  ];
+  const destDir = path.join(dist, 'offscreen');
+  mkdirp(destDir);
+
+  for (const sourceDir of wasmSources) {
+    if (!fs.existsSync(sourceDir)) continue;
+    for (const file of fs.readdirSync(sourceDir)) {
+      if (file.endsWith('.wasm')) {
+        copyFile(path.join(sourceDir, file), path.join(destDir, file));
+      }
+    }
+  }
+}
+
 async function build() {
   if (fs.existsSync(dist)) fs.rmSync(dist, { recursive: true });
   mkdirp(dist);
@@ -51,6 +69,8 @@ async function build() {
 
   await minifyCss(path.join(src, 'sidebar', 'sidebar.css'), path.join(dist, 'sidebar', 'sidebar.css'));
   await minifyCss(path.join(src, 'settings', 'settings.css'), path.join(dist, 'settings', 'settings.css'));
+
+  copyWasmFiles();
 
   const common = { bundle: true, minify: true, target: 'es2020' };
 

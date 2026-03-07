@@ -1,11 +1,19 @@
-import { pipeline, type FeatureExtractionPipeline } from '@huggingface/transformers';
+import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/transformers';
 import { EMBEDDING_MODEL } from '../shared/constants';
+
+env.backends.onnx.wasm.proxy = false;
+env.backends.onnx.wasm.numThreads = 1;
+env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL('offscreen/');
+env.allowRemoteModels = true;
+env.allowLocalModels = false;
 
 let pipelineInstance: FeatureExtractionPipeline | null = null;
 
 async function getPipeline(): Promise<FeatureExtractionPipeline> {
   if (!pipelineInstance) {
-    pipelineInstance = await pipeline('feature-extraction', EMBEDDING_MODEL);
+    pipelineInstance = await pipeline('feature-extraction', EMBEDDING_MODEL, {
+      dtype: 'fp32',
+    });
   }
   return pipelineInstance;
 }
@@ -23,6 +31,7 @@ chrome.runtime.onMessage.addListener((message: { type: string; text?: string }, 
     .then((embedding) => sendResponse({ ok: true, embedding }))
     .catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : 'Embedding failed';
+      console.error('[Sonto offscreen] embed error:', err);
       sendResponse({ ok: false, error: msg });
     });
 
