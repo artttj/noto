@@ -61,6 +61,7 @@ type ViewMode = 'zen' | 'browse' | 'chat';
 
 const ZEN_INITIAL_BATCH = 4;
 const ZEN_DRIP_MS = 30000;
+const ZEN_SPOTLIGHT_MS = 8000;
 
 class SontoSidebar {
   private snippets: Snippet[] = [];
@@ -72,6 +73,8 @@ class SontoSidebar {
   private pastInsights: string[] = [];
 
   private zenDripTimer: ReturnType<typeof setInterval> | null = null;
+  private zenSpotlightTimer: ReturnType<typeof setInterval> | null = null;
+  private zenActiveIndex = 0;
   private zenUsedIds: Set<string> = new Set();
 
   private zenBtn = qs<HTMLButtonElement>('#btn-zen');
@@ -258,11 +261,10 @@ class SontoSidebar {
       if (items.length > 0) {
         this.zenFeed.innerHTML = '';
         for (const text of items) {
-          const bubble = document.createElement('div');
-          bubble.className = 'zen-bubble';
-          bubble.innerHTML = `<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="6" r="4"/><path d="M6.5 10v1.5a1.5 1.5 0 0 0 3 0V10" stroke-linecap="round"/><path d="M8 14v.5" stroke-linecap="round"/></svg><span>${escapeHtml(text)}</span>`;
-          this.zenFeed.appendChild(bubble);
+          this.appendZenBubbleElement(text);
         }
+        this.highlightBubble(0);
+        this.startSpotlightTimer();
         this.zenDripTimer = setInterval(() => {
           void this.dripZen();
         }, ZEN_DRIP_MS);
@@ -278,6 +280,9 @@ class SontoSidebar {
     await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
     this.hideZenLoader();
 
+    this.highlightBubble(0);
+    this.startSpotlightTimer();
+
     if (this.mode === 'zen') {
       this.zenDripTimer = setInterval(() => {
         void this.dripZen();
@@ -291,10 +296,16 @@ class SontoSidebar {
       first.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
       first.style.opacity = '0';
       first.style.transform = 'translateY(-8px)';
+      if (this.zenActiveIndex > 0) this.zenActiveIndex--;
       setTimeout(() => first.remove(), 800);
     }
 
     await this.addZenBubble();
+
+    const bubbles = this.zenFeed.querySelectorAll('.zen-bubble');
+    this.highlightBubble(bubbles.length - 1);
+    this.startSpotlightTimer();
+
     void this.cacheZenFeed();
   }
 
@@ -309,6 +320,46 @@ class SontoSidebar {
       clearInterval(this.zenDripTimer);
       this.zenDripTimer = null;
     }
+    if (this.zenSpotlightTimer) {
+      clearInterval(this.zenSpotlightTimer);
+      this.zenSpotlightTimer = null;
+    }
+  }
+
+  private highlightBubble(index: number): void {
+    const bubbles = this.zenFeed.querySelectorAll<HTMLElement>('.zen-bubble');
+    if (bubbles.length === 0) return;
+    this.zenActiveIndex = Math.max(0, Math.min(index, bubbles.length - 1));
+    bubbles.forEach((b, i) => b.classList.toggle('active', i === this.zenActiveIndex));
+    bubbles[this.zenActiveIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  private advanceSpotlight(): void {
+    const bubbles = this.zenFeed.querySelectorAll('.zen-bubble');
+    if (bubbles.length === 0) return;
+    const next = (this.zenActiveIndex + 1) % bubbles.length;
+    this.highlightBubble(next);
+  }
+
+  private startSpotlightTimer(): void {
+    if (this.zenSpotlightTimer) clearInterval(this.zenSpotlightTimer);
+    this.zenSpotlightTimer = setInterval(() => this.advanceSpotlight(), ZEN_SPOTLIGHT_MS);
+  }
+
+  private appendZenBubbleElement(text: string): HTMLElement {
+    const bubble = document.createElement('div');
+    bubble.className = 'zen-bubble';
+    bubble.innerHTML = `<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="6" r="4"/><path d="M6.5 10v1.5a1.5 1.5 0 0 0 3 0V10" stroke-linecap="round"/><path d="M8 14v.5" stroke-linecap="round"/></svg><span>${escapeHtml(text)}</span>`;
+    bubble.addEventListener('click', () => {
+      const bubbles = Array.from(this.zenFeed.querySelectorAll('.zen-bubble'));
+      const idx = bubbles.indexOf(bubble);
+      if (idx >= 0) {
+        this.highlightBubble(idx);
+        this.startSpotlightTimer();
+      }
+    });
+    this.zenFeed.appendChild(bubble);
+    return bubble;
   }
 
   private showZenLoader(): void {
@@ -355,11 +406,7 @@ class SontoSidebar {
 
       if (response?.ok && response.insight) {
         this.hideZenLoader();
-        const bubble = document.createElement('div');
-        bubble.className = 'zen-bubble';
-        bubble.innerHTML = `<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="6" r="4"/><path d="M6.5 10v1.5a1.5 1.5 0 0 0 3 0V10" stroke-linecap="round"/><path d="M8 14v.5" stroke-linecap="round"/></svg><span>${escapeHtml(response.insight)}</span>`;
-        this.zenFeed.appendChild(bubble);
-        bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        this.appendZenBubbleElement(response.insight);
 
         this.pastInsights.push(response.insight);
         if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
