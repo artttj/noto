@@ -1,7 +1,7 @@
 import { MSG } from '../shared/messages';
 import { getSettings, getOpenAIKey, getGeminiKey } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';
-import type { ChatMessage, QueryResult, Snippet } from '../shared/types';
+import type { ChatMessage, QueryResult, Snippet, SnippetSource } from '../shared/types';
 
 function qs<T extends HTMLElement>(sel: string): T {
   return document.querySelector<T>(sel)!;
@@ -56,8 +56,11 @@ function buildPrompt(query: string, results: QueryResult[]): ChatMessage[] {
   ];
 }
 
+type FilterMode = 'all' | 'manual' | 'history';
+
 class SontoSidebar {
   private snippets: Snippet[] = [];
+  private filter: FilterMode = 'all';
   private chatHistory: { role: 'user' | 'assistant' | 'error'; text: string }[] = [];
   private isLoading = false;
   private abortController: AbortController | null = null;
@@ -68,7 +71,6 @@ class SontoSidebar {
   private viewBrowse = qs<HTMLElement>('#view-browse');
   private viewChat = qs<HTMLElement>('#view-chat');
   private snippetList = qs<HTMLElement>('#snippet-list');
-  private snippetCount = qs<HTMLElement>('#snippet-count');
   private chatMessages = qs<HTMLElement>('#chat-messages');
   private chatInput = qs<HTMLTextAreaElement>('#chat-input');
   private sendBtn = qs<HTMLButtonElement>('#btn-send');
@@ -81,6 +83,15 @@ class SontoSidebar {
     this.browseBtn.addEventListener('click', () => this.setMode('browse'));
     this.chatBtn.addEventListener('click', () => this.setMode('chat'));
     qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () => void this.clearAll());
+
+    document.querySelectorAll<HTMLButtonElement>('.filter-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.filter = (btn.dataset.filter ?? 'all') as FilterMode;
+        document.querySelectorAll('.filter-tab').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.renderSnippets();
+      });
+    });
 
     this.sendBtn.addEventListener('click', () => void this.sendMessage());
     this.chatInput.addEventListener('keydown', (e) => {
@@ -109,11 +120,37 @@ class SontoSidebar {
     this.renderSnippets();
   }
 
-  private renderSnippets(): void {
-    const count = this.snippets.length;
-    this.snippetCount.textContent = `${count} snippet${count !== 1 ? 's' : ''}`;
+  private getFilteredSnippets(): Snippet[] {
+    if (this.filter === 'all') return this.snippets;
+    return this.snippets.filter((s) => (s.source ?? 'manual') === this.filter);
+  }
 
-    if (count === 0) {
+  private updateCounts(): void {
+    const manual = this.snippets.filter((s) => (s.source ?? 'manual') === 'manual').length;
+    const history = this.snippets.filter((s) => s.source === 'history').length;
+    const countAll = document.getElementById('count-all');
+    const countManual = document.getElementById('count-manual');
+    const countHistory = document.getElementById('count-history');
+    if (countAll) countAll.textContent = String(this.snippets.length);
+    if (countManual) countManual.textContent = String(manual);
+    if (countHistory) countHistory.textContent = String(history);
+  }
+
+  private renderSnippets(): void {
+    this.updateCounts();
+    const filtered = this.getFilteredSnippets();
+
+    if (filtered.length === 0) {
+      const emptyMsg = this.snippets.length === 0
+        ? 'Highlight text on any page and press <strong>Alt+Shift+C</strong> or right-click to save it here.'
+        : this.filter === 'manual'
+          ? 'No manually saved snippets yet.'
+          : 'No history items synced yet.';
+      const emptyTitle = this.snippets.length === 0
+        ? 'No saved snippets'
+        : this.filter === 'manual'
+          ? 'No saved snippets'
+          : 'No history';
       this.snippetList.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">
@@ -122,15 +159,15 @@ class SontoSidebar {
               <path d="M16 18h16M16 24h12M16 30h8"/>
             </svg>
           </div>
-          <div class="empty-title">No saved snippets</div>
-          <div class="empty-desc">Highlight text on any page and press <strong>Alt+Shift+C</strong> or right-click to save it here.</div>
+          <div class="empty-title">${emptyTitle}</div>
+          <div class="empty-desc">${emptyMsg}</div>
         </div>
       `;
       return;
     }
 
     this.snippetList.innerHTML = '';
-    for (const snippet of this.snippets) {
+    for (const snippet of filtered) {
       const card = document.createElement('div');
       card.className = 'snippet-card';
       const source = snippet.source ?? 'manual';
@@ -169,9 +206,12 @@ class SontoSidebar {
   }
 
   private async clearAll(): Promise<void> {
-    if (!confirm(`Delete all ${this.snippets.length} snippets?`)) return;
-    await Promise.all(this.snippets.map((s) => chrome.runtime.sendMessage({ type: MSG.DELETE_SNIPPET, id: s.id })));
-    this.snippets = [];
+    const filtered = this.getFilteredSnippets();
+    const label = this.filter === 'all' ? 'all' : this.filter === 'manual' ? 'all saved' : 'all history';
+    if (!confirm(`Delete ${label} ${filtered.length} snippets?`)) return;
+    await Promise.all(filtered.map((s) => chrome.runtime.sendMessage({ type: MSG.DELETE_SNIPPET, id: s.id })));
+    const ids = new Set(filtered.map((s) => s.id));
+    this.snippets = this.snippets.filter((s) => !ids.has(s.id));
     this.renderSnippets();
   }
 

@@ -41,7 +41,11 @@
 
     <div id="view-browse" class="view">
       <div class="snippet-count-bar">
-        <span id="snippet-count" class="count-text">0 snippets</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all" type="button">All <span id="count-all" class="filter-count">0</span></button>
+          <button class="filter-tab" data-filter="manual" type="button">Saved <span id="count-manual" class="filter-count">0</span></button>
+          <button class="filter-tab" data-filter="history" type="button">History <span id="count-history" class="filter-count">0</span></button>
+        </div>
         <button id="btn-clear-all" class="link-btn danger" type="button">Clear all</button>
       </div>
       <div id="snippet-list" class="snippet-list">
