@@ -64,6 +64,7 @@ const ZEN_INITIAL_BATCH = 3;
 const ZEN_DRIP_BATCH = 1;
 const ZEN_DRIP_MS = 15000;
 const ZEN_MAX_CATCHUP = 6;
+const ZEN_MAX_BUBBLES = 20;
 const SVG_BULB = [
   '<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">',
   '<circle cx="8" cy="6" r="4"/>',
@@ -324,18 +325,21 @@ class SontoSidebar {
   }
 
   private async dripZen(): Promise<void> {
-    const bubbles = this.zenFeed.querySelectorAll<HTMLElement>('.zen-bubble');
-    const last = bubbles[bubbles.length - 1] ?? null;
-    if (last) {
-      last.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-      last.style.opacity = '0';
-      last.style.transform = 'translateY(8px)';
-      setTimeout(() => last.remove(), 800);
-    }
-
     await this.loadBubblesSequentially(ZEN_DRIP_BATCH);
+    this.trimOldBubbles();
     this.zenFeed.scrollTo({ top: 0, behavior: 'smooth' });
     void this.cacheZenFeed();
+  }
+
+  private trimOldBubbles(): void {
+    const bubbles = this.zenFeed.querySelectorAll<HTMLElement>('.zen-bubble');
+    const excess = bubbles.length - ZEN_MAX_BUBBLES;
+    for (let i = 0; i < excess; i++) {
+      const old = bubbles[bubbles.length - 1 - i];
+      old.style.transition = 'opacity 0.6s ease';
+      old.style.opacity = '0';
+      setTimeout(() => old.remove(), 600);
+    }
   }
 
   private cacheZenFeed(): void {
