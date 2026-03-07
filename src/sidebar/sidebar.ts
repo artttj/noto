@@ -309,12 +309,13 @@ class SontoSidebar {
   }
 
   private async dripZen(): Promise<void> {
-    const first = this.zenFeed.querySelector('.zen-bubble') as HTMLElement | null;
-    if (first) {
-      first.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-      first.style.opacity = '0';
-      first.style.transform = 'translateY(-8px)';
-      setTimeout(() => first.remove(), 800);
+    const bubbles = this.zenFeed.querySelectorAll<HTMLElement>('.zen-bubble');
+    const last = bubbles[bubbles.length - 1] ?? null;
+    if (last) {
+      last.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+      last.style.opacity = '0';
+      last.style.transform = 'translateY(8px)';
+      setTimeout(() => last.remove(), 800);
     }
 
     const samples = Array.from({ length: ZEN_DRIP_BATCH }, () => this.pickSample());
@@ -339,7 +340,12 @@ class SontoSidebar {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     bubble.innerHTML = `${SVG_BULB}<span>${escapeHtml(text)}</span>`;
-    this.zenFeed.appendChild(bubble);
+    const first = this.zenFeed.firstChild;
+    if (first) {
+      this.zenFeed.insertBefore(bubble, first);
+    } else {
+      this.zenFeed.appendChild(bubble);
+    }
     return bubble;
   }
 
@@ -349,7 +355,7 @@ class SontoSidebar {
       loader = document.createElement('div');
       loader.className = 'zen-loading';
       loader.innerHTML = '<div class="spinner"></div>';
-      this.zenFeed.appendChild(loader);
+      this.zenFeed.prepend(loader);
     }
   }
 
@@ -387,8 +393,8 @@ class SontoSidebar {
 
       if (response?.ok && response.insight) {
         this.hideZenLoader();
-        const bubble = this.appendZenBubbleElement(response.insight);
-        bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        this.appendZenBubbleElement(response.insight);
+        this.zenFeed.scrollTo({ top: 0, behavior: 'smooth' });
 
         this.pastInsights.push(response.insight);
         if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
