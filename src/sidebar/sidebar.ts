@@ -61,8 +61,6 @@ type ViewMode = 'zen' | 'browse' | 'chat';
 
 const ZEN_INITIAL_BATCH = 4;
 const ZEN_DRIP_MS = 30000;
-const ZEN_SPOTLIGHT_MS = 8000;
-
 const SVG_BULB = [
   '<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">',
   '<circle cx="8" cy="6" r="4"/>',
@@ -102,8 +100,6 @@ class SontoSidebar {
   private pastInsights: string[] = [];
 
   private zenDripTimer: ReturnType<typeof setInterval> | null = null;
-  private zenSpotlightTimer: ReturnType<typeof setInterval> | null = null;
-  private zenActiveIndex = 0;
   private zenUsedIds: Set<string> = new Set();
 
   private zenBtn = qs<HTMLButtonElement>('#btn-zen');
@@ -283,34 +279,27 @@ class SontoSidebar {
 
   private async startZen(): Promise<void> {
     this.stopZen();
-    this.ensureZenSpacers();
 
     try {
       const cached = await chrome.storage.session.get('sonto_zen_feed');
       const items = (cached?.sonto_zen_feed as string[]) ?? [];
       if (items.length > 0) {
-        this.clearZenBubbles();
+        this.zenFeed.innerHTML = '';
         for (const text of items) {
-          this.appendZenBubbleElement(text, false);
+          this.appendZenBubbleElement(text);
         }
-        this.updateSpacerHeights();
-        this.highlightBubble(0);
-        this.startSpotlightTimer();
         this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
         return;
       }
     } catch {}
 
-    this.clearZenBubbles();
+    this.zenFeed.innerHTML = '';
     this.zenUsedIds.clear();
 
     this.showZenLoader();
     const samples = Array.from({ length: ZEN_INITIAL_BATCH }, () => this.pickSample());
     await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
     this.hideZenLoader();
-    this.updateSpacerHeights();
-    this.highlightBubble(0);
-    this.startSpotlightTimer();
 
     if (this.mode === 'zen') {
       this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
@@ -323,17 +312,10 @@ class SontoSidebar {
       first.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
       first.style.opacity = '0';
       first.style.transform = 'translateY(-8px)';
-      if (this.zenActiveIndex > 0) this.zenActiveIndex--;
       setTimeout(() => first.remove(), 800);
     }
 
     await this.addZenBubble();
-    this.updateSpacerHeights();
-
-    const bubbles = this.zenFeed.querySelectorAll('.zen-bubble');
-    this.highlightBubble(bubbles.length - 1);
-    this.startSpotlightTimer();
-
     void this.cacheZenFeed();
   }
 
@@ -348,79 +330,13 @@ class SontoSidebar {
       clearInterval(this.zenDripTimer);
       this.zenDripTimer = null;
     }
-    if (this.zenSpotlightTimer) {
-      clearInterval(this.zenSpotlightTimer);
-      this.zenSpotlightTimer = null;
-    }
   }
 
-  private ensureZenSpacers(): void {
-    if (!this.zenFeed.querySelector('.zen-spacer-top')) {
-      const top = document.createElement('div');
-      top.className = 'zen-spacer zen-spacer-top';
-      this.zenFeed.prepend(top);
-    }
-    if (!this.zenFeed.querySelector('.zen-spacer-bottom')) {
-      const bottom = document.createElement('div');
-      bottom.className = 'zen-spacer zen-spacer-bottom';
-      this.zenFeed.appendChild(bottom);
-    }
-  }
-
-  private updateSpacerHeights(): void {
-    const feedH = this.zenFeed.clientHeight;
-    const spacerH = Math.max(0, (feedH / 2) - 40);
-    const top = this.zenFeed.querySelector<HTMLElement>('.zen-spacer-top');
-    const bottom = this.zenFeed.querySelector<HTMLElement>('.zen-spacer-bottom');
-    if (top) top.style.height = `${spacerH}px`;
-    if (bottom) bottom.style.height = `${spacerH}px`;
-  }
-
-  private clearZenBubbles(): void {
-    this.zenFeed.querySelectorAll('.zen-bubble, .zen-loading').forEach((el) => el.remove());
-  }
-
-  private highlightBubble(index: number): void {
-    const bubbles = this.zenFeed.querySelectorAll<HTMLElement>('.zen-bubble');
-    if (bubbles.length === 0) return;
-    this.zenActiveIndex = Math.max(0, Math.min(index, bubbles.length - 1));
-    bubbles.forEach((b, i) => b.classList.toggle('active', i === this.zenActiveIndex));
-    bubbles[this.zenActiveIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  private advanceSpotlight(): void {
-    const bubbles = this.zenFeed.querySelectorAll('.zen-bubble');
-    if (bubbles.length === 0) return;
-    const next = (this.zenActiveIndex + 1) % bubbles.length;
-    this.highlightBubble(next);
-  }
-
-  private startSpotlightTimer(): void {
-    if (this.zenSpotlightTimer) clearInterval(this.zenSpotlightTimer);
-    this.zenSpotlightTimer = setInterval(() => this.advanceSpotlight(), ZEN_SPOTLIGHT_MS);
-  }
-
-  private appendZenBubbleElement(text: string, animate = true): HTMLElement {
+  private appendZenBubbleElement(text: string): HTMLElement {
     const bubble = document.createElement('div');
-    bubble.className = animate ? 'zen-bubble entering' : 'zen-bubble';
+    bubble.className = 'zen-bubble';
     bubble.innerHTML = `${SVG_BULB}<span>${escapeHtml(text)}</span>`;
-    if (animate) {
-      bubble.addEventListener('animationend', () => bubble.classList.remove('entering'), { once: true });
-    }
-    bubble.addEventListener('click', () => {
-      const bubbles = Array.from(this.zenFeed.querySelectorAll('.zen-bubble'));
-      const idx = bubbles.indexOf(bubble);
-      if (idx >= 0) {
-        this.highlightBubble(idx);
-        this.startSpotlightTimer();
-      }
-    });
-    const bottomSpacer = this.zenFeed.querySelector('.zen-spacer-bottom');
-    if (bottomSpacer) {
-      this.zenFeed.insertBefore(bubble, bottomSpacer);
-    } else {
-      this.zenFeed.appendChild(bubble);
-    }
+    this.zenFeed.appendChild(bubble);
     return bubble;
   }
 
@@ -430,12 +346,7 @@ class SontoSidebar {
       loader = document.createElement('div');
       loader.className = 'zen-loading';
       loader.innerHTML = '<div class="spinner"></div>';
-      const bottomSpacer = this.zenFeed.querySelector('.zen-spacer-bottom');
-      if (bottomSpacer) {
-        this.zenFeed.insertBefore(loader, bottomSpacer);
-      } else {
-        this.zenFeed.appendChild(loader);
-      }
+      this.zenFeed.appendChild(loader);
     }
   }
 
@@ -473,7 +384,8 @@ class SontoSidebar {
 
       if (response?.ok && response.insight) {
         this.hideZenLoader();
-        this.appendZenBubbleElement(response.insight);
+        const bubble = this.appendZenBubbleElement(response.insight);
+        bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
         this.pastInsights.push(response.insight);
         if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
