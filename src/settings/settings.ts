@@ -156,14 +156,8 @@ async function init(): Promise<void> {
   setZenDisplay(storedZenDisplay);
 
   const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
-  const dripValueEl = document.getElementById('drip-interval-value')!;
   const storedInterval = await getDripInterval();
-  const storedSeconds = storedInterval / 1000;
-  dripSlider.value = String(storedSeconds);
-  dripValueEl.textContent = `${storedSeconds}s`;
-  dripSlider.addEventListener('input', () => {
-    dripValueEl.textContent = `${dripSlider.value}s`;
-  });
+  dripSlider.value = String(storedInterval / 1000);
   dripSlider.addEventListener('change', () => {
     void saveDripInterval(parseInt(dripSlider.value, 10) * 1000);
   });

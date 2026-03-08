@@ -12,11 +12,15 @@ import { parseFeed } from '../../shared/rss-parser';
 // Wrap text in smart quotes unless it already starts with one.
 // Splits on em-dash attribution so the author stays outside the quotes:
 // "Some wisdom" — Socrates
+function stripWrappingQuotes(text: string): string {
+  return text.replace(/^["'\u201C\u201D\u2018\u2019]+|["'\u201C\u201D\u2018\u2019]+$/g, '').trim();
+}
+
 function wrapQuotes(text: string): string {
-  if (/^[\u201C\u201D\u2018\u2019"']/.test(text)) return text;
-  const match = text.match(/^([\s\S]+?)(\s[\u2014\-]{1,2}\s.+)$/);
+  const cleaned = stripWrappingQuotes(text);
+  const match = cleaned.match(/^([\s\S]+?)(\s[\u2014\-]{1,2}\s.+)$/);
   if (match) return `\u201C${match[1]}\u201D${match[2]}`;
-  return `\u201C${text}\u201D`;
+  return `\u201C${cleaned}\u201D`;
 }
 
 export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string };
@@ -76,7 +80,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (!res.ok) return null;
         const data = await res.json() as { text?: string };
         const text = data.text?.trim() ?? '';
-        return ctx.isValidFact(text) ? { text: wrapQuotes(text) } : null;
+        return ctx.isValidFact(text) ? { text: stripWrappingQuotes(text) } : null;
       } catch {
         return null;
       }
@@ -96,7 +100,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (!res.ok) return null;
         const data = await res.json() as { slip?: { advice: string } };
         const text = data.slip?.advice.trim() ?? '';
-        return ctx.isValidFact(text) ? { text: wrapQuotes(text) } : null;
+        return ctx.isValidFact(text) ? { text: stripWrappingQuotes(text) } : null;
       } catch {
         return null;
       }
@@ -542,6 +546,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         );
         if (!res.ok) return null;
         const data = await res.json() as {
+          config?: { iiif_url?: string };
           data?: Array<{
             id?: number;
             title?: string;
@@ -550,10 +555,12 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
             image_id?: string;
           }>;
         };
+        const iiifBase = data.config?.iiif_url;
+        if (!iiifBase) return null;
         const artworks = (data.data ?? []).filter((a) => a.image_id);
         if (artworks.length === 0) return null;
         const pick = artworks[Math.floor(Math.random() * artworks.length)];
-        const imageUrl = `https://www.artic.edu/iiif/2/${pick.image_id}/full/843,/0/default.jpg`;
+        const imageUrl = `${iiifBase}/${pick.image_id}/full/843,/0/default.jpg`;
         const title = pick.title?.trim() || 'Untitled';
         const artist = pick.artist_display?.split('\n')[0]?.trim();
         const date = pick.date_display?.trim();
