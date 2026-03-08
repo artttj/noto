@@ -45,18 +45,6 @@ function decodeHtml(str: string): string {
   return new DOMParser().parseFromString(str, 'text/html').body.textContent ?? str;
 }
 
-function getGeolocation(): Promise<GeolocationCoordinates> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) { reject(new Error('no geolocation')); return; }
-    const timer = setTimeout(() => reject(new Error('timeout')), 6000);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { clearTimeout(timer); resolve(pos.coords); },
-      (err) => { clearTimeout(timer); reject(err); },
-      { timeout: 6000, maximumAge: 300000 },
-    );
-  });
-}
-
 export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'uselessFacts',
@@ -282,53 +270,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       if (text.length < 30) return null;
       const query = encodeURIComponent(`${item.question} ${item.answer}`);
       return { text, link: `https://www.google.com/search?q=${query}` };
-    },
-  },
-  {
-    id: 'weather',
-    label: 'Weather',
-    weight: 4,
-    fetch: async (ctx) => {
-      const WMO_EN: Record<number, string> = {
-        0: 'clear sky', 1: 'mainly clear', 2: 'partly cloudy', 3: 'overcast',
-        45: 'foggy', 48: 'icy fog',
-        51: 'light drizzle', 53: 'moderate drizzle', 55: 'heavy drizzle',
-        61: 'light rain', 63: 'moderate rain', 65: 'heavy rain',
-        71: 'light snow', 73: 'moderate snow', 75: 'heavy snow',
-        80: 'rain showers', 81: 'moderate showers', 82: 'heavy showers',
-        95: 'thunderstorm', 96: 'thunderstorm with hail', 99: 'severe thunderstorm',
-      };
-      const WMO_DE: Record<number, string> = {
-        0: 'klarer Himmel', 1: 'überwiegend klar', 2: 'teils bewölkt', 3: 'bedeckt',
-        45: 'Nebel', 48: 'Eisnebel',
-        51: 'leichter Nieselregen', 53: 'mäßiger Nieselregen', 55: 'starker Nieselregen',
-        61: 'leichter Regen', 63: 'mäßiger Regen', 65: 'starker Regen',
-        71: 'leichter Schnee', 73: 'mäßiger Schnee', 75: 'starker Schnee',
-        80: 'Regenschauer', 81: 'mäßige Schauer', 82: 'starke Schauer',
-        95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'schweres Gewitter',
-      };
-      try {
-        const coords = await getGeolocation();
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude.toFixed(4)}&longitude=${coords.longitude.toFixed(4)}&current=temperature_2m,weathercode,wind_speed_10m&timezone=auto`;
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) return null;
-        const data = await res.json() as {
-          current?: { temperature_2m?: number; weathercode?: number; wind_speed_10m?: number };
-        };
-        const c = data.current;
-        if (!c) return null;
-        const temp = Math.round(c.temperature_2m ?? 0);
-        const wind = Math.round(c.wind_speed_10m ?? 0);
-        const code = c.weathercode ?? 0;
-        const wmo = ctx.language === 'de' ? WMO_DE : WMO_EN;
-        const condition = wmo[code] ?? (ctx.language === 'de' ? 'wechselhaft' : 'mixed conditions');
-        const text = ctx.language === 'de'
-          ? `Aktuell ${temp}°C, ${condition}, Wind ${wind} km/h.`
-          : `Currently ${temp}°C with ${condition} and ${wind} km/h winds.`;
-        return { text };
-      } catch {
-        return null;
-      }
     },
   },
   {

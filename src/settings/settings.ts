@@ -164,7 +164,6 @@ async function init(): Promise<void> {
     { id: 'zenQuote',     label: 'Zen Quotes' },
     { id: 'affirmation',  label: 'Affirmations API' },
     { id: 'adviceSlip',   label: 'Advice Slip' },
-    { id: 'weather',      label: 'Local Weather' },
   ];
 
   const disabledSources = new Set(await getDisabledSources());
