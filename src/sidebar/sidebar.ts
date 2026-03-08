@@ -577,17 +577,12 @@ class SontoSidebar {
   }
 
   private async fetchMetArtwork(category: string): Promise<{ imageUrl: string; caption: string } | null> {
-    try {
-      const keyword = encodeURIComponent(category.split(/\s+/).slice(0, 3).join(' '));
-      const searchRes = await fetch(
-        `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${keyword}&hasImages=true&isPublicDomain=true`,
-        { signal: AbortSignal.timeout(10000) }
-      );
-      if (!searchRes.ok) return null;
-      const searchData = await searchRes.json() as { total: number; objectIDs?: number[] };
-      if (!searchData.objectIDs || searchData.objectIDs.length === 0) return null;
-      const pool = searchData.objectIDs.slice(0, 50);
-      const objectId = pool[Math.floor(Math.random() * pool.length)];
+    const MET_HIGHLIGHTED_IDS = [
+      436535, 437329, 436121, 11417, 45734, 437984, 436527, 436532, 437980, 436528,
+      10481, 459055, 436524, 437331, 436533, 452658, 436529, 436534, 436530, 436526,
+    ];
+
+    const fetchObject = async (objectId: number) => {
       const objRes = await fetch(
         `https://collectionapi.metmuseum.org/public/collection/v1/objects/${objectId}`,
         { signal: AbortSignal.timeout(10000) }
@@ -606,6 +601,28 @@ class SontoSidebar {
       if (obj.artistDisplayName?.trim()) parts.push(obj.artistDisplayName.trim());
       if (obj.objectDate?.trim()) parts.push(obj.objectDate.trim());
       return { imageUrl: obj.primaryImageSmall, caption: parts.join(' — ') };
+    };
+
+    try {
+      const keyword = encodeURIComponent(category.split(/\s+/)[0]);
+      const searchRes = await fetch(
+        `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${keyword}&hasImages=true&isPublicDomain=true`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (searchRes.ok) {
+        const searchData = await searchRes.json() as { total: number; objectIDs?: number[] };
+        const ids = searchData.objectIDs ?? [];
+        if (ids.length > 0) {
+          const pool = ids.slice(0, 50);
+          const objectId = pool[Math.floor(Math.random() * pool.length)];
+          const result = await fetchObject(objectId);
+          if (result) return result;
+        }
+      }
+
+      // Fallback: pick from a curated list of well-known highlighted artworks
+      const fallbackId = MET_HIGHLIGHTED_IDS[Math.floor(Math.random() * MET_HIGHLIGHTED_IDS.length)];
+      return await fetchObject(fallbackId);
     } catch {
       return null;
     }
@@ -697,7 +714,7 @@ class SontoSidebar {
 
     const roll = Math.random();
 
-    if (roll < 0.06) {
+    if (roll < 0.15) {
       const artCategory = this.pickCategory();
       if (artCategory) {
         const art = await this.fetchMetArtwork(artCategory);
