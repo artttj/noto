@@ -6,8 +6,9 @@
 
 Sonto is a Chrome extension that captures highlighted text from any webpage, stores it locally with vector embeddings, and lets you chat with your browsing history using your own API key. No accounts, no servers, no telemetry.
 
+- **Zen feed.** A rolling feed of actionable tips, shortcuts, and ideas based on what you browse. New insights appear every 15 seconds. Persists across panel opens.
 - **Save anything.** Highlight text on any page, press `Alt+Shift+C` or right-click to save it. Browser history syncs automatically.
-- **Ask questions.** Chat with your saved snippets in the sidebar. Sonto finds the most relevant context and sends it to your AI provider.
+- **Ask questions.** Chat with your saved snippets in the sidebar. Sonto finds the most relevant context and sends it to your AI provider. Responses render full markdown.
 - **Your keys, your cost.** Connect your own OpenAI or Gemini API key. You pay the provider directly.
 - **Fully local.** Snippets and embeddings live in IndexedDB on your machine. Nothing leaves your browser except API calls you initiate.
 - **Privacy by design.** No backend, no analytics, no tracking. Open source.
@@ -42,13 +43,19 @@ Sonto is a Chrome extension that captures highlighted text from any webpage, sto
 
 ## How It Works
 
-Sonto uses Retrieval-Augmented Generation (RAG):
+The sidebar has three modes:
 
-1. **Capture**:Save text from any page via shortcut or context menu. Browser history (last 30 days) syncs automatically every 30 minutes.
-2. **Embed**:Each snippet is converted to a vector embedding via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
-3. **Store**:Embeddings and text are stored locally in IndexedDB. Nothing leaves your device at this point.
-4. **Search**:When you ask a question, your query is embedded and compared against stored vectors using cosine similarity.
-5. **Answer**:The top 10 matching snippets are sent as context to your chat model. The AI generates a grounded response.
+- **Zen** (default): A rolling feed of useful tips and ideas drawn from your browsing context. New bubbles appear at the top every 15 seconds. Cached across panel opens with catch-up loading for missed time.
+- **Browse**: View, filter, and manage all saved snippets and synced history items.
+- **Chat**: Ask questions about your saved data. Sonto finds the most relevant snippets via vector search and sends them as context to your AI provider.
+
+Under the hood, Sonto uses Retrieval-Augmented Generation (RAG):
+
+1. **Capture**: Save text from any page via shortcut or context menu. Browser history (last 30 days) syncs automatically every 30 minutes.
+2. **Embed**: Each snippet is converted to a vector embedding via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
+3. **Store**: Embeddings and text are stored locally in IndexedDB. Nothing leaves your device at this point.
+4. **Search**: When you ask a question, your query is embedded and compared against stored vectors using cosine similarity.
+5. **Answer**: The top 10 matching snippets are sent as context to your chat model. The AI generates a grounded response.
 
 ---
 
