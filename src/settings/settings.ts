@@ -104,6 +104,7 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'funQuote',            label: 'Fun Quotes' },
   { id: 'kotowaza',            label: 'Japanese Proverbs' },
   { id: 'obliqueStrategies',   label: 'Oblique Strategies' },
+  { id: 'haiku',               label: 'Haiku' },
   { id: 'favqsQotd',           label: 'Quote of the Day' },
   { id: 'customRss',           label: 'Custom RSS Feeds' },
 ];

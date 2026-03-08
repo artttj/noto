@@ -450,6 +450,15 @@ html, body {
   margin-top: 4px;
 }
 
+.zen-haiku-line {
+  display: block;
+  line-height: 1.6;
+}
+
+.zen-haiku-line:not(:first-child) {
+  margin-top: 2px;
+}
+
 @keyframes lyricIn {
   from {
     opacity: 0;
