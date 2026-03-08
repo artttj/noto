@@ -340,6 +340,44 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
+    id: 'nasaMarsImage',
+    label: 'NASA Mars Images',
+    weight: 6,
+    fetch: async () => {
+      try {
+        const page = Math.floor(Math.random() * 33) + 1;
+        const res = await fetch(
+          `https://images-api.nasa.gov/search?q=mars+surface&media_type=image&page_size=100&page=${page}`,
+          { signal: AbortSignal.timeout(10000) },
+        );
+        if (!res.ok) return null;
+        const data = await res.json() as {
+          collection?: {
+            items?: Array<{
+              data?: Array<{ title?: string; date_created?: string; description?: string }>;
+              links?: Array<{ href?: string; render?: string }>;
+            }>;
+          };
+        };
+        const items = (data.collection?.items ?? []).filter(
+          (it) => it.links?.some((l) => l.render === 'image' && l.href),
+        );
+        if (items.length === 0) return null;
+        const pick = items[Math.floor(Math.random() * items.length)];
+        const meta = pick.data?.[0];
+        const href = pick.links?.find((l) => l.render === 'image')?.href ?? '';
+        // Prefer ~small.jpg over ~thumb.jpg for better resolution
+        const imageUrl = href.replace('~thumb.jpg', '~small.jpg');
+        const title = meta?.title?.trim() || 'Mars';
+        const year = meta?.date_created ? new Date(meta.date_created).getFullYear() : '';
+        const caption = year ? `${title} · NASA · ${year}` : `${title} · NASA`;
+        return { imageUrl, caption };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
     id: 'marsRover',
     label: 'Mars Rover Photos',
     weight: 6,
