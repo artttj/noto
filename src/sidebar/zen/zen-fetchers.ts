@@ -401,9 +401,12 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
 
       const year = Math.floor(Math.random() * (currentYear - 2014)) + 2014;
       const date = `${year}-${mm}-${dd}`;
+      const dateLabel = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+      });
 
       const rovers: string[] = ['curiosity'];
-      if (year >= 2022) rovers.push('perseverance');
+      if (year >= 2021) rovers.push('perseverance');
 
       try {
         const responses = await Promise.allSettled(
@@ -426,7 +429,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const photo = photos[Math.floor(Math.random() * Math.min(photos.length, 20))];
         return {
           imageUrl: photo.img_src,
-          caption: `Mars · ${photo.rover.name} · ${photo.camera.full_name} · ${date}`,
+          caption: `Mars on ${dateLabel} · ${photo.rover.name} · ${photo.camera.full_name}`,
         };
       } catch {
         return null;
