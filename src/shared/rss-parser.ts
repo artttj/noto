@@ -1,4 +1,22 @@
-export type FeedItem = { title: string; link: string; description?: string };
+export type FeedItem = { title: string; link: string; description?: string; imageUrl?: string };
+
+function findImage(el: Element): string | undefined {
+  const enc = el.querySelector('enclosure');
+  if (enc) {
+    const type = enc.getAttribute('type') ?? '';
+    const url = enc.getAttribute('url') ?? '';
+    if (url && type.startsWith('image/')) return url;
+  }
+
+  const media = el.querySelector('content[url], thumbnail[url]');
+  if (media) {
+    const url = media.getAttribute('url') ?? '';
+    const medium = media.getAttribute('medium') ?? '';
+    if (url && (medium === 'image' || /\.(jpe?g|png|webp|gif)/i.test(url))) return url;
+  }
+
+  return undefined;
+}
 
 export function parseFeed(xml: string): FeedItem[] {
   const doc = new DOMParser().parseFromString(xml, 'text/xml');
@@ -14,6 +32,7 @@ export function parseFeed(xml: string): FeedItem[] {
       : (el.querySelector('link')?.textContent?.trim() ?? '');
     const description = el.querySelector('description, summary')?.textContent?.trim();
     if (!title || !link) return [];
-    return [{ title, link, description }];
+    const imageUrl = findImage(el);
+    return [{ title, link, description, imageUrl }];
   });
 }

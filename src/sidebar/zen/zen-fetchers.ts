@@ -539,6 +539,9 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
+        if (pick.imageUrl) {
+          return { imageUrl: pick.imageUrl, caption: pick.title };
+        }
         return { text: pick.title, link: pick.link };
       } catch {
         return null;
