@@ -1,6 +1,8 @@
 import { getDripInterval, getDisabledSources } from '../shared/storage';
 import { type ZenArtResult, type ZenFetchResult, type ZenTextResult, ZEN_FETCHERS, pickFetcher } from './zen/zen-fetchers';
 
+const AM = Math.PI / 180;
+
 function isArtResult(r: ZenFetchResult): r is ZenArtResult {
   return r !== null && 'imageUrl' in r;
 }
@@ -9,32 +11,70 @@ function isTextResult(r: ZenFetchResult): r is ZenTextResult {
   return r !== null && 'text' in r;
 }
 
-interface SpiroPreset {
+interface SpiroParams {
   Crota: number; HBx: number; HBy: number; Hdist: number;
   Lrota: number; Larm1: number; Larm2: number;
   Rrota: number; Rarm1: number; Rarm2: number; Ext: number;
 }
 
+// Default parameters from htmlspirograph.com (original 960px canvas)
+const BASE: SpiroParams = {
+  Crota: -1.44, HBx: 30, HBy: -700, Hdist: 1174,
+  Lrota: 2.5, Larm1: 120, Larm2: 860,
+  Rrota: -3.6, Rarm1: 100, Rarm2: 1050, Ext: 75,
+};
+
+function rnd(min: number, max: number): number {
+  return min + Math.random() * (max - min);
+}
+
+function generateParams(): SpiroParams {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const Hdist = rnd(900, 1350);
+    const Larm1 = rnd(80, 180);
+    const Rarm1 = rnd(70, 150);
+    const DMin = Math.max(0, Hdist - Larm1 - Rarm1);
+    const DMax = Hdist + Larm1 + Rarm1;
+
+    if (DMin < 50) continue; // arms can nearly touch — geometry becomes unstable
+
+    const armSum = rnd(DMax + 80, DMax + 600);
+    const diffMax = DMin - 50;
+    const armDiff = rnd(-diffMax, diffMax);
+    const Larm2 = (armSum + armDiff) / 2;
+    const Rarm2 = (armSum - armDiff) / 2;
+    if (Larm2 < 200 || Rarm2 < 200) continue;
+
+    const Crota = rnd(-3, 3);
+    const Lrota = rnd(-5, 5);
+    const Rrota = rnd(-5, 5);
+    if (Math.abs(Crota) < 0.3 || Math.abs(Lrota) < 0.3 || Math.abs(Rrota) < 0.3) continue;
+
+    const HBx = rnd(-60, 60);
+    const HBy = rnd(-900, -500);
+    const Ext = rnd(30, 120);
+
+    return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext };
+  }
+  return { ...BASE };
+}
+
 class SpirographCanvas {
-  private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
+  private readonly canvas: HTMLCanvasElement;
+  private readonly ctx: CanvasRenderingContext2D;
   private rafId = 0;
   private running = false;
 
-  // Pantograph state
-  private Crota = 0; private HBx = 0; private HBy = 0; private Hdist = 0;
-  private Lrota = 0; private Larm1 = 0; private Larm2 = 0;
-  private Rrota = 0; private Rarm1 = 0; private Rarm2 = 0; private Ext = 0;
+  // Original 960px canvas reference size
+  private static readonly REF = 960;
 
-  // Rotation state
-  private LrotaVal = 0; private RrotaVal = 0; private CrotaVal = 0;
+  // Pantograph params (in original 960px units)
+  private params: SpiroParams = { ...BASE };
 
-  private static readonly PRESETS: SpiroPreset[] = [
-    { Crota: -1.44, HBx: 9,   HBy: -63, Hdist: 106, Lrota: 2.5,  Larm1: 11, Larm2: 77, Rrota: -3.6,  Rarm1: 9,  Rarm2: 95, Ext: 7  },
-    { Crota: -0.5,  HBx: 0,   HBy: -54, Hdist: 96,  Lrota: 1.2,  Larm1: 12, Larm2: 84, Rrota: -2.0,  Rarm1: 8,  Rarm2: 89, Ext: 5  },
-    { Crota: 1.0,   HBx: -3,  HBy: -60, Hdist: 102, Lrota: -3.0, Larm1: 9,  Larm2: 81, Rrota: 1.5,   Rarm1: 11, Rarm2: 90, Ext: 6  },
-    { Crota: -2.0,  HBx: 2,   HBy: -59, Hdist: 108, Lrota: 3.6,  Larm1: 10, Larm2: 80, Rrota: -1.44, Rarm1: 8,  Rarm2: 93, Ext: 5  },
-  ];
+  // Rotation accumulators in degrees
+  private Lrot = 0;
+  private Rrot = 0;
+  private Crot = 0;
 
   constructor(container: HTMLElement) {
     this.canvas = document.createElement('canvas');
@@ -44,74 +84,99 @@ class SpirographCanvas {
     this.resize();
   }
 
-  resize(): void {
+  private resize(): void {
     this.canvas.width = this.canvas.offsetWidth || 300;
     this.canvas.height = this.canvas.offsetHeight || 400;
   }
 
-  private applyPreset(p: SpiroPreset): void {
-    this.Crota = p.Crota; this.HBx = p.HBx; this.HBy = p.HBy; this.Hdist = p.Hdist;
-    this.Lrota = p.Lrota; this.Larm1 = p.Larm1; this.Larm2 = p.Larm2;
-    this.Rrota = p.Rrota; this.Rarm1 = p.Rarm1; this.Rarm2 = p.Rarm2;
-    this.Ext = p.Ext;
-    this.LrotaVal = 0; this.RrotaVal = 0; this.CrotaVal = 0;
-  }
-
-  private calc(): { fx: number; fy: number; r: number; g: number; b: number } | null {
+  private calc(scale: number): { fx: number; fy: number; r: number; g: number; b: number } | null {
     const cx = this.canvas.width / 2;
     const cy = this.canvas.height / 2;
 
-    // Hinge base
-    const hx = cx + this.HBx;
-    const hy = cy + this.HBy;
-    const dist = this.Hdist;
+    const { HBx, HBy, Hdist, Larm1, Larm2, Rarm1, Rarm2, Ext } = this.params;
 
-    // Left arm
-    const Lx = hx + Math.cos(this.LrotaVal) * dist;
-    const Ly = hy + Math.sin(this.LrotaVal) * dist;
+    // Scale spatial params from 960px to actual canvas size
+    const s = scale;
+    const handsX = cx + HBx * s;
+    const handsY = cy + HBy * s;
+    const H1X = handsX - (Hdist * s) / 2;
+    const H1Y = handsY;
+    const H2X = handsX + (Hdist * s) / 2;
+    const H2Y = handsY;
 
-    // Right arm hinge (offset from center)
-    const Rx = cx + Math.cos(this.CrotaVal) * this.Ext;
-    const Ry = cy + Math.sin(this.CrotaVal) * this.Ext;
+    const H1arm1X = Math.cos(this.Lrot * AM) * (Larm1 * s) + H1X;
+    const H1arm1Y = Math.sin(this.Lrot * AM) * (Larm1 * s) + H1Y;
+    const H2arm1X = Math.cos(this.Rrot * AM) * (Rarm1 * s) + H2X;
+    const H2arm1Y = Math.sin(this.Rrot * AM) * (Rarm1 * s) + H2Y;
 
-    // Distance between left tip and right hinge
-    const D = Math.hypot(Rx - Lx, Ry - Ly);
-
+    const dx = H2arm1X - H1arm1X;
+    const dy = H2arm1Y - H1arm1Y;
+    const D = Math.hypot(dx, dy);
     if (D < 1e-6) return null;
 
-    const cosGamma = (this.Rarm2 * this.Rarm2 + this.Larm2 * this.Larm2 - D * D) / (2 * this.Rarm2 * this.Larm2);
+    const Larm2s = Larm2 * s;
+    const Rarm2s = Rarm2 * s;
+
+    const cosGamma = (Rarm2s * Rarm2s + Larm2s * Larm2s - D * D) / (2 * Rarm2s * Larm2s);
     if (cosGamma < -1 || cosGamma > 1) return null;
 
     const gamma = Math.acos(cosGamma);
+    const sinAlpha = (Rarm2s * Math.sin(gamma)) / D;
+    const sinBeta = (Larm2s * Math.sin(gamma)) / D;
+    if (Math.abs(sinAlpha) > 1 || Math.abs(sinBeta) > 1) return null;
 
-    const sinA = (this.Larm2 * Math.sin(gamma)) / D;
-    const clampedSinA = Math.max(-1, Math.min(1, sinA));
-    const alpha = Math.asin(clampedSinA);
+    let alpha = Math.asin(sinAlpha);
+    let beta = Math.asin(sinBeta);
 
-    const baseAngle = Math.atan2(Ry - Ly, Rx - Lx);
-    const angle = baseAngle + alpha;
+    const clampedDy = Math.max(-1, Math.min(1, dy / D));
+    const delta = Math.asin(clampedDy);
 
-    const fx = Lx + Math.cos(angle) * this.Rarm2;
-    const fy = Ly + Math.sin(angle) * this.Rarm2;
+    if (Larm2 > Rarm2) beta = Math.PI - alpha - gamma;
+    if (Rarm2 > Larm2) alpha = Math.PI - beta - gamma;
 
-    // Color from arm rotations (screen blend mode, black bg)
-    const r = Math.floor(128 + 127 * Math.sin(this.LrotaVal));
-    const g = Math.floor(128 + 127 * Math.sin(this.RrotaVal + 2.094));
-    const b = Math.floor(128 + 127 * Math.sin(this.CrotaVal + 4.189));
+    const H2a = Math.PI - (beta - delta);
+
+    const DReX = H2arm1X + Math.cos(H2a) * ((Rarm2 + Ext) * s);
+    const DReY = H2arm1Y + Math.sin(H2a) * ((Rarm2 + Ext) * s);
+
+    // Apply canvas rotation (Crot) around center
+    const nx = DReX - cx;
+    const ny = DReY - cy;
+    const nd = Math.hypot(nx, ny);
+    if (nd === 0) return null;
+
+    // Cutpixels: clamp to 95% of half-canvas
+    const maxR = Math.min(cx, cy) * 0.95;
+    if (nd > maxR) return null;
+
+    let na = Math.atan2(ny, nx);
+    na += this.Crot * AM;
+
+    const fx = cx + Math.cos(na) * nd;
+    const fy = cy + Math.sin(na) * nd;
+
+    // Colormode 0: sin waves of rotation angles
+    const r = Math.round(Math.sin(this.Lrot * AM) * 127 + 127);
+    const g = Math.round(Math.sin((this.Lrot + this.Rrot) * AM * 0.5) * 127 + 127);
+    const b = Math.round(Math.sin(this.Rrot * AM) * 127 + 127);
 
     return { fx, fy, r, g, b };
   }
 
   start(durationMs: number): Promise<void> {
     return new Promise((resolve) => {
-      const preset = SpirographCanvas.PRESETS[Math.floor(Math.random() * SpirographCanvas.PRESETS.length)];
-      this.applyPreset(preset);
+      this.params = generateParams();
+      this.Lrot = 0;
+      this.Rrot = 0;
+      this.Crot = 0;
 
       this.resize();
+      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF;
+
       this.ctx.globalCompositeOperation = 'screen';
       this.ctx.fillStyle = '#000';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.lineWidth = 0.7;
+      this.ctx.lineWidth = 0.8;
 
       this.running = true;
       const endAt = Date.now() + durationMs;
@@ -119,21 +184,14 @@ class SpirographCanvas {
 
       const tick = () => {
         if (!this.running) { resolve(); return; }
+        if (Date.now() >= endAt) { this.running = false; resolve(); return; }
 
-        const now = Date.now();
-        if (now >= endAt) {
-          this.running = false;
-          resolve();
-          return;
-        }
+        for (let i = 0; i < 50; i++) {
+          this.Lrot = (this.Lrot + this.params.Lrota + 360) % 360;
+          this.Rrot = (this.Rrot + this.params.Rrota + 360) % 360;
+          this.Crot = (this.Crot + this.params.Crota + 360) % 360;
 
-        const STEPS = 60;
-        for (let i = 0; i < STEPS; i++) {
-          this.LrotaVal += this.Lrota * 0.001;
-          this.RrotaVal += this.Rrota * 0.001;
-          this.CrotaVal += this.Crota * 0.001;
-
-          const pt = this.calc();
+          const pt = this.calc(scale);
           if (pt) {
             if (prevPt) {
               this.ctx.beginPath();
@@ -209,7 +267,6 @@ export class CosmosMode {
   private disabledSources = new Set<string>();
   private intervalMs = 10000;
 
-  private readonly wrap: HTMLElement;
   private readonly canvasWrap: HTMLElement;
   private readonly msgEl: HTMLElement;
 
@@ -223,7 +280,6 @@ export class CosmosMode {
     this.msgEl.className = 'cosmos-message';
     this.msgEl.style.opacity = '0';
 
-    this.wrap = container;
     container.appendChild(this.canvasWrap);
     container.appendChild(this.msgEl);
   }
@@ -311,17 +367,14 @@ export class CosmosMode {
         this.msgEl.appendChild(iconWrap);
       }
 
+      const textEl = document.createElement('div');
+      textEl.className = 'cosmos-text';
       if (result.html) {
-        const textEl = document.createElement('div');
-        textEl.className = 'cosmos-text';
         textEl.innerHTML = result.html;
-        this.msgEl.appendChild(textEl);
       } else {
-        const textEl = document.createElement('div');
-        textEl.className = 'cosmos-text';
         textEl.textContent = result.text;
-        this.msgEl.appendChild(textEl);
       }
+      this.msgEl.appendChild(textEl);
 
       if (result.link) {
         const link = document.createElement('a');
@@ -338,7 +391,7 @@ export class CosmosMode {
   private async runLoop(first: boolean): Promise<void> {
     if (this.stopped) return;
 
-    const SPIRO_MS = 2500;
+    const SPIRO_MS = 3000;
     const FADE_MS = 500;
 
     if (first) {
@@ -349,34 +402,28 @@ export class CosmosMode {
       if (this.stopped) return;
     }
 
-    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 2, 1000);
+    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 2, 1500);
 
-    // Prefetch next while showing current
+    // Kick off fetch after a delay so it's ready when we need it
     const nextResultPromise = new Promise<ZenFetchResult>((resolve) => {
-      setTimeout(() => {
-        void this.fetchNext().then(resolve);
-      }, Math.max(showMs - 1500, 0));
+      setTimeout(() => void this.fetchNext().then(resolve), Math.max(showMs - 2000, 0));
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, showMs));
+    await new Promise<void>((r) => setTimeout(r, showMs));
     if (this.stopped) return;
 
-    // Fade out message
     await fadeEl(this.msgEl, 1, 0, FADE_MS);
     if (this.stopped) return;
 
-    // Spirograph animation
+    // New spirograph every cycle
     this.spiro?.remove();
     this.spiro = new SpirographCanvas(this.canvasWrap);
-    this.canvasWrap.style.opacity = '1';
     await this.spiro.start(SPIRO_MS);
     if (this.stopped) return;
 
-    // Get next content (should be ready)
     const nextResult = await nextResultPromise;
     if (this.stopped) return;
 
-    // Render next message while canvas fades out
     this.renderResult(nextResult);
 
     await Promise.all([

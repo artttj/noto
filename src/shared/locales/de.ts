@@ -17,6 +17,14 @@ const de: Record<string, string> = {
   general_save: 'Einstellungen speichern',
   general_saved: 'Gespeichert',
 
+  // Zen display & refresh
+  zen_display_title: 'Zen-Ansicht',
+  zen_display_desc: 'Feed scrollt kontinuierlich. Cosmos zeigt eine Nachricht mit Spirograph-Animation dazwischen.',
+  zen_refresh_title: 'Aktualisierungsintervall',
+  zen_refresh_desc: 'Wie oft der Zen-Feed oder die Cosmos-Nachricht wechselt',
+  zen_sources_title: 'Zen-Feed-Quellen',
+  zen_sources_desc: 'Wähle welche Quellen im Zen-Feed erscheinen. Alle sind standardmäßig aktiviert.',
+
   // AI Connections tab
   ai_heading: 'KI-Verbindungen',
   ai_desc: 'API-Schl\u00fcssel werden lokal auf deinem Ger\u00e4t gespeichert und nur direkt an den gew\u00e4hlten Anbieter gesendet.',

@@ -17,6 +17,14 @@ const en: Record<string, string> = {
   general_save: 'Save Settings',
   general_saved: 'Saved',
 
+  // Zen display & refresh
+  zen_display_title: 'Zen display',
+  zen_display_desc: 'Feed scrolls continuously. Cosmos shows one message with spirograph animation in between.',
+  zen_refresh_title: 'Refresh interval',
+  zen_refresh_desc: 'How often the Zen feed or Cosmos message updates',
+  zen_sources_title: 'Zen Feed Sources',
+  zen_sources_desc: 'Choose which sources appear in your Zen feed. All are enabled by default.',
+
   // AI Connections tab
   ai_heading: 'AI Connections',
   ai_desc: 'API keys are stored locally on your device and never sent anywhere except directly to your chosen provider.',

@@ -1600,28 +1600,6 @@ body {
   transform: translateX(16px);
 }
 
-.zen-display-row {
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  margin-bottom: 4px;
-}
-
-.drip-interval-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 0 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  margin-bottom: 16px;
-}
-
-.drip-interval-label {
-  font-size: 0.85rem;
-  color: rgba(255,255,255,0.7);
-  white-space: nowrap;
-}
-
 .drip-interval-control {
   display: flex;
   align-items: center;

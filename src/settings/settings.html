@@ -91,6 +91,28 @@
               <button class="seg-btn" data-value="de" type="button">Deutsch</button>
             </div>
           </div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="zen_display_title">Zen display</div>
+              <div class="setting-desc" data-i18n="zen_display_desc">Feed scrolls continuously. Cosmos shows one message with spirograph animation in between.</div>
+            </div>
+            <div class="segmented" id="zen-display-segmented">
+              <button class="seg-btn active" data-value="feed" type="button">Feed</button>
+              <button class="seg-btn" data-value="cosmos" type="button">Cosmos</button>
+            </div>
+          </div>
+
+          <div class="setting-row setting-row--refresh">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="zen_refresh_title">Refresh interval</div>
+              <div class="setting-desc" data-i18n="zen_refresh_desc">How often the Zen feed or Cosmos message updates</div>
+            </div>
+            <div class="drip-interval-control">
+              <input type="range" id="drip-interval-slider" min="5" max="60" step="5" value="10" />
+              <span id="drip-interval-value" class="drip-interval-value">10s</span>
+            </div>
+          </div>
         </div>
 
         <div class="panel-actions">
@@ -100,30 +122,13 @@
 
         <details class="zen-sources-collapsible" id="zen-sources-details">
           <summary>
-            <span>Zen Feed Sources</span>
+            <span data-i18n="zen_sources_title">Zen Feed Sources</span>
             <svg class="collapsible-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 6 L8 10 L12 6"/>
             </svg>
           </summary>
           <div class="zen-sources-body">
-            <div class="setting-row zen-display-row">
-              <div class="setting-label">
-                <div class="setting-title">Zen display</div>
-                <div class="setting-desc">Feed scrolls continuously. Cosmos shows one message with a spirograph animation between each.</div>
-              </div>
-              <div class="segmented" id="zen-display-segmented">
-                <button class="seg-btn active" data-value="feed" type="button">Feed</button>
-                <button class="seg-btn" data-value="cosmos" type="button">Cosmos</button>
-              </div>
-            </div>
-            <div class="drip-interval-row">
-              <div class="drip-interval-label">Refresh interval</div>
-              <div class="drip-interval-control">
-                <input type="range" id="drip-interval-slider" min="5" max="60" step="5" value="10" />
-                <span id="drip-interval-value" class="drip-interval-value">10s</span>
-              </div>
-            </div>
-            <p class="zen-sources-desc">Choose which sources appear in your Zen feed. All are enabled by default.</p>
+            <p class="zen-sources-desc" data-i18n="zen_sources_desc">Choose which sources appear in your Zen feed. All are enabled by default.</p>
             <div id="zen-sources-list"></div>
           </div>
         </details>
