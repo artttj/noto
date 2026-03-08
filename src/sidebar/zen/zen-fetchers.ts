@@ -4,7 +4,6 @@ import {
   SVG_ATLAS,
   SVG_HAIKU,
   SVG_HN,
-  SVG_OBLIQUE,
   SVG_PHILOSOPHY,
   SVG_REDDIT,
   SVG_SMITHSONIAN,
@@ -599,7 +598,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       }
       const card = obliqueQueue.pop();
       if (!card) return null;
-      return { text: card, icon: SVG_OBLIQUE };
+      return { text: card, html: `<span class="zen-oblique">${escapeHtml(card)}</span>`, icon: '' };
     },
   },
   {
