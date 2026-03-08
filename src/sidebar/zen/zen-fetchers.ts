@@ -427,6 +427,41 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
+    id: 'clevelandArtwork',
+    label: 'Cleveland Museum of Art',
+    weight: 6,
+    fetch: async () => {
+      try {
+        const skip = Math.floor(Math.random() * 3000);
+        const res = await fetch(
+          `https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&limit=10&skip=${skip}&fields=title,creators,creation_date,images`,
+          { signal: AbortSignal.timeout(10000) },
+        );
+        if (!res.ok) return null;
+        const data = await res.json() as {
+          data?: Array<{
+            title?: string;
+            creators?: Array<{ description?: string }>;
+            creation_date?: string;
+            images?: { web?: { url?: string } };
+          }>;
+        };
+        const artworks = (data.data ?? []).filter((a) => a.images?.web?.url);
+        if (artworks.length === 0) return null;
+        const pick = artworks[Math.floor(Math.random() * artworks.length)];
+        const title = pick.title?.trim() || 'Untitled';
+        const creator = pick.creators?.[0]?.description?.trim();
+        const date = pick.creation_date?.trim();
+        const parts = [title];
+        if (creator) parts.push(creator);
+        if (date) parts.push(date);
+        return { imageUrl: pick.images!.web!.url!, caption: parts.join(' — ') };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
     id: 'predefined',
     label: 'Predefined Messages',
     weight: 20,

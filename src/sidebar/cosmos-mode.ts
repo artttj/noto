@@ -262,13 +262,13 @@ class SpirographCanvas {
     const fx = cx + Math.cos(na) * nd;
     const fy = cy + Math.sin(na) * nd;
 
-    // Analogue colormode: three phase-shifted sine waves across L and R arm rotations
-    // Creates the classic spirograph color sweep — blue/cyan → gold/orange → white → pink
+    // Analogue colormode with raised floor — never produces near-black strokes on dark bg
+    // Range per channel: [81, 255] so every stroke is visibly colored
     const phase = this.Lrot * AM;
     const phase2 = this.Rrot * AM;
-    const r = Math.round(Math.sin(phase) * 127 + 127);
-    const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 127 + 127);
-    const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 127 + 127);
+    const r = Math.round(Math.sin(phase) * 87 + 168);
+    const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 87 + 168);
+    const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 87 + 168);
     const color = `rgba(${r},${g},${b},${this.alpha})`;
 
     return { fx, fy, color };
@@ -288,21 +288,20 @@ class SpirographCanvas {
       this.Crot = 0;
       this.drawn = 0;
 
-      // Alpha controls how many overlapping strands before saturation
-      // Higher alpha = more vivid individual strands; lower = finer mesh before glow
-      this.alpha = this.style === 'dense' ? 0.22 : this.style === 'open' ? 0.32 : 0.26;
+      // Alpha high enough so individual strands are clearly visible on dark background
+      // Screen blend causes center areas to glow toward white as strands accumulate
+      this.alpha = this.style === 'dense' ? 0.45 : this.style === 'open' ? 0.55 : 0.50;
 
       const fps = 60;
       const frames = Math.round(durationMs / 1000 * fps);
       let stepsPerFrame: number;
 
       if (this.style === 'geometric') {
-        // Use the slowest arm to determine how many steps are needed to show lobe structure
         const slowSpeed = Math.max(0.01, Math.min(Math.abs(this.params.Lrota), Math.abs(this.params.Rrota)));
         const targetSteps = Math.round(60 / slowSpeed);
-        stepsPerFrame = Math.max(10, Math.min(200, Math.ceil(targetSteps / frames)));
+        stepsPerFrame = Math.max(10, Math.min(150, Math.ceil(targetSteps / frames)));
       } else {
-        stepsPerFrame = this.style === 'dense' ? 45 : 15;
+        stepsPerFrame = this.style === 'dense' ? 25 : 10;
       }
       this.stepsTotal = stepsPerFrame * frames;
 
@@ -339,6 +338,8 @@ class SpirographCanvas {
               this.ctx.stroke();
             }
             prevPt = { fx: pt.fx, fy: pt.fy };
+          } else {
+            prevPt = null;
           }
         }
 
