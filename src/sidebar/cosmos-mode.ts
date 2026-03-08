@@ -289,7 +289,7 @@ class SpirographCanvas {
       this.drawn = 0;
 
       // Low alpha — spiro is a background element, text must stay readable on top
-      this.alpha = this.style === 'dense' ? 0.20 : this.style === 'open' ? 0.26 : 0.22;
+      this.alpha = this.style === 'dense' ? 0.35 : this.style === 'open' ? 0.40 : 0.35;
 
       // drawMs caps the active drawing phase; the rest of durationMs is a silent hold.
       const DRAW_MS = Math.min(durationMs, 3000);
