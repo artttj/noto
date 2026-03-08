@@ -660,26 +660,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'smithsonianPhoto',
-    label: 'Smithsonian Photos',
-    weight: 5,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch('https://www.smithsonianmag.com/rss/multimedia/', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const items = parseFeed(await res.text()).filter((it) => it.imageUrl);
-        if (items.length === 0) return null;
-        const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
-        return { imageUrl: pick.imageUrl!, caption: pick.title };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
     id: 'atlasObscura',
     label: 'Atlas Obscura',
     weight: 6,
