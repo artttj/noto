@@ -220,6 +220,7 @@ html, body {
   text-align: center;
   gap: 14px;
   pointer-events: none;
+  background: radial-gradient(ellipse 90% 60% at 50% 50%, rgba(0,0,0,0.55) 0%, transparent 100%);
 }
 
 .cosmos-icon svg {

@@ -372,9 +372,13 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
             }>;
           };
         };
-        const items = (data.collection?.items ?? []).filter(
-          (it) => it.links?.some((l) => l.render === 'image' && l.href),
-        );
+        const items = (data.collection?.items ?? []).filter((it) => {
+          if (!it.links?.some((l) => l.render === 'image' && l.href)) return false;
+          const title = it.data?.[0]?.title?.trim() ?? '';
+          // Skip archive catalog codes like "KSC-05pd-0823" — no spaces, contains dashes
+          if (title && !title.includes(' ') && title.includes('-')) return false;
+          return true;
+        });
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * items.length)];
         const meta = pick.data?.[0];

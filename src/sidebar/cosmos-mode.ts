@@ -288,13 +288,13 @@ class SpirographCanvas {
       this.Crot = 0;
       this.drawn = 0;
 
-      // Alpha high enough so individual strands are clearly visible on dark background
-      // Screen blend causes center areas to glow toward white as strands accumulate
-      this.alpha = this.style === 'dense' ? 0.45 : this.style === 'open' ? 0.55 : 0.50;
+      // Low alpha — spiro is a background element, text must stay readable on top
+      this.alpha = this.style === 'dense' ? 0.20 : this.style === 'open' ? 0.26 : 0.22;
 
-      // Target 30fps as the minimum — pattern must complete even on a throttled tab.
+      // drawMs caps the active drawing phase; the rest of durationMs is a silent hold.
+      const DRAW_MS = Math.min(durationMs, 3000);
       const fps = 30;
-      const frames = Math.round(durationMs / 1000 * fps);
+      const frames = Math.round(DRAW_MS / 1000 * fps);
       let stepsPerFrame: number;
 
       if (this.style === 'geometric') {
@@ -443,7 +443,7 @@ export class CosmosMode {
       this.intervalMs = ms;
     } catch { /* use defaults */ }
 
-    void this.runLoop(true);
+    void this.runLoop();
   }
 
   private async fetchNext(): Promise<ZenFetchResult> {
@@ -542,53 +542,37 @@ export class CosmosMode {
     }
   }
 
-  private async runLoop(first: boolean): Promise<void> {
+  private async runLoop(): Promise<void> {
     if (this.stopped) return;
 
-    const SPIRO_MS = 3000;
     const FADE_MS = 500;
 
-    if (first) {
-      const result = await this.fetchNext();
-      if (this.stopped) return;
-      this.renderResult(result);
-      await fadeEl(this.msgEl, 0, 1, FADE_MS);
-      if (this.stopped) return;
-    }
-
-    // Wait, then draw spiro underneath — message stays on top throughout.
-    // Total after showMs: SPIRO_MS + 3×FADE_MS (spiro fade, msg out, msg in) = 4500ms.
-    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 3, 1500);
-
-    const nextResultPromise = new Promise<ZenFetchResult>((resolve) => {
-      setTimeout(() => void this.fetchNext().then(resolve), Math.max(showMs - 2000, 0));
-    });
-
-    await new Promise<void>((r) => setTimeout(r, showMs));
-    if (this.stopped) return;
-
-    // Spirograph draws underneath the quote — no message fade-out
+    // Spiro and content fetch start simultaneously — spiro draws for 3s then holds
     this.spiro?.remove();
     this.spiro = new SpirographCanvas(this.canvasWrap);
-    await this.spiro.start(SPIRO_MS);
+    const spiroPromise = this.spiro.start(this.intervalMs);
+
+    const result = await this.fetchNext();
+    if (this.stopped) { this.spiro.stop(); return; }
+
+    this.renderResult(result);
+    await fadeEl(this.msgEl, 0, 1, FADE_MS);
+    if (this.stopped) { this.spiro.stop(); return; }
+
+    // Wait for spiro's full display window to expire
+    await spiroPromise;
     if (this.stopped) return;
 
-    await this.spiro.fadeOut(FADE_MS);
+    // Fade message and spiro out together
+    await Promise.all([
+      fadeEl(this.msgEl, 1, 0, FADE_MS),
+      this.spiro.fadeOut(FADE_MS),
+    ]);
     if (this.stopped) return;
 
     this.spiro.remove();
     this.spiro = null;
 
-    const nextResult = await nextResultPromise;
-    if (this.stopped) return;
-
-    // Swap to next content after spiro is gone
-    await fadeEl(this.msgEl, 1, 0, FADE_MS);
-    if (this.stopped) return;
-
-    this.renderResult(nextResult);
-    await fadeEl(this.msgEl, 0, 1, FADE_MS);
-
-    void this.runLoop(false);
+    void this.runLoop();
   }
 }
