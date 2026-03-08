@@ -347,7 +347,12 @@ export class ZenFeed {
   private appendArtBubble(imageUrl: string, caption: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
-    bubble.innerHTML = `${SVG_BULB}<div class="zen-art"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /><span class="zen-art-caption">${escapeHtml(caption)}</span></div>`;
+    const sep = caption.includes(' · ') ? ' · ' : ' — ';
+    const sepIdx = caption.indexOf(sep);
+    const title = sepIdx !== -1 ? caption.slice(0, sepIdx) : caption;
+    const sub = sepIdx !== -1 ? caption.slice(sepIdx + sep.length) : '';
+    const subHtml = sub ? `<span class="zen-art-caption">${escapeHtml(sub)}</span>` : '';
+    bubble.innerHTML = `${SVG_BULB}<div class="zen-art"><span class="zen-art-title">${escapeHtml(title)}</span><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />${subHtml}</div>`;
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });

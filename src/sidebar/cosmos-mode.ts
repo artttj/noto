@@ -487,17 +487,29 @@ export class CosmosMode {
     }
 
     if (isArtResult(result)) {
+      const sep = result.caption.includes(' · ') ? ' · ' : ' — ';
+      const sepIdx = result.caption.indexOf(sep);
+      const title = sepIdx !== -1 ? result.caption.slice(0, sepIdx) : result.caption;
+      const sub = sepIdx !== -1 ? result.caption.slice(sepIdx + sep.length) : '';
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'cosmos-art-title';
+      titleEl.textContent = title;
+
       const img = document.createElement('img');
       img.className = 'cosmos-art-img';
       img.src = result.imageUrl;
       img.alt = result.caption;
 
-      const cap = document.createElement('div');
-      cap.className = 'cosmos-art-caption';
-      cap.textContent = result.caption;
-
+      this.msgEl.appendChild(titleEl);
       this.msgEl.appendChild(img);
-      this.msgEl.appendChild(cap);
+
+      if (sub) {
+        const cap = document.createElement('div');
+        cap.className = 'cosmos-art-caption';
+        cap.textContent = sub;
+        this.msgEl.appendChild(cap);
+      }
       return;
     }
 
