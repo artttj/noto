@@ -1508,7 +1508,7 @@ body {
 
 /* ═══ ZEN SOURCES COLLAPSIBLE ══════════════════════════════════════════════ */
 .zen-sources-collapsible {
-  margin-top: 24px;
+  margin-top: 32px;
   border: 1px solid var(--c-border);
   border-radius: 10px;
   overflow: hidden;

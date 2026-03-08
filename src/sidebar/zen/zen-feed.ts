@@ -35,7 +35,7 @@ export class ZenFeed {
   private pastFacts: string[] = [];
   private zenCategories: string[] = [];
   private zenCategoryQueue: string[] = [];
-  private zenDripTimer: ReturnType<typeof setInterval> | null = null;
+  private zenDripTimer: ReturnType<typeof setTimeout> | null = null;
   private dripIntervalMs = ZEN_DRIP_MS;
   private lastActivity = Date.now();
   private language: string;
@@ -80,7 +80,7 @@ export class ZenFeed {
     try {
       const hasBubbles = this.feedEl.querySelectorAll('.zen-bubble').length > 0;
       if (hasBubbles) {
-        this.zenDripTimer = setInterval(() => void this.dripZen(), this.dripIntervalMs);
+        this.scheduleDrip();
         return;
       }
 
@@ -107,7 +107,7 @@ export class ZenFeed {
           void this.cacheZenFeed();
         }
 
-        this.zenDripTimer = setInterval(() => void this.dripZen(), this.dripIntervalMs);
+        this.scheduleDrip();
         return;
       }
 
@@ -116,7 +116,7 @@ export class ZenFeed {
       await this.extractCategories(this.snippetsFn());
       await this.loadInitialBubbles(ZEN_INITIAL_BATCH);
       this.hideLoader();
-      this.zenDripTimer = setInterval(() => void this.dripZen(), this.dripIntervalMs);
+      this.scheduleDrip();
     } finally {
       this._starting = false;
     }
@@ -124,9 +124,25 @@ export class ZenFeed {
 
   stop(): void {
     if (this.zenDripTimer) {
-      clearInterval(this.zenDripTimer);
+      clearTimeout(this.zenDripTimer);
       this.zenDripTimer = null;
     }
+  }
+
+  private scheduleDrip(multiplier = 1): void {
+    this.zenDripTimer = setTimeout(() => void this.dripZen(), Math.round(this.dripIntervalMs * multiplier));
+  }
+
+  private durationMultiplier(result: ZenFetchResult): number {
+    if (!result) return 1;
+    if (isArtResult(result)) return 1.2;
+    if (isTextResult(result)) {
+      if (result.html?.includes('zen-trivia')) return 1.4;
+      if (/[\u201C\u201D]/.test(result.text) || / [\u2014\-]{1,2} /.test(result.text)) return 1.5;
+      if (result.text.length > 250) return 1.3;
+      if (result.link && result.text.length < 120) return 0.85;
+    }
+    return 1;
   }
 
   refresh(snippets: Snippet[], language: string): void {
@@ -202,7 +218,7 @@ export class ZenFeed {
     return text.length >= 50 && !text.includes('[NULL]') && !AI_PATTERNS.some((p) => p.test(text));
   }
 
-  private async addBubble(): Promise<void> {
+  private async addBubble(): Promise<number> {
     const fetcher = pickFetcher(ZEN_FETCHERS, this.disabledSources);
     const ctx = {
       language: this.language,
@@ -219,7 +235,7 @@ export class ZenFeed {
         this.pastFacts.push(result.caption);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
-        return;
+        return this.durationMultiplier(result);
       }
     }
 
@@ -231,12 +247,12 @@ export class ZenFeed {
         this.pastFacts.push(text);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
-        return;
+        return this.durationMultiplier(result);
       }
     }
 
     const category = this.pickCategory();
-    if (!category) return;
+    if (!category) return 1;
     const useStat = Math.random() < 0.1;
 
     try {
@@ -257,7 +273,7 @@ export class ZenFeed {
         const isDuplicate = this.pastFacts.some(
           (p) => p === response.fact || p.slice(0, 60) === response.fact!.slice(0, 60),
         );
-        if (isDuplicate) return;
+        if (isDuplicate) return 1;
 
         this.hideLoader();
         this.appendBubbleElement(response.fact);
@@ -265,8 +281,11 @@ export class ZenFeed {
         this.pastFacts.push(response.fact);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+        return 1.3;
       }
     } catch {}
+
+    return 1;
   }
 
   private async loadInitialBubbles(count: number): Promise<void> {
@@ -276,11 +295,15 @@ export class ZenFeed {
   }
 
   private async dripZen(): Promise<void> {
-    if (document.hidden || Date.now() - this.lastActivity > ZEN_IDLE_MS) return;
-    await this.addBubble();
+    if (document.hidden || Date.now() - this.lastActivity > ZEN_IDLE_MS) {
+      this.scheduleDrip();
+      return;
+    }
+    const multiplier = await this.addBubble();
     this.trimOldBubbles();
     this.feedEl.scrollTo({ top: 0, behavior: 'smooth' });
     void this.cacheZenFeed();
+    this.scheduleDrip(multiplier);
   }
 
   private trimOldBubbles(): void {
