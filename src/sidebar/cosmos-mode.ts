@@ -179,8 +179,10 @@ function generateGeometricParams(): SpiroParams {
 class SpirographCanvas {
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
+  private readonly ro: ResizeObserver;
   private rafId = 0;
   private running = false;
+  private resizeTimer = 0;
 
   private style: 'dense' | 'open' | 'geometric' = 'dense';
   private stepsTotal = 0;
@@ -204,6 +206,11 @@ class SpirographCanvas {
     container.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d')!;
     this.resize();
+    this.ro = new ResizeObserver(() => {
+      clearTimeout(this.resizeTimer);
+      this.resizeTimer = window.setTimeout(() => this.stop(), 350);
+    });
+    this.ro.observe(container);
   }
 
   private resize(): void {
@@ -394,6 +401,8 @@ class SpirographCanvas {
 
   remove(): void {
     this.stop();
+    this.ro.disconnect();
+    clearTimeout(this.resizeTimer);
     this.canvas.remove();
   }
 }
