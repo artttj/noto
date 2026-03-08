@@ -171,7 +171,7 @@ class SpirographCanvas {
       this.Crot = 0;
 
       this.resize();
-      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF;
+      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 2;
 
       this.ctx.globalCompositeOperation = 'screen';
       this.ctx.fillStyle = '#000';
