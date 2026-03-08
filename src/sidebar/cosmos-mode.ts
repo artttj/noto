@@ -556,10 +556,9 @@ export class CosmosMode {
       if (this.stopped) return;
     }
 
-    // Account for three sequential fades: message out + spiro fade-out + message in
-    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 3, 1500);
+    // Wait, then draw spiro underneath — message stays on top throughout
+    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 2, 1500);
 
-    // Kick off fetch after a delay so it's ready when we need it
     const nextResultPromise = new Promise<ZenFetchResult>((resolve) => {
       setTimeout(() => void this.fetchNext().then(resolve), Math.max(showMs - 2000, 0));
     });
@@ -567,16 +566,12 @@ export class CosmosMode {
     await new Promise<void>((r) => setTimeout(r, showMs));
     if (this.stopped) return;
 
-    await fadeEl(this.msgEl, 1, 0, FADE_MS);
-    if (this.stopped) return;
-
-    // New spirograph every cycle
+    // Spirograph draws underneath the quote — no message fade-out
     this.spiro?.remove();
     this.spiro = new SpirographCanvas(this.canvasWrap);
     await this.spiro.start(SPIRO_MS);
     if (this.stopped) return;
 
-    // Spiro fully fades out first, then message fades in — no overlap
     await this.spiro.fadeOut(FADE_MS);
     if (this.stopped) return;
 
@@ -584,6 +579,10 @@ export class CosmosMode {
     this.spiro = null;
 
     const nextResult = await nextResultPromise;
+    if (this.stopped) return;
+
+    // Swap to next content after spiro is gone
+    await fadeEl(this.msgEl, 1, 0, FADE_MS);
     if (this.stopped) return;
 
     this.renderResult(nextResult);
