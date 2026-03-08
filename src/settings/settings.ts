@@ -111,16 +111,35 @@ async function init(): Promise<void> {
   if (openaiKey) openaiInput.value = openaiKey;
   if (geminiKey) geminiInput.value = geminiKey;
 
+  // Zen display (tracked, saved with main Save button)
+  const storedZenDisplay = await getZenDisplay();
+  let selectedZenDisplay: 'feed' | 'cosmos' = storedZenDisplay;
+  const setZenDisplay = initSegmented('zen-display-segmented', (val) => {
+    selectedZenDisplay = val as 'feed' | 'cosmos';
+  });
+  setZenDisplay(storedZenDisplay);
+
+  // Drip interval slider (tracked, saved with main Save button)
+  const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
+  const dripValueEl = document.getElementById('drip-interval-value')!;
+  const storedInterval = await getDripInterval();
+  let selectedDripSeconds = storedInterval / 1000;
+  dripSlider.value = String(selectedDripSeconds);
+  dripValueEl.textContent = `${selectedDripSeconds}s`;
+  dripSlider.addEventListener('input', () => {
+    selectedDripSeconds = parseInt(dripSlider.value, 10);
+    dripValueEl.textContent = `${selectedDripSeconds}s`;
+  });
+
   document.getElementById('btn-save-settings')!.addEventListener('click', async () => {
     const openaiModel = qs<HTMLSelectElement>('#openai-model').value;
     const geminiModel = qs<HTMLSelectElement>('#gemini-model').value;
 
-    await saveSettings({
-      llmProvider: selectedProvider,
-      openaiModel,
-      geminiModel,
-      language: selectedLanguage,
-    });
+    await Promise.all([
+      saveSettings({ llmProvider: selectedProvider, openaiModel, geminiModel, language: selectedLanguage }),
+      saveZenDisplay(selectedZenDisplay),
+      saveDripInterval(selectedDripSeconds * 1000),
+    ]);
     showStatus('settings-status');
   });
 
@@ -154,25 +173,6 @@ async function init(): Promise<void> {
   if (versionEl) {
     versionEl.textContent = chrome.runtime.getManifest().version;
   }
-
-  // Zen display mode
-  const zenDisplay = await getZenDisplay();
-  const setZenDisplay = initSegmented('zen-display-segmented', (val) => {
-    void saveZenDisplay(val as 'feed' | 'cosmos');
-  });
-  setZenDisplay(zenDisplay);
-
-  // Drip interval slider
-  const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
-  const dripValueEl = document.getElementById('drip-interval-value')!;
-  const storedInterval = await getDripInterval();
-  dripSlider.value = String(storedInterval / 1000);
-  dripValueEl.textContent = `${storedInterval / 1000}s`;
-  dripSlider.addEventListener('input', () => {
-    const seconds = parseInt(dripSlider.value, 10);
-    dripValueEl.textContent = `${seconds}s`;
-    void saveDripInterval(seconds * 1000);
-  });
 
   // Zen Feed Sources
   const ZEN_SOURCES: Array<{ id: string; label: string }> = [
