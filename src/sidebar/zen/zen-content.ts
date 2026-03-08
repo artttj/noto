@@ -63,6 +63,13 @@ export const SVG_QUOTE = [
 ].join('');
 
 
+export const SVG_PHILOSOPHY = [
+  '<svg class="zen-bulb zen-bulb--philosophy" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">',
+  '<path d="M5 3 C5 3 3 5 3 8 C3 11 5 13 8 13 C11 13 13 11 13 8 C13 5 11 3 8 3"/>',
+  '<path d="M8 3 L8 13"/>',
+  '</svg>',
+].join('');
+
 export const SVG_HAIKU = [
   '<svg class="zen-bulb zen-bulb--haiku" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">',
   '<path d="M8 2 C6 4 5 7 7 9 C9 11 8 13 6 14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>',

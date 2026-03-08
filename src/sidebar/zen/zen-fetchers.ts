@@ -4,6 +4,7 @@ import {
   SVG_HAIKU,
   SVG_HN,
   SVG_OBLIQUE,
+  SVG_PHILOSOPHY,
   SVG_REDDIT,
   escapeHtml,
 } from './zen-content';
@@ -612,6 +613,27 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       const lines = raw.split(' / ').map((l) => l.trim()).filter(Boolean);
       const html = lines.map((l) => `<span class="zen-haiku-line">${escapeHtml(l)}</span>`).join('');
       return { text: raw.replace(/ \/ /g, '\n'), html, icon: SVG_HAIKU };
+    },
+  },
+  {
+    id: 'philosophyEssay',
+    label: '1000-Word Philosophy',
+    weight: 5,
+    fetch: async (ctx) => {
+      if (ctx.language !== 'en') return null;
+      try {
+        const res = await fetch('https://1000wordphilosophy.com/feed/', {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return null;
+        const xml = await res.text();
+        const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
+        if (items.length === 0) return null;
+        const pick = items[Math.floor(Math.random() * items.length)];
+        return { text: pick.title, link: pick.link, icon: SVG_PHILOSOPHY };
+      } catch {
+        return null;
+      }
     },
   },
 ];
