@@ -3,12 +3,19 @@ import {
   AFFIRMATIONS_PREDEFINED,
   CHALLENGES,
   QUOTES_PREDEFINED,
-  SVG_AFFIRM,
-  SVG_CHALLENGE,
   SVG_HN,
-  SVG_QUOTE,
   escapeHtml,
 } from './zen-content';
+
+// Wrap text in smart quotes unless it already starts with one.
+// Splits on em-dash attribution so the author stays outside the quotes:
+// "Some wisdom" — Socrates
+function wrapQuotes(text: string): string {
+  if (/^[\u201C\u201D\u2018\u2019"']/.test(text)) return text;
+  const match = text.match(/^([\s\S]+?)(\s[\u2014\-]{1,2}\s.+)$/);
+  if (match) return `\u201C${match[1]}\u201D${match[2]}`;
+  return `\u201C${text}\u201D`;
+}
 
 export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string };
 export type ZenArtResult = { imageUrl: string; caption: string };
@@ -67,7 +74,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (!res.ok) return null;
         const data = await res.json() as { text?: string };
         const text = data.text?.trim() ?? '';
-        return ctx.isValidFact(text) ? { text } : null;
+        return ctx.isValidFact(text) ? { text: wrapQuotes(text) } : null;
       } catch {
         return null;
       }
@@ -87,7 +94,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (!res.ok) return null;
         const data = await res.json() as { slip?: { advice: string } };
         const text = data.slip?.advice.trim() ?? '';
-        return ctx.isValidFact(text) ? { text } : null;
+        return ctx.isValidFact(text) ? { text: wrapQuotes(text) } : null;
       } catch {
         return null;
       }
@@ -108,7 +115,8 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const quote = data.data?.quote?.trim() ?? '';
         const author = data.data?.author?.trim();
         if (!ctx.isValidFact(quote)) return null;
-        return { text: author ? `${quote} — ${author}` : quote };
+        const full = author ? `${quote} — ${author}` : quote;
+        return { text: wrapQuotes(full) };
       } catch {
         return null;
       }
@@ -131,7 +139,8 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const raw = decoded.trim();
         const author = data.title?.trim();
         if (!ctx.isValidFact(raw)) return null;
-        return { text: author ? `${raw} — ${author}` : raw };
+        const full = author ? `${raw} — ${author}` : raw;
+        return { text: wrapQuotes(full) };
       } catch {
         return null;
       }
@@ -153,7 +162,8 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const quote = item?.q?.trim() ?? '';
         const author = item?.a?.trim();
         if (!ctx.isValidFact(quote)) return null;
-        return { text: author ? `${quote} — ${author}` : quote };
+        const full = author ? `${quote} — ${author}` : quote;
+        return { text: wrapQuotes(full) };
       } catch {
         return null;
       }
@@ -172,7 +182,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (!res.ok) return null;
         const data = await res.json() as { affirmation?: string };
         const text = data.affirmation?.trim() ?? '';
-        return text ? { text } : null;
+        return text ? { text: wrapQuotes(text) } : null;
       } catch {
         return null;
       }
@@ -436,7 +446,8 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const quote = data.result?.quote?.trim() ?? '';
         const author = data.result?.author?.trim();
         if (!ctx.isValidFact(quote)) return null;
-        return { text: author ? `${quote} — ${author}` : quote };
+        const full = author ? `${quote} — ${author}` : quote;
+        return { text: wrapQuotes(full) };
       } catch {
         return null;
       }
@@ -458,7 +469,8 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const author = data.quote?.author?.trim();
         const link = data.quote?.url;
         if (!ctx.isValidFact(text)) return null;
-        return { text: author ? `${text} — ${author}` : text, link };
+        const full = author ? `${text} — ${author}` : text;
+        return { text: wrapQuotes(full), link };
       } catch {
         return null;
       }
@@ -506,9 +518,9 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     fetch: async () => {
       if (predefinedQueue.length === 0) {
         const pool = [
-          ...CHALLENGES.map((text) => ({ text, icon: SVG_CHALLENGE })),
-          ...AFFIRMATIONS_PREDEFINED.map((text) => ({ text, icon: SVG_AFFIRM })),
-          ...QUOTES_PREDEFINED.map((text) => ({ text, icon: SVG_QUOTE })),
+          ...CHALLENGES.map((text) => ({ text, icon: '' })),
+          ...AFFIRMATIONS_PREDEFINED.map((text) => ({ text: wrapQuotes(text), icon: '' })),
+          ...QUOTES_PREDEFINED.map((text) => ({ text: wrapQuotes(text), icon: '' })),
         ];
         for (let i = pool.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));

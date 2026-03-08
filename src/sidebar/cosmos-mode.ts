@@ -306,7 +306,7 @@ class SpirographCanvas {
       this.stepsTotal = stepsPerFrame * frames;
 
       this.resize();
-      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.3;
+      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 2.2;
 
       this.ctx.globalCompositeOperation = 'screen';
       this.ctx.fillStyle = '#060410';
