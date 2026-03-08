@@ -215,6 +215,9 @@ html, body {
   opacity: 0.3;
   transition: opacity 0.55s cubic-bezier(0.4,0,0.2,1), width 0.55s, height 0.55s;
 }
+.zen-bulb--challenge { color: #f97316; }
+.zen-bulb--affirm    { color: #2dd4bf; }
+.zen-bulb--quote     { color: #a78bfa; }
 
 .zen-bubble:first-child .zen-bulb {
   width: 18px;
@@ -223,6 +226,9 @@ html, body {
   opacity: 1;
   filter: drop-shadow(0 0 5px rgba(232,185,49,0.5));
 }
+.zen-bubble:first-child .zen-bulb--challenge { filter: drop-shadow(0 0 5px rgba(249,115,22,0.55)); }
+.zen-bubble:first-child .zen-bulb--affirm    { filter: drop-shadow(0 0 5px rgba(45,212,180,0.55)); }
+.zen-bubble:first-child .zen-bulb--quote     { filter: drop-shadow(0 0 5px rgba(167,139,250,0.55)); }
 
 .zen-bubble:nth-child(2) .zen-bulb {
   opacity: 0.55;
