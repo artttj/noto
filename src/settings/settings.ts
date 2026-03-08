@@ -105,6 +105,7 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'kotowaza',            label: 'Japanese Proverbs' },
   { id: 'obliqueStrategies',   label: 'Oblique Strategies' },
   { id: 'haiku',               label: 'Haiku' },
+  { id: 'quotesLibrary',       label: 'Quotes Library' },
   { id: 'philosophyEssay',     label: '1000-Word Philosophy' },
   { id: 'smithsonianNews',     label: 'Smithsonian Smart News' },
   { id: 'atlasObscura',        label: 'Atlas Obscura' },

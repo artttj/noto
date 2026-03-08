@@ -5,6 +5,7 @@ import {
   SVG_HAIKU,
   SVG_HN,
   SVG_PHILOSOPHY,
+  SVG_QUOTE,
   SVG_REDDIT,
   SVG_SMITHSONIAN,
   escapeHtml,
@@ -13,6 +14,7 @@ import { getCustomFeeds } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 import haikuData from './haiku-data.json';
+import quotesData from './quotes-data.json';
 
 // Wrap text in smart quotes unless it already starts with one.
 // Splits on em-dash attribution so the author stays outside the quotes:
@@ -68,6 +70,7 @@ let triviaCache: Array<{ question: string; answer: string }> = [];
 let kotowazaQueue: Array<unknown> = [];
 let obliqueQueue: string[] = [];
 let haikuQueue: string[] = [];
+let quotesQueue: string[] = [];
 
 function decodeHtml(str: string): string {
   return new DOMParser().parseFromString(str, 'text/html').body.textContent ?? str;
@@ -614,6 +617,19 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       const lines = raw.split(' / ').map((l) => l.trim()).filter(Boolean);
       const html = lines.map((l) => `<span class="zen-haiku-line">${escapeHtml(l)}</span>`).join('');
       return { text: raw.replace(/ \/ /g, '\n'), html, icon: SVG_HAIKU };
+    },
+  },
+  {
+    id: 'quotesLibrary',
+    label: 'Quotes Library',
+    weight: 8,
+    fetch: async (ctx) => {
+      if (quotesQueue.length === 0) {
+        quotesQueue = [...quotesData].sort(() => Math.random() - 0.5);
+      }
+      const raw = quotesQueue.pop();
+      if (!raw || !ctx.isValidFact(raw)) return null;
+      return { text: wrapQuotes(raw), icon: SVG_QUOTE };
     },
   },
   {
