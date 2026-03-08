@@ -2,7 +2,7 @@ import { MSG } from '../shared/messages';
 import { getSettings, getOpenAIKey, getGeminiKey } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';
 import { renderMarkdown } from '../shared/markdown';
-import type { ChatMessage, QueryResult, Snippet, SnippetSource } from '../shared/types';
+import type { ChatMessage, QueryResult, Snippet } from '../shared/types';
 
 function qs<T extends HTMLElement>(sel: string): T {
   return document.querySelector<T>(sel)!;
@@ -62,7 +62,8 @@ type ViewMode = 'zen' | 'browse' | 'chat';
 
 const ZEN_INITIAL_BATCH = 3;
 const ZEN_DRIP_BATCH = 1;
-const ZEN_DRIP_MS = 15000;
+const ZEN_DRIP_MS = 30000;
+const ZEN_IDLE_MS = 5 * 60 * 1000;
 const ZEN_MAX_CATCHUP = 6;
 const ZEN_MAX_BUBBLES = 20;
 const SVG_BULB = [
@@ -94,6 +95,27 @@ const SVG_ERROR = [
   '</svg>',
 ].join('');
 
+const JUNK_PATTERNS = [
+  /\bcookies?\b.*\b(consent|policy|notice|settings|preferences)\b/i,
+  /\bprivacy policy\b/i,
+  /\bterms (of service|of use|and conditions)\b/i,
+  /\baccept all\b.*\bcookies?\b/i,
+  /\bwe use cookies?\b/i,
+  /^(home|about|contact|menu|navigation|search|log ?in|sign in|sign up|register|subscribe)\s*$/i,
+];
+
+const AI_PATTERNS = [
+  /\b(artificial intelligence|machine learning|deep learning|neural network|large language model|llm|gpt-?\d|chatgpt|copilot|chatbot|generative ai|diffusion model|prompt engineering|fine.?tun(ing)?)\b/i,
+];
+
+const BLOCKED_CATEGORY_PATTERNS = [
+  /\b(ai|artificial intelligence|machine learning|deep learning|llm|large language model|chatbot|generative|prompt engineering|ai.driven|ai.powered|ai.based|neural network)\b/i,
+  /\b(adult|porn|pornograph|explicit|erotic|escort|sex|xxx|onlyfans)\b/i,
+  /\b(cannabis|hashish|weed|drug|marijuana|cocaine|narcotic|psychedelic|substance abuse)\b/i,
+  /\b(food delivery|ride.?hail|grocery|uber|doordash|restaurant|takeaway|takeout|local service|banking app|subscription service)\b/i,
+  /\b(social media|instagram|tiktok|facebook|twitter|youtube|streaming|content creation|video platform|twitch)\b/i,
+];
+
 class SontoSidebar {
   private snippets: Snippet[] = [];
   private filter: FilterMode = 'all';
@@ -101,10 +123,13 @@ class SontoSidebar {
   private isLoading = false;
   private abortController: AbortController | null = null;
   private mode: ViewMode = 'zen';
-  private pastInsights: string[] = [];
+  private pastFacts: string[] = [];
+  private zenCategories: string[] = [];
+  private zenCategoryQueue: string[] = [];
+  private language = 'en';
 
   private zenDripTimer: ReturnType<typeof setInterval> | null = null;
-  private zenUsedIds: Set<string> = new Set();
+  private lastActivity = Date.now();
 
   private zenBtn = qs<HTMLButtonElement>('#btn-zen');
   private browseBtn = qs<HTMLButtonElement>('#btn-browse');
@@ -123,9 +148,18 @@ class SontoSidebar {
       void chrome.runtime.sendMessage({ type: MSG.OPEN_SETTINGS });
     });
 
+    document.addEventListener('pointermove', () => { this.lastActivity = Date.now(); });
+    document.addEventListener('keydown', () => { this.lastActivity = Date.now(); });
+
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
       if (message.type === MSG.SNIPPET_ADDED) {
-        void this.loadSnippets();
+        void this.loadSnippets().then(() => {
+          if (this.mode === 'zen') {
+            this.zenCategories = [];
+            void chrome.storage.session.remove('sonto_zen_categories').catch(() => {});
+            void this.dripZen();
+          }
+        });
       }
     });
 
@@ -152,8 +186,13 @@ class SontoSidebar {
     });
 
     try {
-      const stored = await chrome.storage.session.get('sonto_past_insights');
-      this.pastInsights = (stored?.sonto_past_insights as string[]) ?? [];
+      const stored = await chrome.storage.session.get('sonto_past_facts');
+      this.pastFacts = (stored?.sonto_past_facts as string[]) ?? [];
+    } catch {}
+
+    try {
+      const settings = await getSettings();
+      this.language = settings.language ?? 'en';
     } catch {}
 
     await this.loadSnippets();
@@ -292,22 +331,25 @@ class SontoSidebar {
 
     try {
       const cached = await chrome.storage.session.get(['sonto_zen_feed', 'sonto_zen_last_drip']);
-      const items = (cached?.sonto_zen_feed as string[]) ?? [];
+      const raw = (cached?.sonto_zen_feed as string[]) ?? [];
       const lastDrip = (cached?.sonto_zen_last_drip as number) ?? 0;
-      const unique = [...new Set(items)];
-      if (unique.length > 0) {
+
+      if (raw.length > 0) {
         this.zenFeed.innerHTML = '';
-        for (const text of unique) {
+        const seen = new Set<string>();
+        for (const text of raw) {
+          if (!text || seen.has(text)) continue;
+          seen.add(text);
           this.appendZenBubbleElement(text);
         }
 
-        const missedCycles = lastDrip > 0
-          ? Math.floor((Date.now() - lastDrip) / ZEN_DRIP_MS)
-          : 0;
+        await this.extractCategories();
+
+        const missedCycles = lastDrip > 0 ? Math.floor((Date.now() - lastDrip) / ZEN_DRIP_MS) : 0;
         const catchup = Math.min(missedCycles * ZEN_DRIP_BATCH, ZEN_MAX_CATCHUP);
         if (catchup > 0) {
-          const newInsights = await this.fetchInsightsBatch(catchup);
-          for (const text of newInsights) {
+          const newFacts = await this.fetchFactsBatch(catchup);
+          for (const text of newFacts) {
             this.appendZenBubbleElement(text);
           }
           void this.cacheZenFeed();
@@ -319,10 +361,11 @@ class SontoSidebar {
     } catch {}
 
     this.zenFeed.innerHTML = '';
-    this.zenUsedIds.clear();
-
     this.showZenLoader();
-    await this.loadBubblesSequentially(ZEN_INITIAL_BATCH);
+
+    await this.extractCategories();
+    await this.loadInitialBubbles(ZEN_INITIAL_BATCH);
+
     this.hideZenLoader();
 
     if (this.mode === 'zen') {
@@ -331,7 +374,8 @@ class SontoSidebar {
   }
 
   private async dripZen(): Promise<void> {
-    await this.loadBubblesSequentially(ZEN_DRIP_BATCH);
+    if (document.hidden || Date.now() - this.lastActivity > ZEN_IDLE_MS) return;
+    await this.addZenBubble();
     this.trimOldBubbles();
     this.zenFeed.scrollTo({ top: 0, behavior: 'smooth' });
     void this.cacheZenFeed();
@@ -349,10 +393,11 @@ class SontoSidebar {
   }
 
   private cacheZenFeed(): void {
-    const texts = Array.from(this.zenFeed.querySelectorAll('.zen-bubble span'))
-      .map((el) => el.textContent ?? '');
+    const items = Array.from(this.zenFeed.querySelectorAll<HTMLElement>('.zen-bubble'))
+      .map((el) => el.querySelector('span')?.textContent ?? '')
+      .filter(Boolean);
     void chrome.storage.session.set({
-      sonto_zen_feed: texts,
+      sonto_zen_feed: items,
       sonto_zen_last_drip: Date.now(),
     }).catch(() => {});
   }
@@ -391,82 +436,168 @@ class SontoSidebar {
     this.zenFeed.querySelector('.zen-loading')?.remove();
   }
 
-  private pickSample(): { text: string; title: string; source: string }[] {
-    let pool = this.snippets.filter((s) => !this.zenUsedIds.has(s.id));
-    if (pool.length < 5) {
-      this.zenUsedIds.clear();
-      pool = this.snippets;
-    }
-    const picked = [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
-    picked.forEach((s) => this.zenUsedIds.add(s.id));
-    return picked.map((s) => ({
-      text: s.text.slice(0, 120),
-      title: s.title || '',
-      source: s.source ?? 'manual',
-    }));
-  }
+  private async extractCategories(): Promise<void> {
+    if (this.zenCategories.length > 0) return;
 
-  private async loadBubblesSequentially(count: number): Promise<void> {
-    for (let i = 0; i < count; i++) {
-      if (this.snippets.length < 3) break;
-      await this.addZenBubbleWithSample(this.pickSample());
-    }
-  }
+    try {
+      const cached = await chrome.storage.session.get('sonto_zen_categories');
+      if (Array.isArray(cached?.sonto_zen_categories) && (cached.sonto_zen_categories as unknown[]).length > 0) {
+        this.zenCategories = cached.sonto_zen_categories as string[];
+        return;
+      }
+    } catch {}
 
-  private async fetchInsightsBatch(count: number): Promise<string[]> {
-    const results: string[] = [];
-    for (let i = 0; i < count; i++) {
-      if (this.snippets.length < 3) break;
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: MSG.GENERATE_INSIGHT,
-          snippetSample: this.pickSample(),
-          previousInsights: this.pastInsights.slice(-20),
-        }) as { ok: boolean; insight?: string };
+    if (this.snippets.length === 0) return;
 
-        if (response?.ok && response.insight) {
-          const isDuplicate = this.pastInsights.some((p) =>
-            p === response.insight || p.slice(0, 60) === response.insight!.slice(0, 60)
-          );
-          if (isDuplicate) continue;
+    const valid = this.snippets.filter((s) => !JUNK_PATTERNS.some((p) => p.test(`${s.title} ${s.text}`)));
+    const manual = valid.filter((s) => s.source !== 'history');
+    const history = valid
+      .filter((s) => s.source === 'history')
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 200);
 
-          results.push(response.insight);
-          this.pastInsights.push(response.insight);
-          if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
-        }
-      } catch {}
-    }
-    if (results.length > 0) {
-      void chrome.storage.session.set({ sonto_past_insights: this.pastInsights }).catch(() => {});
-    }
-    return results;
-  }
+    const sample = [...manual, ...history]
+      .slice(0, 250)
+      .map((s) => ({
+        text: s.text.slice(0, 300),
+        title: s.title || '',
+        source: s.source ?? 'manual',
+      }));
 
-  private async addZenBubbleWithSample(sample: { text: string; title: string; source: string }[]): Promise<void> {
+    if (sample.length === 0) return;
+
     try {
       const response = await chrome.runtime.sendMessage({
-        type: MSG.GENERATE_INSIGHT,
-        snippetSample: sample,
-        previousInsights: this.pastInsights.slice(-20),
-      }) as { ok: boolean; insight?: string };
+        type: MSG.EXTRACT_CATEGORIES,
+        snippets: sample,
+      }) as { ok: boolean; categories?: string[] };
 
-      if (response?.ok && response.insight) {
-        const isDuplicate = this.pastInsights.some((p) =>
-          p === response.insight || p.slice(0, 60) === response.insight!.slice(0, 60)
+      if (response?.ok && response.categories?.length) {
+        this.zenCategories = response.categories;
+        void chrome.storage.session.set({ sonto_zen_categories: this.zenCategories }).catch(() => {});
+      }
+    } catch {}
+  }
+
+  private async fetchApiFact(): Promise<string | null> {
+    try {
+      const res = await fetch(`https://uselessfacts.jsph.pl/api/v2/facts/random?language=${this.language}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as { text?: string };
+      const text = data.text?.trim() ?? '';
+      if (
+        text.length < 50 ||
+        text.includes('[NULL]') ||
+        AI_PATTERNS.some((p) => p.test(text))
+      ) return null;
+      return text;
+    } catch {
+      return null;
+    }
+  }
+
+  private pickCategory(): string | null {
+    if (this.zenCategories.length === 0) return null;
+    if (this.zenCategoryQueue.length === 0) {
+      this.zenCategoryQueue = [...this.zenCategories]
+        .filter((c) => !BLOCKED_CATEGORY_PATTERNS.some((p) => p.test(c)))
+        .sort(() => Math.random() - 0.5);
+    }
+    if (this.zenCategoryQueue.length === 0) return null;
+    return this.zenCategoryQueue.pop()!;
+  }
+
+  private async addZenBubble(): Promise<void> {
+    if (this.zenCategories.length === 0) return;
+
+    if (Math.random() < 0.2) {
+      const apiFact = await this.fetchApiFact();
+      if (apiFact) {
+        const isDuplicate = this.pastFacts.some((p) =>
+          p === apiFact || p.slice(0, 60) === apiFact.slice(0, 60)
+        );
+        if (!isDuplicate) {
+          this.hideZenLoader();
+          this.appendZenBubbleElement(apiFact);
+          this.pastFacts.push(apiFact);
+          if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
+          void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+          void this.cacheZenFeed();
+          return;
+        }
+      }
+    }
+
+    const category = this.pickCategory();
+    if (!category) return;
+    const useStat = Math.random() < 0.1;
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: useStat ? MSG.GENERATE_ZEN_STAT : MSG.GENERATE_ZEN_FACT,
+        category,
+        previousFacts: this.pastFacts.slice(-20),
+        language: this.language,
+      }) as { ok: boolean; fact?: string };
+
+      if (response?.ok && response.fact && !response.fact.includes('[NULL]') && response.fact.trim().length >= 50 && !AI_PATTERNS.some((p) => p.test(response.fact!))) {
+        const isDuplicate = this.pastFacts.some((p) =>
+          p === response.fact || p.slice(0, 60) === response.fact!.slice(0, 60)
         );
         if (isDuplicate) return;
 
         this.hideZenLoader();
-        this.appendZenBubbleElement(response.insight);
+        this.appendZenBubbleElement(response.fact);
 
-        this.pastInsights.push(response.insight);
-        if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
-        void chrome.storage.session.set({ sonto_past_insights: this.pastInsights }).catch(() => {});
+        this.pastFacts.push(response.fact);
+        if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
+        void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
         void this.cacheZenFeed();
       }
-    } catch {
-      // no key or API error
+    } catch {}
+  }
+
+  private async loadInitialBubbles(count: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      await this.addZenBubble();
     }
+  }
+
+  private async fetchFactsBatch(count: number): Promise<string[]> {
+    if (this.zenCategories.length === 0) return [];
+
+    const results: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const category = this.pickCategory();
+      if (!category) break;
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: MSG.GENERATE_ZEN_FACT,
+          category,
+          previousFacts: this.pastFacts.slice(-20),
+          language: this.language,
+        }) as { ok: boolean; fact?: string };
+
+        if (response?.ok && response.fact && !response.fact.includes('[NULL]') && response.fact.trim().length >= 50 && !AI_PATTERNS.some((p) => p.test(response.fact!))) {
+          const isDuplicate = this.pastFacts.some((p) =>
+            p === response.fact || p.slice(0, 60) === response.fact!.slice(0, 60)
+          );
+          if (isDuplicate) continue;
+
+          results.push(response.fact);
+          this.pastFacts.push(response.fact);
+          if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
+        }
+      } catch {}
+    }
+
+    if (results.length > 0) {
+      void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+    }
+
+    return results;
   }
 
   // ── Chat ──────────────────────────────────────────────────────────────

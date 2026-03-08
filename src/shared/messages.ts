@@ -9,7 +9,9 @@ export const MSG = {
   GET_ALL_SNIPPETS: 'GET_ALL_SNIPPETS',
   OPEN_SETTINGS: 'OPEN_SETTINGS',
   SNIPPET_ADDED: 'SNIPPET_ADDED',
-  GENERATE_INSIGHT: 'GENERATE_INSIGHT',
+  EXTRACT_CATEGORIES: 'EXTRACT_CATEGORIES',
+  GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
+  GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
 } as const;
 
 export interface CaptureSnippetMessage {
@@ -37,10 +39,23 @@ export interface OpenSettingsMessage {
   type: typeof MSG.OPEN_SETTINGS;
 }
 
-export interface GenerateInsightMessage {
-  type: typeof MSG.GENERATE_INSIGHT;
-  snippetSample: { text: string; title: string; source: string }[];
-  previousInsights?: string[];
+export interface ExtractCategoriesMessage {
+  type: typeof MSG.EXTRACT_CATEGORIES;
+  snippets: { text: string; title: string; source: string }[];
+}
+
+export interface GenerateZenFactMessage {
+  type: typeof MSG.GENERATE_ZEN_FACT;
+  category: string;
+  previousFacts: string[];
+  language: string;
+}
+
+export interface GenerateZenStatMessage {
+  type: typeof MSG.GENERATE_ZEN_STAT;
+  category: string;
+  previousFacts: string[];
+  language: string;
 }
 
 export type RuntimeMessage =
@@ -49,7 +64,9 @@ export type RuntimeMessage =
   | DeleteSnippetMessage
   | GetAllSnippetsMessage
   | OpenSettingsMessage
-  | GenerateInsightMessage;
+  | ExtractCategoriesMessage
+  | GenerateZenFactMessage
+  | GenerateZenStatMessage;
 
 export interface CaptureSuccessResult {
   ok: true;

@@ -26,46 +26,41 @@ async function captureSnippet(text: string, url: string, title: string, source: 
   void chrome.runtime.sendMessage({ type: MSG.SNIPPET_ADDED }).catch(() => {});
 }
 
-const GENERATE_PROMPT =
-  `You receive context data. Pick ONE topic from it. Output ONE of these (vary the type each time):\n` +
-  `- A practical tip, shortcut, or hidden feature for that topic\n` +
-  `- A useful idea or approach that improves how someone works with that topic\n` +
-  `- A lesser-known technique or workflow improvement related to it\n\n` +
-  `1-2 sentences max.\n\n` +
-  `## HARD RULES\n` +
-  `- ONLY write about things you are 100% certain exist and work.\n` +
-  `- The output must sound like you just know this, not like you looked it up from their data.\n` +
-  `- NEVER mention, quote, or paraphrase any text from the input data.\n` +
-  `- NEVER reference browsing, history, search, reading, or anything the user did.\n` +
-  `- NEVER say "based on," "since you," "if you're using," "given that," or similar.\n` +
-  `- NEVER define or describe what something is.\n` +
-  `- NEVER invent features, shortcuts, or commands.\n` +
-  `- No proverbs, no quotes, no fun facts, no trivia.\n\n` +
-  `## STYLE\n` +
-  `- Write like a friend sharing something useful. Casual, direct.\n` +
-  `- No labels: no "Pro tip:", "Tip:", "Fun fact:", "Did you know", "Here's a".\n` +
-  `- Period or comma only. No em dashes.\n` +
-  `- No AI words: "delve," "tapestry," "vibrant," "pivotal," "underscore," "testament," "nestled," "landscape," "renowned," "notable," "leverage," "streamline."\n` +
-  `- Just say the thing.`;
+const EXTRACT_CATEGORIES_PROMPT =
+  `You receive titles and content from a user's browsing history and saved snippets.\n` +
+  `Extract 15-20 specific interest categories that describe what this person genuinely reads about.\n\n` +
+  `Be specific and detailed:\n` +
+  `- NOT "programming" → YES "TypeScript type inference" or "Rust memory management"\n` +
+  `- NOT "health" → YES "intermittent fasting" or "VO2 max training"\n` +
+  `- NOT "finance" → YES "index fund investing" or "options pricing"\n\n` +
+  `Exclude:\n` +
+  `- Anything involving AI, machine learning, LLMs, prompt engineering, chatbots, or AI-driven automation — no exceptions\n` +
+  `- Adult content, pornography, drugs, substances, or anything explicit\n` +
+  `- Social media, streaming platforms, video platforms, content creation\n` +
+  `- Food delivery, ride hailing, banking apps, or mundane everyday services\n` +
+  `- Local businesses, restaurants, or city-specific services\n\n` +
+  `Return a JSON array of strings only. No explanation, no markdown. Example:\n` +
+  `["TypeScript generics", "espresso extraction", "sleep optimization"]`;
 
-async function generateInsight(
-  snippetSample: { text: string; title: string; source: string }[],
-  previousInsights: string[] = [],
-): Promise<string> {
+const GENERATE_ZEN_FACT_PROMPT =
+  `ONE surprising, counterintuitive fact about the given topic. 1-2 sentences.\n` +
+  `Return [NULL] if uncertain. No numbers. No advice. No labels. No em dashes. Just say the thing.`;
+
+const GENERATE_ZEN_STAT_PROMPT =
+  `ONE well-established numerical fact about the given topic. 1-2 sentences.\n` +
+  `Use only widely cited, verifiable figures. Return [NULL] if uncertain. No advice. No labels. No em dashes. Just say the thing.`;
+
+async function generateZenStat(category: string, previousFacts: string[], language: string): Promise<string> {
   const settings = await getSettings();
   const key = settings.llmProvider === 'gemini' ? await getGeminiKey() : await getOpenAIKey();
   if (!key.trim()) throw new Error('No API key');
 
-  const context = snippetSample
-    .map((s, i) => `[${i + 1}] ${s.title || s.text.slice(0, 80)}`)
-    .join('\n');
+  const doNotRepeat = previousFacts.length > 0
+    ? `\n\n## DO NOT REPEAT\n${previousFacts.map((p) => `- ${p}`).join('\n')}`
+    : '';
 
   const strategy = getProviderStrategy(settings.llmProvider);
   const model = settings.llmProvider === 'gemini' ? settings.geminiModel : settings.openaiModel;
-
-  const doNotRepeat = previousInsights.length > 0
-    ? `\n\n## DO NOT REPEAT\n${previousInsights.map((p) => `- ${p}`).join('\n')}`
-    : '';
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
@@ -75,8 +70,72 @@ async function generateInsight(
       apiKey: key,
       model,
       messages: [
-        { role: 'system', content: GENERATE_PROMPT + doNotRepeat },
-        { role: 'user', content: `Context:\n${context}` },
+        { role: 'system', content: `Respond in ${language === 'de' ? 'German' : 'English'}.\n\n` + GENERATE_ZEN_STAT_PROMPT + doNotRepeat },
+        { role: 'user', content: `Topic: ${category}` },
+      ],
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function extractCategories(snippets: { text: string; title: string; source: string }[]): Promise<string[]> {
+  const settings = await getSettings();
+  const key = settings.llmProvider === 'gemini' ? await getGeminiKey() : await getOpenAIKey();
+  if (!key.trim()) throw new Error('No API key');
+
+  const context = snippets
+    .map((s) => s.source === 'history' ? s.title : `${s.title ? s.title + ': ' : ''}${s.text.slice(0, 200)}`)
+    .join('\n');
+
+  const strategy = getProviderStrategy(settings.llmProvider);
+  const model = settings.llmProvider === 'gemini' ? settings.geminiModel : settings.openaiModel;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const raw = await strategy.chat({
+      apiKey: key,
+      model,
+      messages: [
+        { role: 'system', content: EXTRACT_CATEGORIES_PROMPT },
+        { role: 'user', content: `Snippets:\n${context}` },
+      ],
+      signal: controller.signal,
+    });
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as unknown[]).filter((c): c is string => typeof c === 'string') : [];
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function generateZenFact(category: string, previousFacts: string[], language: string): Promise<string> {
+  const settings = await getSettings();
+  const key = settings.llmProvider === 'gemini' ? await getGeminiKey() : await getOpenAIKey();
+  if (!key.trim()) throw new Error('No API key');
+
+  const doNotRepeat = previousFacts.length > 0
+    ? `\n\n## DO NOT REPEAT\n${previousFacts.map((p) => `- ${p}`).join('\n')}`
+    : '';
+
+  const strategy = getProviderStrategy(settings.llmProvider);
+  const model = settings.llmProvider === 'gemini' ? settings.geminiModel : settings.openaiModel;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    return await strategy.chat({
+      apiKey: key,
+      model,
+      messages: [
+        { role: 'system', content: `Respond in ${language === 'de' ? 'German' : 'English'}.\n\n` + GENERATE_ZEN_FACT_PROMPT + doNotRepeat },
+        { role: 'user', content: `Topic: ${category}` },
       ],
       signal: controller.signal,
     });
@@ -244,17 +303,24 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
     return true;
   }
 
-  if (message.type === MSG.GENERATE_INSIGHT) {
-    console.log('[Sonto] generating insight for', message.snippetSample.length, 'snippets');
-    void generateInsight(message.snippetSample, message.previousInsights ?? [])
-      .then((insight) => {
-        console.log('[Sonto] insight generated:', insight.slice(0, 60));
-        sendResponse({ ok: true, insight });
-      })
-      .catch((err) => {
-        console.error('[Sonto] insight generation failed:', err);
-        sendResponse({ ok: false });
-      });
+  if (message.type === MSG.EXTRACT_CATEGORIES) {
+    void extractCategories(message.snippets)
+      .then((categories) => sendResponse({ ok: true, categories }))
+      .catch(() => sendResponse({ ok: false, categories: [] }));
+    return true;
+  }
+
+  if (message.type === MSG.GENERATE_ZEN_FACT) {
+    void generateZenFact(message.category, message.previousFacts, message.language)
+      .then((fact) => sendResponse({ ok: true, fact }))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+
+  if (message.type === MSG.GENERATE_ZEN_STAT) {
+    void generateZenStat(message.category, message.previousFacts, message.language)
+      .then((fact) => sendResponse({ ok: true, fact }))
+      .catch(() => sendResponse({ ok: false }));
     return true;
   }
 });

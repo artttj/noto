@@ -6,7 +6,7 @@
 
 Sonto is a Chrome extension that captures highlighted text from any webpage, stores it locally with vector embeddings, and lets you chat with your browsing history using your own API key. No accounts, no servers, no telemetry.
 
-- **Zen feed.** A rolling feed of actionable tips, shortcuts, and ideas based on what you browse. New insights appear every 15 seconds. Persists across panel opens.
+- **Zen feed.** A lyrics-style scrolling feed of surprising facts and insights drawn from your interest categories. Refreshes every 30 seconds. Persists across panel opens.
 - **Save anything.** Highlight text on any page, press `Alt+Shift+C` or right-click to save it. Browser history syncs automatically.
 - **Ask questions.** Chat with your saved snippets in the sidebar. Sonto finds the most relevant context and sends it to your AI provider. Responses render full markdown.
 - **Your keys, your cost.** Connect your own OpenAI or Gemini API key. You pay the provider directly.
@@ -45,11 +45,20 @@ Sonto is a Chrome extension that captures highlighted text from any webpage, sto
 
 The sidebar has three modes:
 
-- **Zen** (default): A rolling feed of useful tips and ideas drawn from your browsing context. New bubbles appear at the top every 15 seconds. Cached across panel opens with catch-up loading for missed time.
+- **Zen** (default): A lyrics-style feed of facts and insights based on your interest profile. Sonto analyses your browsing history and saved snippets to extract 15–20 specific interest categories, then generates surprising facts across those topics. New bubbles appear every 30 seconds. One in five comes from an external random facts API. One in ten is a verified statistic. All facts are filtered for quality and relevance before display.
 - **Browse**: View, filter, and manage all saved snippets and synced history items.
 - **Chat**: Ask questions about your saved data. Sonto finds the most relevant snippets via vector search and sends them as context to your AI provider.
 
-Under the hood, Sonto uses Retrieval-Augmented Generation (RAG):
+### Zen Feed
+
+1. On first load, Sonto samples up to 250 snippets and history titles and asks your LLM to extract 15–20 specific interest categories (e.g. "TypeScript generics", "espresso extraction", "sleep optimization").
+2. Categories are shuffled into a queue. Each bubble picks the next category from the queue, cycling through all before repeating.
+3. The LLM generates one striking, counterintuitive fact about that category — qualitative by default, numerical once every ten bubbles when a well-known statistic exists.
+4. 20% of bubbles are sourced from the [Useless Facts API](https://uselessfacts.jsph.pl) in your chosen language.
+5. Facts are filtered client-side: AI topics, adult content, mundane services, social media, and duplicates are dropped silently.
+6. The newest fact is displayed largest and brightest at the top, older ones fade progressively.
+
+### RAG (Browse & Chat)
 
 1. **Capture**: Save text from any page via shortcut or context menu. Browser history (last 30 days) syncs automatically every 30 minutes.
 2. **Embed**: Each snippet is converted to a vector embedding via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
@@ -70,12 +79,12 @@ Under the hood, Sonto uses Retrieval-Augmented Generation (RAG):
 
 ## Languages
 
-The settings interface supports:
+The interface and AI responses support:
 
 - **English**
 - **Deutsch** (German)
 
-Switch in Settings → General → Language.
+Switch in Settings → General → Language. AI fact generation and the random facts API both respect the selected language.
 
 ---
 
