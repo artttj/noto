@@ -1,5 +1,5 @@
 import { MSG } from '../shared/messages';
-import { getSettings, getZenDisplay } from '../shared/storage';
+import { getSettings, getZenDisplay, isOnboardingDone, setOnboardingDone, setHistoryEnabled } from '../shared/storage';
 import type { Snippet } from '../shared/types';
 import { BrowseManager } from './browse-manager';
 import { ChatManager } from './chat-manager';
@@ -88,9 +88,10 @@ class SontoSidebar {
     });
 
     try {
-      const [settings, zenDisplay] = await Promise.all([getSettings(), getZenDisplay()]);
+      const [settings, zenDisplay, onboardingDone] = await Promise.all([getSettings(), getZenDisplay(), isOnboardingDone()]);
       this.language = settings.language ?? 'en';
       this.zenDisplay = zenDisplay;
+      if (!onboardingDone) this.showHistoryPrompt();
     } catch {}
 
     if (this.zenDisplay === 'cosmos') {
@@ -114,6 +115,26 @@ class SontoSidebar {
     } else {
       void this.zenFeed!.start();
     }
+  }
+
+  private showHistoryPrompt(): void {
+    const prompt = qs<HTMLElement>('#history-prompt');
+    prompt.classList.remove('hidden');
+
+    qs<HTMLButtonElement>('#history-prompt-yes').addEventListener('click', () => {
+      void (async () => {
+        await Promise.all([setHistoryEnabled(true), setOnboardingDone()]);
+        prompt.classList.add('hidden');
+        await chrome.runtime.sendMessage({ type: MSG.SYNC_HISTORY });
+      })();
+    });
+
+    qs<HTMLButtonElement>('#history-prompt-no').addEventListener('click', () => {
+      void (async () => {
+        await Promise.all([setHistoryEnabled(false), setOnboardingDone()]);
+        prompt.classList.add('hidden');
+      })();
+    });
   }
 
   private setMode(mode: ViewMode): void {

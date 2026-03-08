@@ -84,6 +84,27 @@ export async function saveCustomFeeds(feeds: CustomFeed[]): Promise<void> {
   await chrome.storage.local.set({ [CUSTOM_FEEDS_KEY]: feeds });
 }
 
+const HISTORY_ENABLED_KEY = 'sonto_history_enabled';
+const ONBOARDING_DONE_KEY = 'sonto_onboarding_done';
+
+export async function isHistoryEnabled(): Promise<boolean> {
+  const result = await chrome.storage.local.get(HISTORY_ENABLED_KEY);
+  return (result[HISTORY_ENABLED_KEY] as boolean | undefined) ?? true;
+}
+
+export async function setHistoryEnabled(enabled: boolean): Promise<void> {
+  await chrome.storage.local.set({ [HISTORY_ENABLED_KEY]: enabled });
+}
+
+export async function isOnboardingDone(): Promise<boolean> {
+  const result = await chrome.storage.local.get(ONBOARDING_DONE_KEY);
+  return (result[ONBOARDING_DONE_KEY] as boolean | undefined) ?? false;
+}
+
+export async function setOnboardingDone(): Promise<void> {
+  await chrome.storage.local.set({ [ONBOARDING_DONE_KEY]: true });
+}
+
 const ZEN_DISPLAY_KEY = 'sonto_zen_display';
 
 export async function getZenDisplay(): Promise<'feed' | 'cosmos'> {

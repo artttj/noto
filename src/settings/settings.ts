@@ -14,6 +14,8 @@ import {
   saveZenDisplay,
   getCustomFeeds,
   saveCustomFeeds,
+  isHistoryEnabled,
+  setHistoryEnabled,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
 import { setLocale, applyI18n } from '../shared/i18n';
@@ -62,7 +64,10 @@ function initTabs(): void {
   });
 }
 
-function initSegmented(containerId: string, onSelect: (value: string) => void): (val: string) => void {
+function initSegmented(
+  containerId: string,
+  onSelect: (value: string) => void,
+): (val: string) => void {
   const container = document.getElementById(containerId)!;
   const buttons = container.querySelectorAll<HTMLButtonElement>('.seg-btn');
 
@@ -79,24 +84,47 @@ function initSegmented(containerId: string, onSelect: (value: string) => void): 
   };
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const ZEN_SOURCES: Array<{ id: string; label: string }> = [
+  { id: 'predefined',          label: 'Challenges, Affirmations & Quotes' },
+  { id: 'metArtwork',          label: 'Art from The Met (New York)' },
+  { id: 'clevelandArtwork',    label: 'Art from Cleveland Museum' },
+  { id: 'artInstituteChicago', label: 'Art from Art Institute of Chicago' },
+  { id: 'marsRover',           label: 'NASA Mars Rover Photos' },
+  { id: 'hnStory',             label: 'Hacker News Headlines' },
+  { id: 'reddit',              label: 'Reddit Top Posts' },
+  { id: 'trivia',              label: 'Trivia (Art, Science, Books)' },
+  { id: 'uselessFacts',        label: 'Random Facts' },
+  { id: 'stoicQuote',          label: 'Stoic Quotes' },
+  { id: 'designQuote',         label: 'Design Quotes' },
+  { id: 'zenQuote',            label: 'Zen Quotes' },
+  { id: 'affirmation',         label: 'Daily Affirmations' },
+  { id: 'adviceSlip',          label: 'Advice Slip' },
+  { id: 'funQuote',            label: 'Fun Quotes' },
+  { id: 'favqsQotd',           label: 'Quote of the Day' },
+  { id: 'customRss',           label: 'Custom RSS Feeds' },
+];
+
 async function init(): Promise<void> {
   const settings = await getSettings();
 
   setLocale(settings.language);
   applyI18n();
-
   initTabs();
 
   const [openaiKey, geminiKey] = await Promise.all([getOpenAIKey(), getGeminiKey()]);
 
-  let selectedProvider: ProviderName = settings.llmProvider;
-  let selectedLanguage = settings.language;
+  const setProvider = initSegmented('provider-segmented', (val) => {
+    void saveSettings({ llmProvider: val as ProviderName });
+  });
 
-  const setProvider = initSegmented('provider-segmented', (val) => { selectedProvider = val as ProviderName; });
   const setLanguage = initSegmented('language-segmented', (val) => {
-    selectedLanguage = val as typeof settings.language;
-    setLocale(selectedLanguage);
+    setLocale(val);
     applyI18n();
+    void saveSettings({ language: val as typeof settings.language });
   });
 
   setProvider(settings.llmProvider);
@@ -104,6 +132,13 @@ async function init(): Promise<void> {
 
   populateModelSelect('openai-model', 'openai', settings.openaiModel);
   populateModelSelect('gemini-model', 'gemini', settings.geminiModel);
+
+  qs<HTMLSelectElement>('#openai-model').addEventListener('change', (e) => {
+    void saveSettings({ openaiModel: (e.target as HTMLSelectElement).value });
+  });
+  qs<HTMLSelectElement>('#gemini-model').addEventListener('change', (e) => {
+    void saveSettings({ geminiModel: (e.target as HTMLSelectElement).value });
+  });
 
   updateKeyBadge('badge-openai', !!openaiKey);
   updateKeyBadge('badge-gemini', !!geminiKey);
@@ -114,37 +149,26 @@ async function init(): Promise<void> {
   if (openaiKey) openaiInput.value = openaiKey;
   if (geminiKey) geminiInput.value = geminiKey;
 
-  // Zen display (tracked, saved with main Save button)
   const storedZenDisplay = await getZenDisplay();
-  let selectedZenDisplay: 'feed' | 'cosmos' = storedZenDisplay;
   const setZenDisplay = initSegmented('zen-display-segmented', (val) => {
-    selectedZenDisplay = val as 'feed' | 'cosmos';
+    void saveZenDisplay(val as 'feed' | 'cosmos');
   });
   setZenDisplay(storedZenDisplay);
 
-  // Drip interval slider (tracked, saved with main Save button)
   const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
   const dripValueEl = document.getElementById('drip-interval-value')!;
   const storedInterval = await getDripInterval();
-  let selectedDripSeconds = storedInterval / 1000;
-  dripSlider.value = String(selectedDripSeconds);
-  dripValueEl.textContent = `${selectedDripSeconds}s`;
+  const storedSeconds = storedInterval / 1000;
+  dripSlider.value = String(storedSeconds);
+  dripValueEl.textContent = `${storedSeconds}s`;
   dripSlider.addEventListener('input', () => {
-    selectedDripSeconds = parseInt(dripSlider.value, 10);
-    dripValueEl.textContent = `${selectedDripSeconds}s`;
+    dripValueEl.textContent = `${dripSlider.value}s`;
+  });
+  dripSlider.addEventListener('change', () => {
+    void saveDripInterval(parseInt(dripSlider.value, 10) * 1000);
   });
 
-  document.getElementById('btn-save-settings')!.addEventListener('click', async () => {
-    const openaiModel = qs<HTMLSelectElement>('#openai-model').value;
-    const geminiModel = qs<HTMLSelectElement>('#gemini-model').value;
-
-    await Promise.all([
-      saveSettings({ llmProvider: selectedProvider, openaiModel, geminiModel, language: selectedLanguage }),
-      saveZenDisplay(selectedZenDisplay),
-      saveDripInterval(selectedDripSeconds * 1000),
-    ]);
-    showStatus('settings-status');
-  });
+  await initHistoryToggle();
 
   document.getElementById('btn-save-openai')!.addEventListener('click', async () => {
     await saveOpenAIKey(openaiInput.value.trim());
@@ -176,25 +200,6 @@ async function init(): Promise<void> {
   if (versionEl) {
     versionEl.textContent = chrome.runtime.getManifest().version;
   }
-
-  // Zen Feed Sources
-  const ZEN_SOURCES: Array<{ id: string; label: string }> = [
-    { id: 'predefined',   label: 'Challenges, Affirmations & Quotes' },
-    { id: 'metArtwork',   label: 'Met Museum Artwork' },
-    { id: 'marsRover',    label: 'Mars Rover Photos' },
-    { id: 'hnStory',      label: 'Hacker News' },
-    { id: 'reddit',       label: 'Reddit' },
-    { id: 'trivia',       label: 'Trivia (Art, Science, Books)' },
-    { id: 'uselessFacts', label: 'Random Facts' },
-    { id: 'stoicQuote',   label: 'Stoic Quotes' },
-    { id: 'designQuote',  label: 'Design Quotes' },
-    { id: 'zenQuote',     label: 'Zen Quotes' },
-    { id: 'affirmation',  label: 'Affirmations API' },
-    { id: 'adviceSlip',   label: 'Advice Slip' },
-    { id: 'funQuote',     label: 'Fun Quotes' },
-    { id: 'favqsQotd',    label: 'Quote of the Day (FavQs)' },
-    { id: 'customRss',    label: 'Custom RSS Feeds' },
-  ];
 
   const disabledSources = new Set(await getDisabledSources());
   const sourcesList = document.getElementById('zen-sources-list')!;
@@ -239,8 +244,11 @@ async function init(): Promise<void> {
   await initRssFeeds();
 }
 
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+async function initHistoryToggle(): Promise<void> {
+  const toggle = document.getElementById('toggle-history-enabled') as HTMLInputElement;
+  if (!toggle) return;
+  toggle.checked = await isHistoryEnabled();
+  toggle.addEventListener('change', () => void setHistoryEnabled(toggle.checked));
 }
 
 async function initRssFeeds(): Promise<void> {

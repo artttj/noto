@@ -2,22 +2,28 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Google Chrome](https://img.shields.io/badge/Google%20Chrome-4285F4?style=for-the-badge&logo=GoogleChrome&logoColor=white)
 
-## Your local second brain.
+## A zen feed for your browser.
 
-Sonto is a Chrome extension that captures highlighted text from any webpage, stores it locally with vector embeddings, and lets you chat with your browsing history using your own API key. No accounts, no servers, no telemetry.
+Sonto turns your Chrome sidebar into a calm, rolling feed of art, quotes, science facts, and news. New content drips in at your pace. When you want more, save text from any page and chat with your browsing history using AI.
 
-- **Zen feed.** A lyrics-style scrolling feed of facts, art, and discoveries. New bubbles drip in on a configurable interval (5–60 seconds). Persists across panel opens.
-- **Save anything.** Highlight text on any page, press `Alt+Shift+C` or right-click to save it. Browser history syncs automatically.
-- **Ask questions.** Chat with your saved snippets in the sidebar. Sonto finds the most relevant context and sends it to your AI provider. Responses render full markdown.
-- **Your keys, your cost.** Connect your own OpenAI or Gemini API key. You pay the provider directly.
-- **Fully local.** Snippets and embeddings live in IndexedDB on your machine. Nothing leaves your browser except API calls you initiate.
-- **Privacy by design.** No backend, no analytics, no tracking. Open source.
+No accounts. No servers. No tracking. Everything stays on your machine.
+
+---
+
+## What you get
+
+- **Zen feed.** A quiet stream of content from 15+ sources: museum art, Mars rover photos, Hacker News, Reddit, trivia, quotes, and more. New items appear on a timer you control (5-60 seconds). Two display modes: scrolling feed or single-message cosmos with spirograph animation.
+- **Save anything.** Highlight text on any page, press `Alt+Shift+C` or right-click to save it. Browser history syncs automatically if you opt in.
+- **Ask questions.** Chat with your saved snippets in the sidebar. Sonto finds the best matches and sends them as context to your AI provider.
+- **Custom RSS.** Add your own feeds. Personal blogs, newsletters, niche news sites. They show up right in the zen stream.
+- **Your keys, your cost.** Bring your own OpenAI or Gemini API key. You pay the provider directly.
+- **Fully local.** Snippets and embeddings live in IndexedDB. Nothing leaves your browser except the API calls you choose to make.
 
 ---
 
 ## Quick Start
 
-1. **Clone & build:**
+1. **Clone and build:**
    ```bash
    git clone https://github.com/artttj/sonto.git && cd sonto
    npm install && npm run build
@@ -29,58 +35,58 @@ Sonto is a Chrome extension that captures highlighted text from any webpage, sto
    - Click **Load unpacked**
    - Select the `dist/` folder
 
-3. **Connect an API key:**
+3. **Add an API key (optional, for chat):**
    - Click the Sonto icon to open the sidebar
-   - Click the gear icon → **AI Connections**
-   - Add your OpenAI or Gemini API key
+   - Click the gear icon, go to **AI**
+   - Add your OpenAI or Gemini key
 
 | Provider | Get a key |
 | --- | --- |
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | Google Gemini | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 
+The zen feed works without an API key. You only need one for saving snippets and chatting with them.
+
 ---
 
-## How It Works
+## The Sidebar
 
-The sidebar has three modes:
+Three modes, switch with the bottom tabs:
 
-- **Zen** (default): A lyrics-style feed of facts, art, and curated discoveries. Sources rotate based on your interest profile. New bubbles drip in at a configurable interval (default 10 seconds). Click any bubble to spotlight it.
-- **Browse**: View, filter, and manage all saved snippets and synced history items.
-- **Chat**: Ask questions about your saved data. Sonto finds the most relevant snippets via vector search and sends them as context to your AI provider.
+- **Zen** (default): Rolling feed of content from your enabled sources. Click any bubble to focus it. Configurable interval, display mode, and source toggles in settings.
+- **Browse**: View, filter, and manage saved snippets and history items.
+- **Chat**: Ask questions about your saved data. Sonto finds the top matches via vector search and sends them as context to your AI.
 
-### Zen Feed
+### Zen Feed Sources
 
-The zen feed pulls from multiple content sources, weighted for variety:
-
-| Source | What it shows |
+| Source | What shows up |
 | --- | --- |
-| Challenges, Affirmations & Quotes | 90 predefined messages with distinct icons |
-| Met Museum Artwork | Public-domain paintings from the Met collection |
-| Mars Rover Photos | Photos from Curiosity & Perseverance on this calendar date in past years |
-| Hacker News | Top story titles with direct links |
-| Reddit | Hot posts from curated subreddits (science, history, space, etc.) |
-| Trivia | Art, science, books trivia with answer highlighted, question as context |
-| Random Facts | Useless facts in your selected language |
-| Stoic Quotes | Quotes from stoic.tekloon.net |
-| Design Quotes | Quotes from designers and thinkers |
-| Zen Quotes | Quotes from zenquotes.io |
-| Fun Quotes | Quotes from abhi-api.vercel.app |
+| Art from The Met (New York) | Public-domain paintings |
+| Art from Cleveland Museum | Artworks and did-you-know facts |
+| Art from Art Institute of Chicago | Public-domain artworks |
+| NASA Mars Rover Photos | Curiosity and Perseverance photos from this date in past years |
+| Hacker News Headlines | Top stories with links |
+| Reddit Top Posts | Hot posts from science, history, space, and other subs |
+| Trivia | Art, science, and book trivia |
+| Random Facts | Useless facts in your language |
+| Stoic Quotes | Marcus Aurelius, Seneca, Epictetus |
+| Design Quotes | From designers and thinkers |
+| Zen Quotes | From zenquotes.io |
+| Fun Quotes | Lighthearted quotes |
 | Quote of the Day | Daily quote from FavQs |
-| Affirmations API | Affirmations from affirmations.dev |
+| Daily Affirmations | Positive affirmations |
 | Advice Slip | Random advice |
+| Custom RSS Feeds | Your own feeds |
 
-Facts are filtered client-side: AI topics, adult content, mundane services, and duplicates are dropped silently. The newest bubble appears largest and brightest at the top, older ones fade.
+Toggle any source on or off in Settings > Feed > Sources.
 
-**Settings → General → Zen Feed Sources** lets you toggle each source on or off and adjust the refresh interval (5–60 seconds).
+### How search works
 
-### RAG (Browse & Chat)
-
-1. **Capture**: Save text from any page via shortcut or context menu. Browser history (last 30 days) syncs automatically every 30 minutes.
-2. **Embed**: Each snippet is converted to a vector embedding via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
-3. **Store**: Embeddings and text are stored locally in IndexedDB. Nothing leaves your device at this point.
-4. **Search**: When you ask a question, your query is embedded and compared against stored vectors using cosine similarity.
-5. **Answer**: The top 10 matching snippets are sent as context to your chat model. The AI generates a grounded response.
+1. **Capture**: Save text from any page via shortcut or context menu. History syncs every 30 minutes (opt-in).
+2. **Embed**: Each snippet becomes a vector via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
+3. **Store**: Vectors and text stay in IndexedDB on your device.
+4. **Search**: Your question is embedded and compared against stored vectors using cosine similarity.
+5. **Answer**: The top matches are sent as context to your chat model for a grounded response.
 
 ---
 
@@ -95,31 +101,27 @@ Facts are filtered client-side: AI topics, adult content, mundane services, and 
 
 ## Languages
 
-The interface and AI responses support:
-
-- **English**
-- **Deutsch** (German)
-
-Switch in Settings → General → Language. AI fact generation and the random facts API both respect the selected language.
+English and German. Switch in Settings > Feed > Language.
 
 ---
 
-## Privacy & Security
+## Privacy
 
-- **Local storage only.** API keys in `chrome.storage.local`. Snippets and embeddings in IndexedDB. Never synced.
-- **Direct API calls.** Your text goes straight from your browser to OpenAI or Google. Sonto has no backend.
-- **No telemetry.** No analytics, no tracking, no accounts. The extension is fully open source.
+- Everything stored locally. API keys in `chrome.storage.local`, data in IndexedDB. Nothing synced anywhere.
+- API calls go straight from your browser to OpenAI or Google. No middleman.
+- No analytics, no tracking, no accounts. Fully open source.
 
-Provider privacy: [OpenAI](https://openai.com/policies/privacy-policy/) · [Google AI](https://ai.google.dev/gemini-api/terms)
+Provider privacy policies: [OpenAI](https://openai.com/policies/privacy-policy/) | [Google AI](https://ai.google.dev/gemini-api/terms)
 
 ---
 
-## Tech Stack
+## Tech
 
 - TypeScript (strict mode)
-- Chrome Extension Manifest V3 with Side Panel API
-- IndexedDB vector store with cosine similarity search
-- esbuild for builds
+- Chrome Extension Manifest V3, Side Panel API
+- IndexedDB vector store with cosine similarity
+- esbuild
+- Zero runtime dependencies
 
 ---
 

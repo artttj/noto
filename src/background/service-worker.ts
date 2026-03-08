@@ -2,7 +2,7 @@ import { MSG, type RuntimeMessage } from '../shared/messages';
 import { embed, embedBatch } from '../shared/embeddings/engine';
 import { addSnippet, deleteSnippet, getAllSnippets, search, hasSnippetForUrl } from '../shared/embeddings/vector-store';
 import { MAX_CAPTURE_CHARS, SEARCH_TOP_K } from '../shared/constants';
-import { getSettings, getOpenAIKey, getGeminiKey } from '../shared/storage';
+import { getSettings, getOpenAIKey, getGeminiKey, isHistoryEnabled, isOnboardingDone } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';
 import type { Snippet } from '../shared/types';
 
@@ -152,6 +152,9 @@ const HISTORY_MAX_RESULTS = 500;
 const BATCH_SIZE = 100;
 
 async function syncHistory(startTime?: number): Promise<void> {
+  const [onboardingDone, historyEnabled] = await Promise.all([isOnboardingDone(), isHistoryEnabled()]);
+  if (!onboardingDone || !historyEnabled) return;
+
   const msPerDay = 86400000;
   const defaultStart = Date.now() - HISTORY_INITIAL_DAYS * msPerDay;
   const items = await chrome.history.search({
@@ -255,6 +258,12 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResponse) => {
   if (message.type === MSG.OPEN_SETTINGS) {
     void chrome.runtime.openOptionsPage();
+    sendResponse({ ok: true });
+    return;
+  }
+
+  if (message.type === MSG.SYNC_HISTORY) {
+    void syncHistory();
     sendResponse({ ok: true });
     return;
   }

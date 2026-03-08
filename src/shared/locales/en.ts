@@ -1,11 +1,16 @@
 const en: Record<string, string> = {
   // Sidebar nav
   nav_general: 'General',
-  nav_ai: 'AI Connections',
+  nav_feed: 'Feed',
+  nav_ai: 'AI',
   nav_how: 'How It Works',
   nav_privacy: 'Privacy',
+  nav_info: 'Privacy & Info',
   nav_about: 'About',
   brand_sub: 'Settings',
+
+  // Feed tab
+  feed_heading: 'Feed',
 
   // General tab
   general_heading: 'General',
@@ -26,7 +31,7 @@ const en: Record<string, string> = {
   zen_sources_desc: 'Choose which sources appear in your Zen feed. All are enabled by default.',
 
   // AI Connections tab
-  ai_heading: 'AI Connections',
+  ai_heading: 'AI',
   ai_desc: 'API keys are stored locally on your device and never sent anywhere except directly to your chosen provider.',
   ai_notice_title: 'Privacy & Data Notice',
   ai_notice_p1: 'When you ask a question, relevant snippet text is sent to your chosen AI provider for a response. Embeddings are generated via API (OpenAI or Gemini) when saving snippets.',

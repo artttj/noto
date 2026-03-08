@@ -480,7 +480,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const link = data.quote?.url;
         if (!ctx.isValidFact(text)) return null;
         const full = author ? `${text} — ${author}` : text;
-        return { text: wrapQuotes(full), link };
+        return { text: wrapQuotes(full) };
       } catch {
         return null;
       }
@@ -490,11 +490,11 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     id: 'clevelandArtwork',
     label: 'Cleveland Museum of Art',
     weight: 6,
-    fetch: async () => {
+    fetch: async (ctx) => {
       try {
         const skip = Math.floor(Math.random() * 3000);
         const res = await fetch(
-          `https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&limit=10&skip=${skip}&fields=title,creators,creation_date,images`,
+          `https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&limit=10&skip=${skip}&fields=title,creators,creation_date,images,did_you_know,url`,
           { signal: AbortSignal.timeout(10000) },
         );
         if (!res.ok) return null;
@@ -504,11 +504,19 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
             creators?: Array<{ description?: string }>;
             creation_date?: string;
             images?: { web?: { url?: string } };
+            did_you_know?: string;
+            url?: string;
           }>;
         };
         const artworks = (data.data ?? []).filter((a) => a.images?.web?.url);
         if (artworks.length === 0) return null;
         const pick = artworks[Math.floor(Math.random() * artworks.length)];
+
+        const fact = pick.did_you_know?.trim();
+        if (fact && fact.length >= 50 && ctx.isValidFact(fact) && Math.random() < 0.4) {
+          return { text: fact, link: pick.url };
+        }
+
         const title = pick.title?.trim() || 'Untitled';
         const creator = pick.creators?.[0]?.description?.trim();
         const date = pick.creation_date?.trim();
@@ -516,6 +524,43 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (creator) parts.push(creator);
         if (date) parts.push(date);
         return { imageUrl: pick.images!.web!.url!, caption: parts.join(' — ') };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'artInstituteChicago',
+    label: 'Art Institute of Chicago',
+    weight: 6,
+    fetch: async () => {
+      try {
+        const page = Math.floor(Math.random() * 50) + 1;
+        const res = await fetch(
+          `https://api.artic.edu/api/v1/artworks/search?query[term][is_public_domain]=true&fields=id,title,artist_display,date_display,image_id&limit=20&page=${page}`,
+          { signal: AbortSignal.timeout(10000) },
+        );
+        if (!res.ok) return null;
+        const data = await res.json() as {
+          data?: Array<{
+            id?: number;
+            title?: string;
+            artist_display?: string;
+            date_display?: string;
+            image_id?: string;
+          }>;
+        };
+        const artworks = (data.data ?? []).filter((a) => a.image_id);
+        if (artworks.length === 0) return null;
+        const pick = artworks[Math.floor(Math.random() * artworks.length)];
+        const imageUrl = `https://www.artic.edu/iiif/2/${pick.image_id}/full/843,/0/default.jpg`;
+        const title = pick.title?.trim() || 'Untitled';
+        const artist = pick.artist_display?.split('\n')[0]?.trim();
+        const date = pick.date_display?.trim();
+        const parts = [title];
+        if (artist) parts.push(artist);
+        if (date) parts.push(date);
+        return { imageUrl, caption: parts.join(' · ') };
       } catch {
         return null;
       }

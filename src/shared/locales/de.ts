@@ -1,11 +1,16 @@
 const de: Record<string, string> = {
   // Sidebar nav
   nav_general: 'Allgemein',
-  nav_ai: 'KI-Verbindungen',
+  nav_feed: 'Feed',
+  nav_ai: 'KI',
   nav_how: 'So funktioniert\u2019s',
   nav_privacy: 'Datenschutz',
+  nav_info: 'Datenschutz & Info',
   nav_about: '\u00dcber',
   brand_sub: 'Einstellungen',
+
+  // Feed tab
+  feed_heading: 'Feed',
 
   // General tab
   general_heading: 'Allgemein',
@@ -26,7 +31,7 @@ const de: Record<string, string> = {
   zen_sources_desc: 'Wähle welche Quellen im Zen-Feed erscheinen. Alle sind standardmäßig aktiviert.',
 
   // AI Connections tab
-  ai_heading: 'KI-Verbindungen',
+  ai_heading: 'KI',
   ai_desc: 'API-Schl\u00fcssel werden lokal auf deinem Ger\u00e4t gespeichert und nur direkt an den gew\u00e4hlten Anbieter gesendet.',
   ai_notice_title: 'Datenschutz- & Datenhinweis',
   ai_notice_p1: 'Wenn du eine Frage stellst, wird relevanter Snippet-Text an deinen gew\u00e4hlten KI-Anbieter gesendet. Embeddings werden beim Speichern von Snippets per API (OpenAI oder Gemini) erzeugt.',

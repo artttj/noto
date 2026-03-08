@@ -492,17 +492,17 @@ export class CosmosMode {
       const title = sepIdx !== -1 ? result.caption.slice(0, sepIdx) : result.caption;
       const sub = sepIdx !== -1 ? result.caption.slice(sepIdx + sep.length) : '';
 
-      const titleEl = document.createElement('div');
-      titleEl.className = 'cosmos-art-title';
-      titleEl.textContent = title;
-
       const img = document.createElement('img');
       img.className = 'cosmos-art-img';
       img.src = result.imageUrl;
       img.alt = result.caption;
 
-      this.msgEl.appendChild(titleEl);
+      const titleEl = document.createElement('div');
+      titleEl.className = 'cosmos-art-title';
+      titleEl.textContent = title;
+
       this.msgEl.appendChild(img);
+      this.msgEl.appendChild(titleEl);
 
       if (sub) {
         const cap = document.createElement('div');

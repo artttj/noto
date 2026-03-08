@@ -12,6 +12,7 @@ export const MSG = {
   EXTRACT_CATEGORIES: 'EXTRACT_CATEGORIES',
   GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
   GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
+  SYNC_HISTORY: 'SYNC_HISTORY',
 } as const;
 
 export interface CaptureSnippetMessage {
