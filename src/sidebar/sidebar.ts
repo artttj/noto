@@ -542,7 +542,8 @@ class SontoSidebar {
       });
       if (!res.ok) return null;
       const data = await res.json() as { title?: string; content?: string };
-      const raw = data.content?.replace(/<[^>]+>/g, '').trim() ?? '';
+      const decoded = new DOMParser().parseFromString(data.content ?? '', 'text/html').body.textContent ?? '';
+      const raw = decoded.trim();
       const author = data.title?.trim();
       if (!this.isValidFact(raw)) return null;
       return author ? `${raw} — ${author}` : raw;
