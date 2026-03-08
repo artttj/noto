@@ -68,6 +68,24 @@ function decodeHtml(str: string): string {
   return new DOMParser().parseFromString(str, 'text/html').body.textContent ?? str;
 }
 
+function containsAiContent(text: string): boolean {
+  return AI_PATTERNS.some((p) => p.test(text));
+}
+
+function isValidHnTitle(title: string): boolean {
+  return title.length >= 10 && !/^Ask HN:/i.test(title) && !containsAiContent(title);
+}
+
+function isValidRedditPost(post: { stickied: boolean; over_18: boolean; score: number; title: string }): boolean {
+  return !post.stickied && !post.over_18 && post.score > 50 && post.title.length >= 20 && !containsAiContent(post.title);
+}
+
+const MULTIPLE_CHOICE_RE = /which of (the following|these|those)|all of the following|none of the following|which one of|which statement|following\s+(is|are|was|were)\s+(not\s+)?(true|false|correct|incorrect)/i;
+
+function isMultipleChoiceTrivia(question: string): boolean {
+  return MULTIPLE_CHOICE_RE.test(question);
+}
+
 export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'uselessFacts',
@@ -222,7 +240,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         };
         if (item.dead || item.deleted || item.type !== 'story') return null;
         const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
-        if (title.length < 10 || /^Ask HN:/i.test(title) || AI_PATTERNS.some((p) => p.test(title))) return null;
+        if (!isValidHnTitle(title)) return null;
         const link = item.url ?? `https://news.ycombinator.com/item?id=${id}`;
         return { text: title, link, icon: SVG_HN };
       } catch {
@@ -250,8 +268,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         };
         const posts = (data.data?.children ?? [])
           .map((p) => p.data)
-          .filter((p) => !p.stickied && !p.over_18 && p.score > 50 && p.title.length >= 20)
-          .filter((p) => !AI_PATTERNS.some((pat) => pat.test(p.title)));
+          .filter((p) => isValidRedditPost(p));
         if (posts.length === 0) return null;
         const pick = posts[Math.floor(Math.random() * Math.min(posts.length, 10))];
         return {
@@ -295,7 +312,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       const item = triviaCache.splice(Math.floor(Math.random() * triviaCache.length), 1)[0];
       if (!item) return null;
       if ((item.question + item.answer).length < 20) return null;
-      if (/which of (the following|these|those)|all of the following|none of the following|which one of|which statement|following\s+(is|are|was|were)\s+(not\s+)?(true|false|correct|incorrect)/i.test(item.question)) return null;
+      if (isMultipleChoiceTrivia(item.question)) return null;
       const query = encodeURIComponent(`${item.question} ${item.answer}`);
       const html = `<span class="zen-trivia-answer">${escapeHtml(item.answer)}</span><span class="zen-trivia-question">${escapeHtml(item.question)}</span>`;
       return {
