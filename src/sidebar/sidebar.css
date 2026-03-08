@@ -194,7 +194,7 @@ html, body {
 .cosmos-view {
   position: absolute;
   inset: 0;
-  background: #060608;
+  background: #060410;
   overflow: hidden;
   display: flex;
   flex-direction: column;

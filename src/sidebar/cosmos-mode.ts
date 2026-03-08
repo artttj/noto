@@ -17,11 +17,11 @@ interface SpiroParams {
   Rrota: number; Rarm1: number; Rarm2: number; Ext: number;
 }
 
-// Default parameters from htmlspirograph.com (original 960px canvas)
+// From htmlspirograph.com/#0,50,4,0,1,0.8,-90,-535,631,-0.005,145,476,-3.2,142,501,3,4,0,1,740
 const BASE: SpiroParams = {
-  Crota: -1.44, HBx: 30, HBy: -700, Hdist: 1174,
-  Lrota: 2.5, Larm1: 120, Larm2: 860,
-  Rrota: -3.6, Rarm1: 100, Rarm2: 1050, Ext: 75,
+  Crota: 0.8, HBx: -90, HBy: -535, Hdist: 631,
+  Lrota: -0.005, Larm1: 145, Larm2: 476,
+  Rrota: -3.2, Rarm1: 142, Rarm2: 501, Ext: 3,
 };
 
 function rnd(min: number, max: number): number {
@@ -30,29 +30,34 @@ function rnd(min: number, max: number): number {
 
 function generateParams(): SpiroParams {
   for (let attempt = 0; attempt < 100; attempt++) {
-    const Hdist = rnd(900, 1350);
-    const Larm1 = rnd(80, 180);
-    const Rarm1 = rnd(70, 150);
+    const Hdist = rnd(450, 780);
+    const Larm1 = rnd(100, 200);
+    const Rarm1 = rnd(100, 200);
     const DMin = Math.max(0, Hdist - Larm1 - Rarm1);
     const DMax = Hdist + Larm1 + Rarm1;
 
-    if (DMin < 50) continue; // arms can nearly touch — geometry becomes unstable
+    if (DMin < 30) continue;
 
-    const armSum = rnd(DMax + 80, DMax + 600);
-    const diffMax = DMin - 50;
+    const armSum = rnd(DMax + 40, DMax + 300);
+    // Keep arm lengths close together for dense center fill (small void)
+    const diffMax = Math.min(DMin - 20, armSum * 0.08);
+    if (diffMax <= 0) continue;
+
     const armDiff = rnd(-diffMax, diffMax);
     const Larm2 = (armSum + armDiff) / 2;
     const Rarm2 = (armSum - armDiff) / 2;
-    if (Larm2 < 200 || Rarm2 < 200) continue;
+    if (Larm2 < 100 || Rarm2 < 100) continue;
 
-    const Crota = rnd(-3, 3);
-    const Lrota = rnd(-5, 5);
-    const Rrota = rnd(-5, 5);
-    if (Math.abs(Crota) < 0.3 || Math.abs(Lrota) < 0.3 || Math.abs(Rrota) < 0.3) continue;
+    const Crota = rnd(-2.5, 2.5);
+    const Lrota = rnd(-4, 4);
+    const Rrota = rnd(-4, 4);
+    if (Math.abs(Crota) < 0.1 || Math.abs(Lrota) < 0.05 || Math.abs(Rrota) < 0.05) continue;
+    // Avoid both rotation rates being nearly equal (produces degenerate straight lines)
+    if (Math.abs(Math.abs(Lrota) - Math.abs(Rrota)) < 0.05) continue;
 
-    const HBx = rnd(-60, 60);
-    const HBy = rnd(-900, -500);
-    const Ext = rnd(30, 120);
+    const HBx = rnd(-100, 100);
+    const HBy = rnd(-650, -400);
+    const Ext = rnd(2, 60);
 
     return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext };
   }
@@ -145,20 +150,19 @@ class SpirographCanvas {
     const nd = Math.hypot(nx, ny);
     if (nd === 0) return null;
 
-    // Cutpixels: clamp to 95% of half-canvas
-    const maxR = Math.min(cx, cy) * 0.95;
-    if (nd > maxR) return null;
-
+    // No cutpixels — let canvas bounds clip naturally (matches cutpixels=0 in original)
     let na = Math.atan2(ny, nx);
     na += this.Crot * AM;
 
     const fx = cx + Math.cos(na) * nd;
     const fy = cy + Math.sin(na) * nd;
 
-    // Colormode 0: sin waves of rotation angles
-    const r = Math.round(Math.sin(this.Lrot * AM) * 127 + 127);
-    const g = Math.round(Math.sin((this.Lrot + this.Rrot) * AM * 0.5) * 127 + 127);
-    const b = Math.round(Math.sin(this.Rrot * AM) * 127 + 127);
+    // Analogue colormode: three phase-shifted sine waves for smooth rainbow cycling
+    const phase = this.Lrot * AM;
+    const phase2 = this.Rrot * AM;
+    const r = Math.round(Math.sin(phase) * 127 + 127);
+    const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 127 + 127);
+    const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 127 + 127);
 
     return { fx, fy, r, g, b };
   }
@@ -171,10 +175,11 @@ class SpirographCanvas {
       this.Crot = 0;
 
       this.resize();
-      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 4;
+      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.3;
 
       this.ctx.globalCompositeOperation = 'screen';
-      this.ctx.fillStyle = '#000';
+      // Dark indigo base so the center void blends rather than reads as a harsh black hole
+      this.ctx.fillStyle = '#060410';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.lineWidth = 0.8;
 
