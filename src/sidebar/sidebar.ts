@@ -78,6 +78,7 @@ class SontoSidebar {
       if (area === 'local' && changes.sonto_drip_interval_ms) {
         const ms = changes.sonto_drip_interval_ms.newValue as number;
         this.zenFeed?.setDripInterval(ms);
+        this.cosmosMode?.setIntervalMs(ms);
       }
     });
 

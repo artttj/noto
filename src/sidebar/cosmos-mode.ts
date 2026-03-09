@@ -206,7 +206,9 @@ class SpirographCanvas {
     container.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d')!;
     this.resize();
+    let skipFirst = true;
     this.ro = new ResizeObserver(() => {
+      if (skipFirst) { skipFirst = false; return; }
       clearTimeout(this.resizeTimer);
       this.resizeTimer = window.setTimeout(() => this.stop(), 350);
     });
@@ -459,6 +461,12 @@ export class CosmosMode {
   refresh(snippets: Snippet[], language: string): void {
     this.language = language;
     this.snippetsFn = () => snippets;
+  }
+
+  setIntervalMs(ms: number): void {
+    this.intervalMs = ms;
+    // restart the current cycle so the new interval takes effect
+    this.spiro?.stop();
   }
 
   async start(): Promise<void> {
