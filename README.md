@@ -10,12 +10,15 @@ No accounts. No servers. No tracking. Everything local.
 
 ## Features
 
-- **Zen feed** from 15+ sources: museum art, Mars photos, Hacker News, Reddit, trivia, quotes, and more
-- **Two modes**: single-item cosmos view (default) or rolling feed
+- **Zen feed** from 15+ sources: museum art, Mars photos, Hacker News, Atlas Obscura, trivia, quotes, and more
+- **Two modes**: scrolling feed or Cosmos mode with procedural spirograph animations
+- **Dark and light themes** with WCAG 2.1 AA contrast compliance
 - **Personalized**: generates suggestions from your browsing history when an AI key is set
-- **Save anything**: highlight text and press `Alt+Shift+C` or right-click to save
+- **Save anything**: highlight text and press `Alt+Shift+C` or right-click to save. Works without an API key too.
 - **Chat**: ask questions about saved snippets using RAG with OpenAI or Gemini
-- **Custom RSS**: add your own feeds with image support
+- **Backup and restore**: export/import all data as JSON
+- **Custom RSS feeds** and JSON API sources
+- **Weekly digest** summarizing your saved content
 - **BYOK**: bring your own API key, pay the provider directly
 
 ---
@@ -47,11 +50,16 @@ The zen feed works without an API key. For chat and embeddings, add your key in 
 | NASA Mars / Perseverance | Surface and rover photos |
 | Hacker News | Top stories |
 | Reddit | Science, history, space, tech |
+| Getty Museum | Paintings and sculptures |
+| Smithsonian | Smart news and science |
+| Atlas Obscura | Curious places and facts |
 | Trivia | Art, science, books |
 | Quotes | Stoic, design, zen, fun, daily |
-| Affirmations & Advice | Short motivational messages |
+| Japanese Proverbs | With English translation |
+| Oblique Strategies | Creative prompts |
 | Random Facts | In your language |
 | Custom RSS | Your own feeds |
+| Custom JSON API | Any endpoint returning items |
 
 Toggle any source in **Settings > Feed > Sources**.
 
