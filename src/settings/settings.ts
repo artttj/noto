@@ -107,6 +107,7 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'haiku',               label: 'Haiku' },
   { id: 'quotesLibrary',       label: 'Quotes Library' },
   { id: 'philosophyEssay',     label: '1000-Word Philosophy' },
+  { id: 'gettyArtwork',        label: 'Getty Museum Art' },
   { id: 'smithsonianNews',     label: 'Smithsonian Smart News' },
   { id: 'atlasObscura',        label: 'Atlas Obscura' },
   { id: 'favqsQotd',           label: 'Quote of the Day' },

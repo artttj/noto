@@ -66,6 +66,9 @@ const MET_HIGHLIGHTED_IDS = [
   436524, 437331, 436533, 452658, 436529, 436534, 436530, 436526,
 ];
 
+const GETTY_PAGES = [1000,1500,2000,3500,4000,4500,6500,7000,7500,9000,9500,12000,12500,13000,14000,14500,15000,17000,17500,18000,19000,19500,20000,20500,21000,21500,22000,22500,23000,23500,24000,24500,25000,26500,27000,27500,28500,29000,29500,30500,31000,31500,32000,32500,33500,34000,34500,35000,35500,36000,36500,37000,37500,38500,39500,40000,40500,41000,41500];
+let gettyUuidCache: string[] = [];
+
 let triviaCache: Array<{ question: string; answer: string }> = [];
 let kotowazaQueue: Array<unknown> = [];
 let obliqueQueue: string[] = [];
@@ -648,6 +651,50 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * items.length)];
         return { text: pick.title, link: pick.link, icon: SVG_PHILOSOPHY };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'gettyArtwork',
+    label: 'Getty Museum Art',
+    weight: 5,
+    fetch: async () => {
+      try {
+        if (gettyUuidCache.length === 0) {
+          const page = GETTY_PAGES[Math.floor(Math.random() * GETTY_PAGES.length)];
+          const res = await fetch(
+            `https://data.getty.edu/museum/collection/activity-stream/page/${page}`,
+            { signal: AbortSignal.timeout(7000) },
+          );
+          if (!res.ok) return null;
+          const data = await res.json() as { orderedItems?: Array<{ object?: { type?: string; id?: string } }> };
+          const uuids = (data.orderedItems ?? [])
+            .filter((it) => it.object?.type === 'HumanMadeObject' && it.object?.id)
+            .map((it) => it.object!.id!.split('/').pop()!);
+          if (uuids.length === 0) return null;
+          gettyUuidCache.push(...uuids.sort(() => Math.random() - 0.5));
+        }
+        const uuid = gettyUuidCache.pop();
+        if (!uuid) return null;
+        const res = await fetch(
+          `https://data.getty.edu/museum/collection/object/${uuid}`,
+          { signal: AbortSignal.timeout(7000) },
+        );
+        if (!res.ok) return null;
+        const obj = await res.json() as {
+          _label?: string;
+          representation?: Array<{ id?: string }>;
+          produced_by?: { carried_out_by?: Array<{ _label?: string }> };
+        };
+        const imageUrl = obj.representation?.[0]?.id?.replace('/full/full/', '/full/!900,700/');
+        if (!imageUrl) return null;
+        const title = obj._label?.replace(/\s*\([^)]+\)\s*$/, '').trim() ?? '';
+        const artist = obj.produced_by?.carried_out_by?.[0]?._label?.trim() ?? '';
+        const caption = artist ? `${title} — ${artist}` : title;
+        const link = `https://www.getty.edu/art/collection/object/${uuid}`;
+        return { imageUrl, caption, link };
       } catch {
         return null;
       }
