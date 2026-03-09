@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from './constants';
-import type { AppLanguage, AppSettings, ProviderName } from './types';
+import type { AppLanguage, AppSettings, ChatSession, ProviderName, ReadLaterItem } from './types';
 
 function isProviderName(value: string): value is ProviderName {
   return value === 'openai' || value === 'gemini';
@@ -115,4 +115,65 @@ export async function getZenDisplay(): Promise<'feed' | 'cosmos'> {
 
 export async function saveZenDisplay(mode: 'feed' | 'cosmos'): Promise<void> {
   await chrome.storage.local.set({ [ZEN_DISPLAY_KEY]: mode });
+}
+
+export async function getTheme(): Promise<'dark' | 'light'> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.THEME);
+  const val = result[STORAGE_KEYS.THEME] as string | undefined;
+  return val === 'light' ? 'light' : 'dark';
+}
+
+export async function saveTheme(theme: 'dark' | 'light'): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.THEME]: theme });
+}
+
+export async function getChatSessions(): Promise<ChatSession[]> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.CHAT_SESSIONS);
+  return (result[STORAGE_KEYS.CHAT_SESSIONS] as ChatSession[] | undefined) ?? [];
+}
+
+export async function saveChatSessions(sessions: ChatSession[]): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.CHAT_SESSIONS]: sessions.slice(-50) });
+}
+
+export async function getReadLater(): Promise<ReadLaterItem[]> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.READ_LATER);
+  return (result[STORAGE_KEYS.READ_LATER] as ReadLaterItem[] | undefined) ?? [];
+}
+
+export async function saveReadLater(items: ReadLaterItem[]): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.READ_LATER]: items });
+}
+
+export async function getStoredDigest(): Promise<string | null> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.STORED_DIGEST);
+  return (result[STORAGE_KEYS.STORED_DIGEST] as string | undefined) ?? null;
+}
+
+export async function saveStoredDigest(digest: string | null): Promise<void> {
+  if (digest === null) {
+    await chrome.storage.local.remove(STORAGE_KEYS.STORED_DIGEST);
+  } else {
+    await chrome.storage.local.set({ [STORAGE_KEYS.STORED_DIGEST]: digest });
+  }
+}
+
+export async function getLastDigestAt(): Promise<number> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.LAST_DIGEST_AT);
+  return (result[STORAGE_KEYS.LAST_DIGEST_AT] as number | undefined) ?? 0;
+}
+
+export async function saveLastDigestAt(ts: number): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.LAST_DIGEST_AT]: ts });
+}
+
+export type CustomJsonSource = { url: string; label: string };
+
+export async function getCustomJsonSources(): Promise<CustomJsonSource[]> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.CUSTOM_JSON_SOURCES);
+  return (result[STORAGE_KEYS.CUSTOM_JSON_SOURCES] as CustomJsonSource[] | undefined) ?? [];
+}
+
+export async function saveCustomJsonSources(sources: CustomJsonSource[]): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.CUSTOM_JSON_SOURCES]: sources });
 }

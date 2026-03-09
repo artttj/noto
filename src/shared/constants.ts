@@ -4,6 +4,12 @@ export const STORAGE_KEYS = {
   SETTINGS: 'sonto_settings',
   OPENAI_KEY: 'sonto_openai_key',
   GEMINI_KEY: 'sonto_gemini_key',
+  THEME: 'sonto_theme',
+  CHAT_SESSIONS: 'sonto_chat_sessions',
+  READ_LATER: 'sonto_read_later',
+  LAST_DIGEST_AT: 'sonto_last_digest_at',
+  STORED_DIGEST: 'sonto_stored_digest',
+  CUSTOM_JSON_SOURCES: 'sonto_custom_json_sources',
 } as const;
 
 export const PROVIDER_MODELS: Record<string, string[]> = {

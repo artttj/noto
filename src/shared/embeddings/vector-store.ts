@@ -46,6 +46,10 @@ export async function addSnippet(snippet: Snippet): Promise<void> {
   });
 }
 
+export async function updateSnippet(snippet: Snippet): Promise<void> {
+  return addSnippet(snippet);
+}
+
 export async function deleteSnippet(id: string): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
@@ -66,11 +70,45 @@ export async function getAllSnippets(): Promise<Snippet[]> {
   });
 }
 
+export async function getSnippetById(id: string): Promise<Snippet | null> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(id);
+    req.onsuccess = () => resolve((req.result as Snippet | undefined) ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 export async function search(queryEmbedding: number[], topK: number): Promise<QueryResult[]> {
   const snippets = await getAllSnippets();
   return snippets
     .map((snippet) => ({ snippet, score: cosineSimilarity(queryEmbedding, snippet.embedding) }))
     .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+}
+
+export async function getRelatedSnippets(snippetId: string, topK = 5): Promise<QueryResult[]> {
+  const snippets = await getAllSnippets();
+  const source = snippets.find((s) => s.id === snippetId);
+  if (!source) return [];
+  return snippets
+    .filter((s) => s.id !== snippetId)
+    .map((snippet) => ({ snippet, score: cosineSimilarity(source.embedding, snippet.embedding) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+}
+
+export async function getSnippetsForDomain(domain: string, topK = 5): Promise<Snippet[]> {
+  const snippets = await getAllSnippets();
+  return snippets
+    .filter((s) => {
+      try {
+        return new URL(s.url).hostname === domain;
+      } catch {
+        return false;
+      }
+    })
     .slice(0, topK);
 }
 

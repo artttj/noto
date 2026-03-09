@@ -1,12 +1,24 @@
 import { MSG } from '../shared/messages';
-import { getSettings, getZenDisplay, isOnboardingDone, setOnboardingDone, setHistoryEnabled } from '../shared/storage';
-import type { Snippet } from '../shared/types';
+import {
+  getSettings,
+  getZenDisplay,
+  isOnboardingDone,
+  setOnboardingDone,
+  setHistoryEnabled,
+  getTheme,
+  saveTheme,
+  getReadLater,
+  getStoredDigest,
+  saveStoredDigest,
+} from '../shared/storage';
+import type { ReadLaterItem, Snippet } from '../shared/types';
 import { BrowseManager } from './browse-manager';
 import { ChatManager } from './chat-manager';
 import { CosmosMode } from './cosmos-mode';
 import { ZenFeed } from './zen/zen-feed';
+import { escapeHtml } from './zen/zen-content';
 
-type FilterMode = 'all' | 'manual' | 'history';
+type FilterMode = 'all' | 'manual' | 'history' | 'pinned';
 type ViewMode = 'zen' | 'browse' | 'chat';
 
 function qs<T extends HTMLElement>(sel: string): T {
@@ -18,10 +30,12 @@ class SontoSidebar {
   private snippets: Snippet[] = [];
   private language = 'en';
   private zenDisplay: 'feed' | 'cosmos' = 'feed';
+  private theme: 'dark' | 'light' = 'dark';
 
   private readonly zenBtn = qs<HTMLButtonElement>('#btn-zen');
   private readonly browseBtn = qs<HTMLButtonElement>('#btn-browse');
   private readonly chatBtn = qs<HTMLButtonElement>('#btn-chat');
+  private readonly themeBtn = qs<HTMLButtonElement>('#btn-theme');
   private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewBrowse = qs<HTMLElement>('#view-browse');
   private readonly viewChat = qs<HTMLElement>('#view-chat');
@@ -31,10 +45,11 @@ class SontoSidebar {
   private readonly chatMessagesEl = qs<HTMLElement>('#chat-messages');
   private readonly chatInputEl = qs<HTMLTextAreaElement>('#chat-input');
   private readonly sendBtnEl = qs<HTMLButtonElement>('#btn-send');
+  private readonly historyBtnEl = qs<HTMLButtonElement>('#btn-chat-history');
 
   private readonly browseManager = new BrowseManager(
     this.snippetListEl,
-    (all, manual, history) => this.updateCounts(all, manual, history),
+    (all, manual, history, pinned) => this.updateCounts(all, manual, history, pinned),
   );
 
   private zenFeed: ZenFeed | null = null;
@@ -45,6 +60,7 @@ class SontoSidebar {
     this.chatInputEl,
     this.sendBtnEl,
     () => this.snippets,
+    this.historyBtnEl,
   );
 
   async init(): Promise<void> {
@@ -67,6 +83,8 @@ class SontoSidebar {
     this.zenBtn.addEventListener('click', () => this.setMode('zen'));
     this.browseBtn.addEventListener('click', () => this.setMode('browse'));
     this.chatBtn.addEventListener('click', () => this.setMode('chat'));
+
+    this.themeBtn.addEventListener('click', () => void this.toggleTheme());
 
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes.sonto_zen_display) {
@@ -93,6 +111,9 @@ class SontoSidebar {
       });
     });
 
+    this.initExportDropdown();
+    this.initReadLaterBar();
+
     this.sendBtnEl.addEventListener('click', () => void this.chatManager.sendMessage());
     this.chatInputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -102,9 +123,16 @@ class SontoSidebar {
     });
 
     try {
-      const [settings, zenDisplay, onboardingDone] = await Promise.all([getSettings(), getZenDisplay(), isOnboardingDone()]);
+      const [settings, zenDisplay, onboardingDone, theme] = await Promise.all([
+        getSettings(),
+        getZenDisplay(),
+        isOnboardingDone(),
+        getTheme(),
+      ]);
       this.language = settings.language ?? 'en';
       this.zenDisplay = zenDisplay;
+      this.theme = theme;
+      this.applyTheme(theme);
       if (!onboardingDone) this.showHistoryPrompt();
     } catch {}
 
@@ -129,6 +157,158 @@ class SontoSidebar {
       void this.cosmosMode!.start();
     } else {
       void this.zenFeed!.start();
+    }
+
+    void this.checkDigest();
+    void this.checkReadingAssistant();
+  }
+
+  private initExportDropdown(): void {
+    const exportBtn = document.getElementById('btn-export')!;
+    const exportMenu = document.getElementById('export-menu')!;
+
+    exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMenu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => exportMenu.classList.add('hidden'));
+
+    document.getElementById('btn-export-md')!.addEventListener('click', () => {
+      this.browseManager.exportMarkdown();
+      exportMenu.classList.add('hidden');
+    });
+
+    document.getElementById('btn-export-json')!.addEventListener('click', () => {
+      this.browseManager.exportJson();
+      exportMenu.classList.add('hidden');
+    });
+  }
+
+  private async initReadLaterBar(): Promise<void> {
+    const bar = document.getElementById('read-later-bar')!;
+    const countEl = document.getElementById('read-later-count')!;
+    const listEl = document.getElementById('read-later-list')!;
+    const viewBtn = document.getElementById('btn-view-later')!;
+
+    const refresh = async () => {
+      const items = await getReadLater();
+      if (items.length > 0) {
+        countEl.textContent = `${items.length} item${items.length > 1 ? 's' : ''} in read later`;
+        bar.classList.remove('hidden');
+      } else {
+        bar.classList.add('hidden');
+        listEl.classList.add('hidden');
+      }
+    };
+
+    viewBtn.addEventListener('click', async () => {
+      const items = await getReadLater();
+      if (listEl.classList.contains('hidden')) {
+        this.renderReadLaterList(items, listEl);
+        listEl.classList.remove('hidden');
+        viewBtn.textContent = 'Hide';
+      } else {
+        listEl.classList.add('hidden');
+        viewBtn.textContent = 'View queue';
+      }
+    });
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.sonto_read_later) {
+        void refresh();
+      }
+    });
+
+    await refresh();
+  }
+
+  private renderReadLaterList(items: ReadLaterItem[], container: HTMLElement): void {
+    container.innerHTML = '';
+    for (const item of items) {
+      const row = document.createElement('div');
+      row.className = 'read-later-item';
+      const domain = (() => { try { return new URL(item.url).hostname; } catch { return item.url.slice(0, 40); } })();
+      row.innerHTML = `
+        <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" class="rl-link">${escapeHtml(item.title || domain)}</a>
+        <button class="rl-remove" data-url="${escapeHtml(item.url)}" type="button">✕</button>
+      `;
+      row.querySelector('.rl-remove')!.addEventListener('click', async (e) => {
+        const url = (e.currentTarget as HTMLButtonElement).dataset.url!;
+        await chrome.runtime.sendMessage({ type: MSG.REMOVE_READ_LATER, url });
+        const updated = await getReadLater();
+        this.renderReadLaterList(updated, container);
+        if (updated.length === 0) {
+          container.classList.add('hidden');
+          document.getElementById('read-later-bar')?.classList.add('hidden');
+        }
+      });
+      container.appendChild(row);
+    }
+  }
+
+  private async checkDigest(): Promise<void> {
+    const digest = await getStoredDigest();
+    if (!digest) return;
+
+    const toastEl = document.getElementById('digest-toast')!;
+    const textEl = document.getElementById('digest-text')!;
+    textEl.textContent = digest;
+    toastEl.classList.remove('hidden');
+
+    document.getElementById('btn-dismiss-digest')!.addEventListener('click', async () => {
+      toastEl.classList.add('hidden');
+      await saveStoredDigest(null);
+    }, { once: true });
+  }
+
+  private async checkReadingAssistant(): Promise<void> {
+    const bar = document.getElementById('reading-assistant-bar')!;
+    const textEl = document.getElementById('reading-assistant-text')!;
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) return;
+
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.GET_SNIPPETS_FOR_TAB,
+        url: tab.url,
+        title: tab.title ?? '',
+      }) as { ok: boolean; snippets?: Snippet[] };
+
+      if (!response?.ok || !response.snippets?.length) return;
+
+      const count = response.snippets.length;
+      textEl.textContent = `${count} related save${count > 1 ? 's' : ''} for this page`;
+      bar.classList.remove('hidden');
+
+      document.getElementById('btn-view-related')!.addEventListener('click', () => {
+        bar.classList.add('hidden');
+        this.setMode('browse');
+      }, { once: true });
+
+      document.getElementById('btn-dismiss-ra')!.addEventListener('click', () => {
+        bar.classList.add('hidden');
+      }, { once: true });
+    } catch {}
+  }
+
+  private async toggleTheme(): Promise<void> {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    this.applyTheme(this.theme);
+    await saveTheme(this.theme);
+  }
+
+  private applyTheme(theme: 'dark' | 'light'): void {
+    document.documentElement.dataset.theme = theme;
+    const moonIcon = document.getElementById('icon-moon')!;
+    const sunIcon = document.getElementById('icon-sun')!;
+    if (theme === 'light') {
+      moonIcon.classList.add('hidden');
+      sunIcon.classList.remove('hidden');
+    } else {
+      moonIcon.classList.remove('hidden');
+      sunIcon.classList.add('hidden');
     }
   }
 
@@ -201,13 +381,15 @@ class SontoSidebar {
     }
   }
 
-  private updateCounts(all: number, manual: number, history: number): void {
-    const countAll = document.getElementById('count-all');
-    const countManual = document.getElementById('count-manual');
-    const countHistory = document.getElementById('count-history');
-    if (countAll) countAll.textContent = String(all);
-    if (countManual) countManual.textContent = String(manual);
-    if (countHistory) countHistory.textContent = String(history);
+  private updateCounts(all: number, manual: number, history: number, pinned: number): void {
+    const setCount = (id: string, val: number) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(val);
+    };
+    setCount('count-all', all);
+    setCount('count-manual', manual);
+    setCount('count-history', history);
+    setCount('count-pinned', pinned);
   }
 }
 

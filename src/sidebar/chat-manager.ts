@@ -1,8 +1,8 @@
 import { MSG } from '../shared/messages';
-import { getSettings, getOpenAIKey, getGeminiKey } from '../shared/storage';
+import { getSettings, getOpenAIKey, getGeminiKey, getChatSessions, saveChatSessions } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';
 import { renderMarkdown } from '../shared/markdown';
-import type { ChatMessage, QueryResult, Snippet } from '../shared/types';
+import type { ChatMessage, ChatSession, QueryResult, Snippet } from '../shared/types';
 import { escapeHtml } from './zen/zen-content';
 
 const SVG_USER = [
@@ -60,23 +60,39 @@ function buildPrompt(query: string, results: QueryResult[]): ChatMessage[] {
   ];
 }
 
+function generateSessionId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export class ChatManager {
   private isLoading = false;
   private abortController: AbortController | null = null;
   private snippetsFn: () => Snippet[];
+  private sessionMessages: { role: 'user' | 'assistant'; content: string }[] = [];
+  private currentSessionId = generateSessionId();
+  private showingHistory = false;
 
   constructor(
     private readonly messagesEl: HTMLElement,
     private readonly inputEl: HTMLTextAreaElement,
     private readonly sendBtn: HTMLButtonElement,
     snippets: () => Snippet[],
+    private readonly historyBtn?: HTMLButtonElement,
   ) {
     this.snippetsFn = snippets;
+    if (this.historyBtn) {
+      this.historyBtn.addEventListener('click', () => void this.toggleHistory());
+    }
   }
 
   async sendMessage(): Promise<void> {
     const query = this.inputEl.value.trim();
     if (!query || this.isLoading) return;
+
+    if (this.showingHistory) {
+      this.showingHistory = false;
+      this.messagesEl.innerHTML = '';
+    }
 
     this.isLoading = true;
     this.inputEl.value = '';
@@ -84,6 +100,7 @@ export class ChatManager {
     this.sendBtn.disabled = true;
 
     this.appendMessage('user', query);
+    this.sessionMessages.push({ role: 'user', content: query });
 
     try {
       if (this.snippetsFn().length === 0) {
@@ -122,6 +139,8 @@ export class ChatManager {
       const reply = await strategy.chat({ apiKey: key, model, messages, signal });
 
       this.appendMessage('assistant', reply);
+      this.sessionMessages.push({ role: 'assistant', content: reply });
+      void this.saveCurrentSession(query);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.';
       this.appendMessage('error', msg);
@@ -131,6 +150,73 @@ export class ChatManager {
       this.sendBtn.disabled = false;
       this.inputEl.focus();
       this.abortController = null;
+    }
+  }
+
+  private async saveCurrentSession(firstQuery: string): Promise<void> {
+    if (this.sessionMessages.length === 0) return;
+    const sessions = await getChatSessions();
+    const existing = sessions.findIndex((s) => s.id === this.currentSessionId);
+    const session: ChatSession = {
+      id: this.currentSessionId,
+      title: firstQuery.slice(0, 60),
+      timestamp: Date.now(),
+      messages: this.sessionMessages,
+    };
+    if (existing !== -1) {
+      sessions[existing] = session;
+    } else {
+      sessions.push(session);
+    }
+    await saveChatSessions(sessions);
+  }
+
+  private async toggleHistory(): Promise<void> {
+    if (this.showingHistory) {
+      this.showingHistory = false;
+      this.messagesEl.innerHTML = '';
+      for (const m of this.sessionMessages) {
+        this.appendMessage(m.role, m.content);
+      }
+      return;
+    }
+
+    this.showingHistory = true;
+    this.messagesEl.innerHTML = '';
+
+    const sessions = await getChatSessions();
+    if (sessions.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'chat-history-empty';
+      empty.textContent = 'No past conversations yet.';
+      this.messagesEl.appendChild(empty);
+      return;
+    }
+
+    const header = document.createElement('div');
+    header.className = 'chat-history-header';
+    header.textContent = 'Past Conversations';
+    this.messagesEl.appendChild(header);
+
+    for (const session of [...sessions].reverse()) {
+      const row = document.createElement('div');
+      row.className = 'chat-history-row';
+      row.innerHTML = `
+        <div class="chat-history-title">${escapeHtml(session.title)}</div>
+        <div class="chat-history-date">${new Date(session.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+      `;
+      row.addEventListener('click', () => this.loadSession(session));
+      this.messagesEl.appendChild(row);
+    }
+  }
+
+  private loadSession(session: ChatSession): void {
+    this.showingHistory = false;
+    this.currentSessionId = session.id;
+    this.sessionMessages = [...session.messages];
+    this.messagesEl.innerHTML = '';
+    for (const m of session.messages) {
+      this.appendMessage(m.role, m.content);
     }
   }
 
@@ -155,5 +241,8 @@ export class ChatManager {
 
   clear(): void {
     this.messagesEl.innerHTML = '';
+    this.sessionMessages = [];
+    this.currentSessionId = generateSessionId();
+    this.showingHistory = false;
   }
 }

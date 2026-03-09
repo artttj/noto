@@ -1,4 +1,4 @@
-import type { QueryResult, Snippet } from './types';
+import type { QueryResult, ReadLaterItem, Snippet } from './types';
 
 export const MSG = {
   CAPTURE_SNIPPET: 'CAPTURE_SNIPPET',
@@ -13,6 +13,13 @@ export const MSG = {
   GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
   GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
   SYNC_HISTORY: 'SYNC_HISTORY',
+  GET_RELATED_SNIPPETS: 'GET_RELATED_SNIPPETS',
+  UPDATE_SNIPPET: 'UPDATE_SNIPPET',
+  GET_SNIPPETS_FOR_TAB: 'GET_SNIPPETS_FOR_TAB',
+  ADD_READ_LATER: 'ADD_READ_LATER',
+  REMOVE_READ_LATER: 'REMOVE_READ_LATER',
+  GET_READ_LATER: 'GET_READ_LATER',
+  GENERATE_DIGEST: 'GENERATE_DIGEST',
 } as const;
 
 export interface CaptureSnippetMessage {
@@ -20,6 +27,8 @@ export interface CaptureSnippetMessage {
   text: string;
   url: string;
   title: string;
+  context?: string;
+  tags?: string[];
 }
 
 export interface QuerySnippetsMessage {
@@ -59,6 +68,47 @@ export interface GenerateZenStatMessage {
   language: string;
 }
 
+export interface GetRelatedSnippetsMessage {
+  type: typeof MSG.GET_RELATED_SNIPPETS;
+  snippetId: string;
+  topK?: number;
+}
+
+export interface UpdateSnippetMessage {
+  type: typeof MSG.UPDATE_SNIPPET;
+  snippet: Snippet;
+}
+
+export interface GetSnippetsForTabMessage {
+  type: typeof MSG.GET_SNIPPETS_FOR_TAB;
+  url: string;
+  title: string;
+}
+
+export interface AddReadLaterMessage {
+  type: typeof MSG.ADD_READ_LATER;
+  url: string;
+  title?: string;
+}
+
+export interface RemoveReadLaterMessage {
+  type: typeof MSG.REMOVE_READ_LATER;
+  url: string;
+}
+
+export interface GetReadLaterMessage {
+  type: typeof MSG.GET_READ_LATER;
+}
+
+export interface GenerateDigestMessage {
+  type: typeof MSG.GENERATE_DIGEST;
+  language: string;
+}
+
+export interface SyncHistoryMessage {
+  type: typeof MSG.SYNC_HISTORY;
+}
+
 export type RuntimeMessage =
   | CaptureSnippetMessage
   | QuerySnippetsMessage
@@ -67,7 +117,15 @@ export type RuntimeMessage =
   | OpenSettingsMessage
   | ExtractCategoriesMessage
   | GenerateZenFactMessage
-  | GenerateZenStatMessage;
+  | GenerateZenStatMessage
+  | GetRelatedSnippetsMessage
+  | UpdateSnippetMessage
+  | GetSnippetsForTabMessage
+  | AddReadLaterMessage
+  | RemoveReadLaterMessage
+  | GetReadLaterMessage
+  | GenerateDigestMessage
+  | SyncHistoryMessage;
 
 export interface CaptureSuccessResult {
   ok: true;
@@ -88,4 +146,9 @@ export interface QueryResult2 {
 export interface AllSnippetsResult {
   ok: true;
   snippets: Snippet[];
+}
+
+export interface ReadLaterResult {
+  ok: true;
+  items: ReadLaterItem[];
 }

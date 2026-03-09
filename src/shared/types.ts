@@ -2,14 +2,14 @@ export type ProviderName = 'openai' | 'gemini';
 
 export type AppLanguage = 'en' | 'de';
 
-export type SnippetSource = 'manual' | 'history';
-
 export interface AppSettings {
   llmProvider: ProviderName;
   openaiModel: string;
   geminiModel: string;
   language: AppLanguage;
 }
+
+export type SnippetSource = 'manual' | 'history' | 'pinned' | 'bookmark';
 
 export interface Snippet {
   id: string;
@@ -19,11 +19,27 @@ export interface Snippet {
   timestamp: number;
   embedding: number[];
   source?: SnippetSource;
+  context?: string;
+  tags?: string[];
+  pinned?: boolean;
 }
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  timestamp: number;
+  messages: { role: 'user' | 'assistant'; content: string }[];
+}
+
+export interface ReadLaterItem {
+  url: string;
+  title?: string;
+  addedAt: number;
 }
 
 export interface QueryResult {

@@ -46,6 +46,20 @@ function showToast(message: string, isError = false): void {
   setTimeout(() => host.remove(), 2500);
 }
 
+function extractSurroundingContext(selection: Selection): string {
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer;
+  const el = container.nodeType === Node.TEXT_NODE ? container.parentElement : container as Element;
+  if (!el) return '';
+
+  const block = el.closest('p, li, blockquote, td, article, section, div') ?? el;
+  const text = (block.textContent ?? '').replace(/\s+/g, ' ').trim();
+  const selected = selection.toString().trim();
+
+  if (text === selected || text.length < selected.length + 20) return '';
+  return text.slice(0, 500);
+}
+
 chrome.runtime.onMessage.addListener((message) => {
   if (message && message.type === 'SONTO_CAPTURE_SHORTCUT') {
     triggerCapture();
@@ -61,11 +75,18 @@ function triggerCapture(): void {
     return;
   }
 
+  let context: string | undefined;
+  if (selection && selection.rangeCount > 0) {
+    const surrounding = extractSurroundingContext(selection);
+    if (surrounding && surrounding !== text) context = surrounding;
+  }
+
   chrome.runtime.sendMessage({
     type: MSG.CAPTURE_SNIPPET,
     text,
     url: location.href,
     title: document.title,
+    ...(context ? { context } : {}),
   }, (response) => {
     if (chrome.runtime.lastError) {
       showToast('Could not save. Try again.', true);

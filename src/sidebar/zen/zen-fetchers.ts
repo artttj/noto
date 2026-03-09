@@ -9,7 +9,7 @@ import {
   SVG_SMITHSONIAN,
   escapeHtml,
 } from './zen-content';
-import { getCustomFeeds } from '../../shared/storage';
+import { getCustomFeeds, getCustomJsonSources } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 import haikuData from './haiku-data.json';
@@ -460,6 +460,46 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           if (img?.src) return { imageUrl: img.src, caption: pick.title, link: pick.link };
         }
         return { text: pick.title, link: pick.link, icon: SVG_ATLAS };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'customJson',
+    label: 'Custom API',
+    weight: 8,
+    fetch: async (ctx) => {
+      const sources = await getCustomJsonSources();
+      if (sources.length === 0) return null;
+      const source = sources[Math.floor(Math.random() * sources.length)];
+      try {
+        const res = await fetch(source.url, { signal: AbortSignal.timeout(9000) });
+        if (!res.ok) return null;
+        const data = await res.json() as unknown;
+        const items = Array.isArray(data)
+          ? data as unknown[]
+          : (data as { items?: unknown[] }).items ?? [];
+        if (!Array.isArray(items) || items.length === 0) return null;
+        const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))] as {
+          text?: string;
+          image?: string;
+          link?: string;
+          attribution?: string;
+        };
+        if (!pick || typeof pick !== 'object') return null;
+        const text = typeof pick.text === 'string' ? pick.text.trim() : '';
+        const image = typeof pick.image === 'string' ? pick.image.trim() : '';
+        const link = typeof pick.link === 'string' ? pick.link.trim() : undefined;
+        const attribution = typeof pick.attribution === 'string' ? pick.attribution.trim() : '';
+        if (image && (text || attribution)) {
+          return { imageUrl: image, caption: attribution || text, link };
+        }
+        if (text && ctx.isValidFact(text)) {
+          const displayText = attribution ? `${text} — ${attribution}` : text;
+          return { text: displayText, link };
+        }
+        return null;
       } catch {
         return null;
       }

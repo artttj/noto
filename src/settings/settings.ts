@@ -16,6 +16,8 @@ import {
   saveCustomFeeds,
   isHistoryEnabled,
   setHistoryEnabled,
+  getCustomJsonSources,
+  saveCustomJsonSources,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
 import { setLocale, applyI18n } from '../shared/i18n';
@@ -102,6 +104,7 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'haiku',               label: 'Haiku' },
   { id: 'obliqueStrategies',   label: 'Oblique Strategies' },
   { id: 'customRss',           label: 'Custom RSS Feeds' },
+  { id: 'customJson',          label: 'Custom JSON API Sources' },
 ];
 
 async function init(): Promise<void> {
@@ -237,6 +240,7 @@ async function init(): Promise<void> {
   if (navWarning && !hasAnyKey) navWarning.classList.remove('hidden');
 
   await initRssFeeds();
+  await initJsonSources();
 }
 
 async function initHistoryToggle(): Promise<void> {
@@ -301,6 +305,58 @@ async function initRssFeeds(): Promise<void> {
     const label = new URL(url).hostname;
     await saveCustomFeeds([...feeds, { url, label }]);
     input.value = '';
+    await render();
+  });
+
+  await render();
+}
+
+async function initJsonSources(): Promise<void> {
+  const list = document.getElementById('json-sources-list')!;
+  const urlInput = document.getElementById('json-source-url-input') as HTMLInputElement;
+  const labelInput = document.getElementById('json-source-label-input') as HTMLInputElement;
+  const addBtn = document.getElementById('json-source-add-btn')!;
+  const errorEl = document.getElementById('json-source-error')!;
+
+  const render = async () => {
+    const sources = await getCustomJsonSources();
+    list.innerHTML = '';
+    if (sources.length === 0) {
+      list.innerHTML = '<p class="setting-hint">No sources added yet.</p>';
+      return;
+    }
+    sources.forEach((source, i) => {
+      const row = document.createElement('div');
+      row.className = 'rss-feed-row';
+      row.innerHTML = `<span class="rss-feed-url">${escapeHtml(source.label || source.url)}</span>
+        <button class="rss-remove" data-i="${i}" title="Remove">✕</button>`;
+      row.querySelector('.rss-remove')!.addEventListener('click', async () => {
+        const current = await getCustomJsonSources();
+        await saveCustomJsonSources(current.filter((_, j) => j !== i));
+        await render();
+      });
+      list.appendChild(row);
+    });
+  };
+
+  addBtn.addEventListener('click', async () => {
+    const url = urlInput.value.trim();
+    errorEl.style.display = 'none';
+    if (!url.startsWith('http')) {
+      errorEl.textContent = 'Enter a valid http/https URL';
+      errorEl.style.display = '';
+      return;
+    }
+    const sources = await getCustomJsonSources();
+    if (sources.some((s) => s.url === url)) {
+      errorEl.textContent = 'Source already added';
+      errorEl.style.display = '';
+      return;
+    }
+    const label = labelInput.value.trim() || new URL(url).hostname;
+    await saveCustomJsonSources([...sources, { url, label }]);
+    urlInput.value = '';
+    labelInput.value = '';
     await render();
   });
 
