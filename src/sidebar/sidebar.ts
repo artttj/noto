@@ -2,6 +2,7 @@ import { MSG } from '../shared/messages';
 import {
   getSettings,
   getZenDisplay,
+  saveZenDisplay,
   isOnboardingDone,
   setOnboardingDone,
   setHistoryEnabled,
@@ -86,6 +87,14 @@ class SontoSidebar {
 
     this.themeBtn.addEventListener('click', () => void this.toggleTheme());
 
+    const zdtEl = document.getElementById('zen-display-toggle')!;
+    zdtEl.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const display = btn.dataset.display as 'feed' | 'cosmos';
+        if (display && display !== this.zenDisplay) void saveZenDisplay(display);
+      });
+    });
+
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes.sonto_zen_display) {
         const newMode = changes.sonto_zen_display.newValue as string;
@@ -142,6 +151,7 @@ class SontoSidebar {
       ]);
       this.language = settings.language ?? 'en';
       this.zenDisplay = zenDisplay;
+      this.syncDisplayToggle(zenDisplay);
       this.theme = theme;
       this.applyTheme(theme);
       if (!onboardingDone) this.showHistoryPrompt();
@@ -362,6 +372,7 @@ class SontoSidebar {
     this.zenFeed?.stop();
     this.cosmosMode?.stop();
     this.zenDisplay = display;
+    this.syncDisplayToggle(display);
 
     if (display === 'cosmos') {
       this.zenFeedEl.classList.add('hidden');
@@ -382,6 +393,14 @@ class SontoSidebar {
       this.zenFeed.refresh(this.snippets, this.language);
       if (this.mode === 'zen') void this.zenFeed.start();
     }
+  }
+
+  private syncDisplayToggle(display: 'feed' | 'cosmos'): void {
+    document.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach(btn => {
+      const active = btn.dataset.display === display;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
   }
 
   private setMode(mode: ViewMode): void {

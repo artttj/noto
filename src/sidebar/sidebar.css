@@ -259,6 +259,62 @@ html, body {
 
 .cosmos-view.hidden { display: none; }
 
+/* ═══ ZEN DISPLAY TOGGLE ══════════════════════════════════════════════════ */
+.zen-display-toggle {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  z-index: 20;
+}
+
+.zdt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+.zdt-btn svg { width: 14px; height: 14px; }
+
+.zdt-btn:hover {
+  color: rgba(255,255,255,0.6);
+}
+
+.zdt-btn.active {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.9);
+}
+
+[data-theme="light"] .zen-display-toggle {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .zdt-btn {
+  color: rgba(0,0,0,0.3);
+}
+[data-theme="light"] .zdt-btn:hover {
+  color: rgba(0,0,0,0.5);
+}
+[data-theme="light"] .zdt-btn.active {
+  background: rgba(0,0,0,0.08);
+  color: rgba(0,0,0,0.8);
+}
+
 .cosmos-canvas-wrap {
   position: absolute;
   inset: 0;
@@ -1189,22 +1245,23 @@ html, body {
 }
 
 [data-theme="light"] .zen-bubble {
-  color: rgba(0,0,0,0.18);
+  color: rgba(0,0,0,0.22);
+  font-weight: 440;
 }
 [data-theme="light"] .zen-bubble:first-child {
-  color: rgba(0,0,0,0.90);
+  color: rgba(0,0,0,0.92);
 }
 [data-theme="light"] .zen-bubble:nth-child(2) {
-  color: rgba(0,0,0,0.55);
+  color: rgba(0,0,0,0.68);
 }
 [data-theme="light"] .zen-bubble:nth-child(3) {
-  color: rgba(0,0,0,0.33);
+  color: rgba(0,0,0,0.42);
 }
 [data-theme="light"] .zen-bubble:nth-child(4) {
-  color: rgba(0,0,0,0.20);
+  color: rgba(0,0,0,0.28);
 }
 [data-theme="light"] .zen-bubble:nth-child(n+5) {
-  color: rgba(0,0,0,0.12);
+  color: rgba(0,0,0,0.16);
 }
 [data-theme="light"] .zen-bubble.spotlight {
   color: rgba(0,0,0,0.90);
