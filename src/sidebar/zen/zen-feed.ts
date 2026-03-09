@@ -11,16 +11,8 @@ import {
   ZEN_MAX_BUBBLES,
   escapeHtml,
 } from './zen-content';
-import { type ZenArtResult, type ZenFetchResult, type ZenTextResult, ZEN_FETCHERS, pickFetcher } from './zen-fetchers';
-
-const JUNK_PATTERNS = [
-  /\bcookies?\b.*\b(consent|policy|notice|settings|preferences)\b/i,
-  /\bprivacy policy\b/i,
-  /\bterms (of service|of use|and conditions)\b/i,
-  /\baccept all\b.*\bcookies?\b/i,
-  /\bwe use cookies?\b/i,
-  /^(home|about|contact|menu|navigation|search|log ?in|sign in|sign up|register|subscribe)\s*$/i,
-];
+import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcher } from './zen-fetchers';
+import { JUNK_PATTERNS } from './zen-shared';
 
 const SVG_PIN = [
   '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">',
@@ -40,14 +32,6 @@ const SVG_RESURFACE = [
   '<path d="M6.5 3.5v3l2 1.5"/>',
   '</svg>',
 ].join('');
-
-function isArtResult(r: ZenFetchResult): r is ZenArtResult {
-  return r !== null && 'imageUrl' in r;
-}
-
-function isTextResult(r: ZenFetchResult): r is ZenTextResult {
-  return r !== null && 'text' in r;
-}
 
 export class ZenFeed {
   private pastFacts: string[] = [];
@@ -226,6 +210,16 @@ export class ZenFeed {
     return this.zenCategoryQueue.pop()!;
   }
 
+  private isDuplicate(text: string): boolean {
+    return this.pastFacts.some((p) => p.slice(0, 60) === text.slice(0, 60));
+  }
+
+  private trackFact(text: string): void {
+    this.pastFacts.push(text);
+    if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
+    void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+  }
+
   private isValidFact(text: string): boolean {
     return text.length >= 50 && !text.includes('[NULL]') && !AI_PATTERNS.some((p) => p.test(text));
   }
@@ -257,9 +251,7 @@ export class ZenFeed {
     );
     bubble.classList.add('zen-resurface');
 
-    this.pastFacts.push(snippet.text);
-    if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
-    void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+    this.trackFact(snippet.text);
     return 1.4;
   }
 
@@ -281,25 +273,20 @@ export class ZenFeed {
     const result = await fetcher.fetch(ctx);
 
     if (result && isArtResult(result)) {
-      if (!this.pastFacts.some((p) => p.slice(0, 60) === result.caption.slice(0, 60))) {
+      if (!this.isDuplicate(result.caption)) {
         this.hideLoader();
         this.appendArtBubble(result.imageUrl, result.caption, result.link, fetcher.label);
-        this.pastFacts.push(result.caption);
-        if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
-        void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+        this.trackFact(result.caption);
         return this.durationMultiplier(result);
       }
     }
 
     if (result && isTextResult(result)) {
       const { text, link, icon, html } = result;
-      if (!this.pastFacts.some((p) => p.slice(0, 60) === text.slice(0, 60))) {
+      if (!this.isDuplicate(text)) {
         this.hideLoader();
-        const logoIcon = icon?.startsWith('<img') || icon?.includes('bulb--reddit') || icon?.includes('bulb--hn');
-        this.appendBubbleElement(text, link, icon, html, logoIcon ? undefined : fetcher.label);
-        this.pastFacts.push(text);
-        if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
-        void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+        this.appendBubbleElement(text, link, icon, html, result.hideLabel ? undefined : fetcher.label);
+        this.trackFact(text);
         return this.durationMultiplier(result);
       }
     }
@@ -323,17 +310,11 @@ export class ZenFeed {
         response.fact.trim().length >= 50 &&
         !AI_PATTERNS.some((p) => p.test(response.fact!))
       ) {
-        const isDuplicate = this.pastFacts.some(
-          (p) => p === response.fact || p.slice(0, 60) === response.fact!.slice(0, 60),
-        );
-        if (isDuplicate) return 1;
+        if (this.isDuplicate(response.fact)) return 1;
 
         this.hideLoader();
         this.appendBubbleElement(response.fact);
-
-        this.pastFacts.push(response.fact);
-        if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
-        void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+        this.trackFact(response.fact);
         return 1.3;
       }
     } catch {}

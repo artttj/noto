@@ -12,23 +12,17 @@ import { parseFeed } from '../../shared/rss-parser';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 import haikuData from './haiku-data.json';
 
-// Wrap text in smart quotes unless it already starts with one.
-// Splits on em-dash attribution so the author stays outside the quotes:
-// "Some wisdom" — Socrates
-function stripWrappingQuotes(text: string): string {
-  return text.replace(/^["'\u201C\u201D\u2018\u2019]+|["'\u201C\u201D\u2018\u2019]+$/g, '').trim();
-}
-
-function wrapQuotes(text: string): string {
-  const cleaned = stripWrappingQuotes(text);
-  const match = cleaned.match(/^([\s\S]+?)(\s[\u2014\-]{1,2}\s.+)$/);
-  if (match) return `\u201C${match[1]}\u201D${match[2]}`;
-  return `\u201C${cleaned}\u201D`;
-}
-
-export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string };
+export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string; hideLabel?: boolean };
 export type ZenArtResult = { imageUrl: string; caption: string; link?: string };
 export type ZenFetchResult = ZenTextResult | ZenArtResult | null;
+
+export function isArtResult(r: ZenFetchResult): r is ZenArtResult {
+  return r !== null && 'imageUrl' in r;
+}
+
+export function isTextResult(r: ZenFetchResult): r is ZenTextResult {
+  return r !== null && 'text' in r;
+}
 
 export interface FetcherContext {
   language: string;
@@ -57,10 +51,6 @@ let gettyUuidCache: string[] = [];
 let kotowazaQueue: Array<unknown> = [];
 let obliqueQueue: string[] = [];
 let haikuQueue: string[] = [];
-
-function decodeHtml(str: string): string {
-  return new DOMParser().parseFromString(str, 'text/html').body.textContent ?? str;
-}
 
 function containsAiContent(text: string): boolean {
   return AI_PATTERNS.some((p) => p.test(text));
@@ -103,7 +93,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
         if (!isValidHnTitle(title)) return null;
         const link = item.url ?? `https://news.ycombinator.com/item?id=${id}`;
-        return { text: title, link, icon: SVG_HN };
+        return { text: title, link, icon: SVG_HN, hideLabel: true };
       } catch {
         return null;
       }
@@ -136,6 +126,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           text: `r/${sub}: ${pick.title}`,
           link: `https://www.reddit.com${pick.permalink}`,
           icon: SVG_REDDIT,
+          hideLabel: true,
         };
       } catch {
         return null;
@@ -362,7 +353,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * items.length)];
-        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://1000wordphilosophy.com/wp-content/uploads/2024/09/1000-word-philosophy-square-logo.jpg" alt="1000-Word Philosophy" />' };
+        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://1000wordphilosophy.com/wp-content/uploads/2024/09/1000-word-philosophy-square-logo.jpg" alt="1000-Word Philosophy" />', hideLabel: true };
       } catch {
         return null;
       }
@@ -427,7 +418,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
         if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
-        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://www.teachingforchange.org/wp-content/uploads/2022/04/smithsonian-magazine-logo-vector.png" alt="Smithsonian Magazine" />' };
+        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://www.teachingforchange.org/wp-content/uploads/2022/04/smithsonian-magazine-logo-vector.png" alt="Smithsonian Magazine" />', hideLabel: true };
       } catch {
         return null;
       }

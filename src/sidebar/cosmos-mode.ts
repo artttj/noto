@@ -2,26 +2,10 @@ import { MSG } from '../shared/messages';
 import { getDripInterval, getDisabledSources, getTheme } from '../shared/storage';
 import type { Snippet } from '../shared/types';
 import { AI_PATTERNS, BLOCKED_CATEGORY_PATTERNS } from './zen/zen-content';
-import { type ZenArtResult, type ZenFetchResult, type ZenTextResult, ZEN_FETCHERS, pickFetcher } from './zen/zen-fetchers';
-
-const JUNK_PATTERNS = [
-  /\bcookies?\b.*\b(consent|policy|notice|settings|preferences)\b/i,
-  /\bprivacy policy\b/i,
-  /\bterms (of service|of use|and conditions)\b/i,
-  /\baccept all\b.*\bcookies?\b/i,
-  /\bwe use cookies?\b/i,
-  /^(home|about|contact|menu|navigation|search|log ?in|sign in|sign up|register|subscribe)\s*$/i,
-];
+import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcher } from './zen/zen-fetchers';
+import { JUNK_PATTERNS } from './zen/zen-shared';
 
 const AM = Math.PI / 180;
-
-function isArtResult(r: ZenFetchResult): r is ZenArtResult {
-  return r !== null && 'imageUrl' in r;
-}
-
-function isTextResult(r: ZenFetchResult): r is ZenTextResult {
-  return r !== null && 'text' in r;
-}
 
 interface SpiroParams {
   Crota: number; HBx: number; HBy: number; Hdist: number;
@@ -398,23 +382,15 @@ class SpirographCanvas {
 
   fadeOut(ms: number): Promise<void> {
     return new Promise((resolve) => {
-      const start = Date.now();
-      const snap = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-
-      const tick = () => {
-        const p = Math.min(1, (Date.now() - start) / ms);
+      this.canvas.style.transition = `opacity ${ms}ms ease`;
+      this.canvas.style.opacity = '0';
+      const done = () => {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.globalAlpha = 1 - p;
-        this.ctx.putImageData(snap, 0, 0);
-        this.ctx.globalAlpha = 1;
-        if (p < 1) {
-          requestAnimationFrame(tick);
-        } else {
-          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-          resolve();
-        }
+        this.canvas.style.transition = '';
+        this.canvas.style.opacity = '1';
+        resolve();
       };
-      requestAnimationFrame(tick);
+      setTimeout(done, ms);
     });
   }
 
@@ -670,10 +646,7 @@ export class CosmosMode {
         link.textContent = 'Read more';
         this.msgEl.appendChild(link);
       }
-      return;
-    }
-
-    if (isTextResult(result)) {
+    } else if (isTextResult(result)) {
       if (result.icon) {
         const iconWrap = document.createElement('div');
         iconWrap.className = 'cosmos-icon';
@@ -701,8 +674,8 @@ export class CosmosMode {
       }
     }
 
-    const logoIcon = isTextResult(result) && (result.icon?.startsWith('<img') || result.icon?.includes('bulb--reddit') || result.icon?.includes('bulb--hn'));
-    if (source && !logoIcon) {
+    const hideLabel = isTextResult(result) && result.hideLabel;
+    if (source && !hideLabel) {
       const srcEl = document.createElement('div');
       srcEl.className = 'cosmos-source';
       srcEl.textContent = source;
