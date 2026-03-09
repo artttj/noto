@@ -623,11 +623,20 @@ export class CosmosMode {
       img.alt = result.caption;
       img.addEventListener('error', () => img.remove(), { once: true });
 
+      if (result.link) {
+        const imgLink = document.createElement('a');
+        imgLink.href = result.link;
+        imgLink.target = '_blank';
+        imgLink.rel = 'noopener';
+        imgLink.appendChild(img);
+        this.msgEl.appendChild(imgLink);
+      } else {
+        this.msgEl.appendChild(img);
+      }
+
       const titleEl = document.createElement('div');
       titleEl.className = 'cosmos-art-title';
       titleEl.textContent = title;
-
-      this.msgEl.appendChild(img);
       this.msgEl.appendChild(titleEl);
 
       if (sub) {
@@ -635,6 +644,16 @@ export class CosmosMode {
         cap.className = 'cosmos-art-caption';
         cap.textContent = sub;
         this.msgEl.appendChild(cap);
+      }
+
+      if (result.link) {
+        const link = document.createElement('a');
+        link.className = 'cosmos-link';
+        link.href = result.link;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'Read more';
+        this.msgEl.appendChild(link);
       }
       return;
     }
