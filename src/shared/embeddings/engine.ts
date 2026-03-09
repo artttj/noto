@@ -58,7 +58,7 @@ export async function embed(text: string): Promise<number[]> {
   const geminiKey = await getGeminiKey();
   if (geminiKey) return embedViaGemini(text, geminiKey);
 
-  throw new Error('No API key configured. Add an OpenAI or Gemini key in Settings.');
+  return [];
 }
 
 export async function embedBatch(texts: string[]): Promise<number[][]> {

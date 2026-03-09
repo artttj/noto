@@ -36,6 +36,14 @@
           <span id="nav-ai-warning" class="nav-warning hidden" title="No API keys configured">!</span>
         </button>
 
+        <button class="nav-item" data-tab="data" type="button">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 13l4 4L17 7"/>
+            <path d="M6 3h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" opacity="0.4"/>
+          </svg>
+          <span>Data</span>
+        </button>
+
         <button class="nav-item" data-tab="privacy" type="button">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M10 2L4 5v5c0 4.4 2.6 8 6 9 3.4-1 6-4.6 6-9V5l-6-3z"/>
@@ -242,6 +250,58 @@
         </div>
 
         <span id="keys-status" class="saved-msg hidden" data-i18n="general_saved">Saved</span>
+      </section>
+
+      <!-- ═══ DATA ═══════════════════════════════════════════════════════ -->
+      <section id="tab-data" class="tab-panel hidden">
+        <div class="panel-header">
+          <h1>Data</h1>
+          <p>Export, import, and manage your saved data.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Export</div>
+          <div class="setting-body">
+            <p class="setting-hint" style="margin-top:0">Download all your snippets, chat sessions, and settings as a JSON file.</p>
+            <div style="margin-top:12px">
+              <button id="btn-export" class="btn btn-primary btn-sm" type="button">Export Backup</button>
+              <span id="export-status" class="saved-msg hidden">Downloaded</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Import</div>
+          <div class="setting-body">
+            <p class="setting-hint" style="margin-top:0">Restore from a previously exported backup file.</p>
+            <div class="setting-row" style="padding:10px 0 0;border:none">
+              <div class="setting-label">
+                <div class="setting-title">Merge mode</div>
+                <div class="setting-desc">Keep existing snippets and add imported ones on top</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="import-merge-toggle" checked />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
+              <button id="btn-import" class="btn btn-ghost btn-sm" type="button">Choose File</button>
+              <input id="import-file-input" type="file" accept=".json" style="display:none" />
+              <span id="import-status" class="saved-msg hidden"></span>
+            </div>
+            <p class="setting-hint import-error" id="import-error" style="display:none;color:var(--c-error)"></p>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Danger Zone</div>
+          <div class="setting-body">
+            <p class="setting-hint" style="margin-top:0">Permanently delete all saved snippets. This cannot be undone.</p>
+            <div style="margin-top:12px">
+              <button id="btn-clear-all" class="btn btn-danger" type="button">Delete All Snippets</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ═══ PRIVACY ════════════════════════════════════════════════════ -->

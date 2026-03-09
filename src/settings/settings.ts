@@ -18,8 +18,11 @@ import {
   setHistoryEnabled,
   getCustomJsonSources,
   saveCustomJsonSources,
+  getTheme,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
+import { exportBackup, importBackup, downloadBackup } from '../shared/backup';
+import { clearAllSnippets, getSnippetCount } from '../shared/embeddings/vector-store';
 import { setLocale, applyI18n } from '../shared/i18n';
 import type { ProviderName } from '../shared/types';
 
@@ -109,6 +112,15 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
 
 async function init(): Promise<void> {
   const settings = await getSettings();
+
+  const theme = await getTheme();
+  document.documentElement.dataset.theme = theme;
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.sonto_theme) {
+      document.documentElement.dataset.theme = changes.sonto_theme.newValue as string;
+    }
+  });
 
   setLocale(settings.language);
   applyI18n();
@@ -241,6 +253,7 @@ async function init(): Promise<void> {
 
   await initRssFeeds();
   await initJsonSources();
+  initDataTab();
 }
 
 async function initHistoryToggle(): Promise<void> {
@@ -361,6 +374,51 @@ async function initJsonSources(): Promise<void> {
   });
 
   await render();
+}
+
+function initDataTab(): void {
+  document.getElementById('btn-export')!.addEventListener('click', async () => {
+    const json = await exportBackup();
+    downloadBackup(json);
+    showStatus('export-status');
+  });
+
+  const fileInput = document.getElementById('import-file-input') as HTMLInputElement;
+  const mergeToggle = document.getElementById('import-merge-toggle') as HTMLInputElement;
+  const importError = document.getElementById('import-error')!;
+  const importStatus = document.getElementById('import-status')!;
+
+  document.getElementById('btn-import')!.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    importError.style.display = 'none';
+    try {
+      const text = await file.text();
+      const result = await importBackup(text, mergeToggle.checked);
+      importStatus.textContent = `Imported ${result.snippets} snippets, ${result.sessions} sessions`;
+      importStatus.classList.remove('hidden');
+      setTimeout(() => importStatus.classList.add('hidden'), 4000);
+    } catch (err: unknown) {
+      importError.textContent = err instanceof Error ? err.message : 'Import failed';
+      importError.style.display = '';
+    }
+    fileInput.value = '';
+  });
+
+  document.getElementById('btn-clear-all')!.addEventListener('click', async () => {
+    const count = await getSnippetCount();
+    if (count === 0) return;
+    const confirmed = confirm(`Delete all ${count} snippets? This cannot be undone.`);
+    if (!confirmed) return;
+    await clearAllSnippets();
+    importStatus.textContent = 'All snippets deleted';
+    importStatus.classList.remove('hidden');
+    setTimeout(() => importStatus.classList.add('hidden'), 3000);
+  });
 }
 
 void init();

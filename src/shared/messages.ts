@@ -29,6 +29,7 @@ export interface CaptureSnippetMessage {
   title: string;
   context?: string;
   tags?: string[];
+  pinned?: boolean;
 }
 
 export interface QuerySnippetsMessage {

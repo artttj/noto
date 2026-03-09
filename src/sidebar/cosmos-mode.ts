@@ -1,5 +1,5 @@
 import { MSG } from '../shared/messages';
-import { getDripInterval, getDisabledSources } from '../shared/storage';
+import { getDripInterval, getDisabledSources, getTheme } from '../shared/storage';
 import type { Snippet } from '../shared/types';
 import { AI_PATTERNS, BLOCKED_CATEGORY_PATTERNS } from './zen/zen-content';
 import { type ZenArtResult, type ZenFetchResult, type ZenTextResult, ZEN_FETCHERS, pickFetcher } from './zen/zen-fetchers';
@@ -190,6 +190,7 @@ class SpirographCanvas {
   private stepsTotal = 0;
   private drawn = 0;
   private alpha = 0.20;
+  private light = false;
 
   // Original 960px canvas reference size
   private static readonly REF = 960;
@@ -202,7 +203,8 @@ class SpirographCanvas {
   private Rrot = 0;
   private Crot = 0;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, light = false) {
+    this.light = light;
     this.canvas = document.createElement('canvas');
     this.canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
     container.appendChild(this.canvas);
@@ -285,13 +287,18 @@ class SpirographCanvas {
     const fx = cx + Math.cos(na) * nd;
     const fy = cy + Math.sin(na) * nd;
 
-    // Analogue colormode with raised floor — never produces near-black strokes on dark bg
-    // Range per channel: [81, 255] so every stroke is visibly colored
     const phase = this.Lrot * AM;
     const phase2 = this.Rrot * AM;
-    const r = Math.round(Math.sin(phase) * 87 + 168);
-    const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 87 + 168);
-    const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 87 + 168);
+    let r: number, g: number, b: number;
+    if (this.light) {
+      r = Math.round(Math.sin(phase) * 55 + 170);
+      g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 55 + 150);
+      b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 55 + 200);
+    } else {
+      r = Math.round(Math.sin(phase) * 87 + 168);
+      g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 87 + 168);
+      b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 87 + 168);
+    }
     const color = `rgba(${r},${g},${b},${this.alpha})`;
 
     return { fx, fy, color };
@@ -313,7 +320,11 @@ class SpirographCanvas {
       this.Crot = 0;
       this.drawn = 0;
 
-      this.alpha = this.style === 'dense' ? 0.38 : this.style === 'open' ? 0.42 : 0.38;
+      if (this.light) {
+        this.alpha = this.style === 'dense' ? 0.4 : this.style === 'open' ? 0.45 : 0.4;
+      } else {
+        this.alpha = this.style === 'dense' ? 0.38 : this.style === 'open' ? 0.42 : 0.38;
+      }
 
       const DRAW_MS = Math.min(durationMs, 3000);
       const fps = 30;
@@ -332,10 +343,11 @@ class SpirographCanvas {
       this.resize();
       const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.35;
 
-      this.ctx.globalCompositeOperation = 'screen';
-      this.ctx.fillStyle = '#060410';
+      this.ctx.globalCompositeOperation = this.light ? 'source-over' : 'screen';
+      this.ctx.fillStyle = this.light ? '#f0ede8' : '#060410';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.lineWidth = this.style === 'dense' ? 0.6 : 0.8;
+      const baseWidth = this.style === 'dense' ? 0.6 : 0.8;
+      this.ctx.lineWidth = this.light ? baseWidth * 1.2 : baseWidth;
 
       this.running = true;
       let prevPt: { fx: number; fy: number } | null = null;
@@ -701,7 +713,8 @@ export class CosmosMode {
 
     // Spiro and content fetch start simultaneously — spiro draws for 3s then holds
     this.spiro?.remove();
-    this.spiro = new SpirographCanvas(this.canvasWrap);
+    const theme = await getTheme();
+    this.spiro = new SpirographCanvas(this.canvasWrap, theme === 'light');
     const spiroPromise = this.spiro.start(this.intervalMs);
 
     const [result, source] = await this.fetchNext();

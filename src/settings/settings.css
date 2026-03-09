@@ -1772,3 +1772,86 @@ body {
   font-size: 13px;
   color: var(--c-text);
 }
+
+/* ═══ LIGHT THEME ═════════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  --c-bg:        #f5f5f5;
+  --c-surface:   #fff;
+  --c-elevated:  #eaeaea;
+
+  --c-border:    #ddd;
+  --c-border-hi: #bbb;
+
+  --c-btn-bg:   #111;
+  --c-btn-text: #f5f5f5;
+
+  --c-text:   #111;
+  --c-text-2: #555;
+  --c-text-3: #888;
+
+  --c-success:   #1a8a50;
+  --c-warn:      #b07830;
+  --c-error:     #c0392b;
+  --c-error-bg:  rgba(192,57,43,0.06);
+  --c-error-bd:  rgba(192,57,43,0.18);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 2px 12px rgba(0,0,0,0.10);
+}
+
+[data-theme="light"] .nav-item:hover {
+  background: rgba(0,0,0,0.04);
+}
+[data-theme="light"] .nav-item.active {
+  background: rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .tpl-switch-track {
+  background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .tpl-switch input:checked + .tpl-switch-track {
+  background: rgba(0,0,0,0.14);
+}
+
+[data-theme="light"] .category-toggle:hover,
+[data-theme="light"] .template-item:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.18);
+}
+
+[data-theme="light"] .zen-source-row {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .toggle-track {
+  background: rgba(0,0,0,0.14);
+}
+
+[data-theme="light"] .drip-labels span {
+  color: rgba(0,0,0,0.35);
+}
+[data-theme="light"] #drip-current-value {
+  color: rgba(0,0,0,0.65);
+}
+[data-theme="light"] #drip-interval-slider {
+  background: rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] .privacy-notice a,
+[data-theme="light"] .provider-hint a,
+[data-theme="light"] .privacy-provider-list a {
+  text-decoration-color: rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .modal-overlay {
+  background: rgba(0,0,0,0.35);
+}
+[data-theme="light"] .modal {
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+}

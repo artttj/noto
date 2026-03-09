@@ -94,7 +94,7 @@ export class BrowseManager {
   render(): void {
     const manual = this.snippets.filter((s) => (s.source ?? 'manual') === 'manual').length;
     const history = this.snippets.filter((s) => s.source === 'history').length;
-    const pinned = this.snippets.filter((s) => s.tags?.includes('pinned') || s.pinned).length;
+    const pinned = this.snippets.filter((s) => s.pinned).length;
     this.onCountsChange?.(this.snippets.length, manual, history, pinned);
 
     const filtered = this.getFiltered();
@@ -137,7 +137,7 @@ export class BrowseManager {
 
     const source = snippet.source ?? 'manual';
     const badgeLabel = source === 'history' ? 'History' : source === 'pinned' ? 'Pinned' : 'Saved';
-    const isPinned = snippet.pinned || snippet.tags?.includes('pinned');
+    const isPinned = !!snippet.pinned;
 
     const tagsHtml = snippet.tags?.length
       ? `<div class="snippet-tags">${snippet.tags.filter((t) => t !== 'pinned').map((t) => `<span class="snippet-tag">${escapeHtml(t)}</span>`).join('')}</div>`
@@ -206,13 +206,9 @@ export class BrowseManager {
   }
 
   private async togglePin(snippet: Snippet): Promise<void> {
-    const wasPinned = snippet.pinned || snippet.tags?.includes('pinned');
     const updated: Snippet = {
       ...snippet,
-      pinned: !wasPinned,
-      tags: wasPinned
-        ? (snippet.tags ?? []).filter((t) => t !== 'pinned')
-        : [...(snippet.tags ?? []), 'pinned'],
+      pinned: !snippet.pinned,
     };
     await chrome.runtime.sendMessage({ type: MSG.UPDATE_SNIPPET, snippet: updated });
     const idx = this.snippets.findIndex((s) => s.id === snippet.id);
@@ -288,7 +284,7 @@ export class BrowseManager {
 
   private getFiltered(): Snippet[] {
     if (this.filter === 'all') return this.snippets;
-    if (this.filter === 'pinned') return this.snippets.filter((s) => s.pinned || s.tags?.includes('pinned'));
+    if (this.filter === 'pinned') return this.snippets.filter((s) => s.pinned);
     return this.snippets.filter((s) => (s.source ?? 'manual') === this.filter);
   }
 }

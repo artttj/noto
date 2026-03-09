@@ -98,6 +98,17 @@ class SontoSidebar {
         this.zenFeed?.setDripInterval(ms);
         this.cosmosMode?.setIntervalMs(ms);
       }
+      if (area === 'local' && changes.sonto_theme) {
+        const newTheme = changes.sonto_theme.newValue as 'dark' | 'light';
+        this.theme = newTheme;
+        this.applyTheme(newTheme);
+        if (this.cosmosMode && this.zenDisplay === 'cosmos') {
+          this.cosmosMode.stop();
+          this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+          this.cosmosMode.refresh(this.browseManager?.getSnippets() ?? [], this.language);
+          void this.cosmosMode.start();
+        }
+      }
     });
 
     qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () => void this.browseManager.clearAll());

@@ -64,6 +64,9 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message && message.type === 'SONTO_CAPTURE_SHORTCUT') {
     triggerCapture();
   }
+  if (message && message.type === 'SONTO_TOAST') {
+    showToast(message.message, !!message.isError);
+  }
 });
 
 function triggerCapture(): void {

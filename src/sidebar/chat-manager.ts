@@ -153,13 +153,14 @@ export class ChatManager {
     }
   }
 
-  private async saveCurrentSession(firstQuery: string): Promise<void> {
+  private async saveCurrentSession(query: string): Promise<void> {
     if (this.sessionMessages.length === 0) return;
     const sessions = await getChatSessions();
     const existing = sessions.findIndex((s) => s.id === this.currentSessionId);
+    const title = existing !== -1 ? sessions[existing].title : query.slice(0, 60);
     const session: ChatSession = {
       id: this.currentSessionId,
-      title: firstQuery.slice(0, 60),
+      title,
       timestamp: Date.now(),
       messages: this.sessionMessages,
     };

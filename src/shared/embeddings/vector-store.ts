@@ -122,6 +122,16 @@ export async function hasSnippetForUrl(url: string): Promise<boolean> {
   });
 }
 
+export async function clearAllSnippets(): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const req = tx.objectStore(STORE_NAME).clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
 export async function getSnippetCount(): Promise<number> {
   const db = await openDb();
   return new Promise((resolve, reject) => {

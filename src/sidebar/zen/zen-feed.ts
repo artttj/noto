@@ -411,19 +411,18 @@ export class ZenFeed {
 
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const isPinned = bubble.classList.toggle('zen-pinned');
-      btn.innerHTML = isPinned ? SVG_PIN_FILLED : SVG_PIN;
-      btn.title = isPinned ? 'Unpin' : 'Pin to favorites';
+      if (bubble.classList.contains('zen-pinned')) return;
+      bubble.classList.add('zen-pinned');
+      btn.innerHTML = SVG_PIN_FILLED;
+      btn.title = 'Pinned';
 
-      if (isPinned) {
-        await chrome.runtime.sendMessage({
-          type: MSG.CAPTURE_SNIPPET,
-          text: text.slice(0, 500),
-          url: url ?? location.href,
-          title: 'Pinned from Zen feed',
-          tags: ['pinned'],
-        }).catch(() => {});
-      }
+      await chrome.runtime.sendMessage({
+        type: MSG.CAPTURE_SNIPPET,
+        text: text.slice(0, 500),
+        url: url ?? location.href,
+        title: 'Pinned from Zen feed',
+        pinned: true,
+      }).catch(() => {});
     });
 
     bubble.appendChild(btn);

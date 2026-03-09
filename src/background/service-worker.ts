@@ -39,6 +39,7 @@ async function captureSnippet(
   source: Snippet['source'] = 'manual',
   context?: string,
   tags?: string[],
+  pinned?: boolean,
 ): Promise<void> {
   const trimmed = text.slice(0, MAX_CAPTURE_CHARS);
   const embedding = await embed(trimmed);
@@ -52,6 +53,7 @@ async function captureSnippet(
     source,
     ...(context ? { context: context.slice(0, 500) } : {}),
     ...(tags?.length ? { tags } : {}),
+    ...(pinned ? { pinned } : {}),
   };
   await addSnippet(snippet);
   void chrome.runtime.sendMessage({ type: MSG.SNIPPET_ADDED }).catch(() => {});
@@ -229,9 +231,16 @@ const HISTORY_INITIAL_DAYS = 30;
 const HISTORY_MAX_RESULTS = 500;
 const BATCH_SIZE = 100;
 
+async function hasApiKey(): Promise<boolean> {
+  const settings = await getSettings();
+  const key = settings.llmProvider === 'gemini' ? await getGeminiKey() : await getOpenAIKey();
+  return !!key.trim();
+}
+
 async function syncHistory(startTime?: number): Promise<void> {
   const [onboardingDone, historyEnabled] = await Promise.all([isOnboardingDone(), isHistoryEnabled()]);
   if (!onboardingDone || !historyEnabled) return;
+  if (!await hasApiKey()) return;
 
   const msPerDay = 86400000;
   const defaultStart = Date.now() - HISTORY_INITIAL_DAYS * msPerDay;
@@ -373,9 +382,19 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     const url = tab?.url ?? '';
     const title = tab?.title ?? '';
     if (!text.trim()) return;
-    void captureSnippet(text, url, title).catch((err: unknown) => {
-      console.error('[Sonto] context menu capture failed', err);
-    });
+    void (async () => {
+      try {
+        await captureSnippet(text, url, title);
+        if (tab?.id) {
+          void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: 'Saved to Sonto.' }).catch(() => {});
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Save failed.';
+        if (tab?.id) {
+          void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: msg, isError: true }).catch(() => {});
+        }
+      }
+    })();
     return;
   }
 
@@ -435,8 +454,8 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
   }
 
   if (message.type === MSG.CAPTURE_SNIPPET) {
-    const { text, url, title, context, tags } = message;
-    void captureSnippet(text, url, title, 'manual', context, tags)
+    const { text, url, title, context, tags, pinned } = message;
+    void captureSnippet(text, url, title, 'manual', context, tags, pinned)
       .then(() => {
         sendResponse({ ok: true, type: MSG.CAPTURE_SUCCESS });
       })
