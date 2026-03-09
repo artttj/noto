@@ -266,18 +266,13 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (artworks.length === 0) return null;
         const pick = artworks[Math.floor(Math.random() * artworks.length)];
 
-        const fact = pick.did_you_know?.trim();
-        if (fact && fact.length >= 50 && ctx.isValidFact(fact) && Math.random() < 0.4) {
-          return { text: fact, link: pick.url };
-        }
-
         const title = pick.title?.trim() || 'Untitled';
         const creator = pick.creators?.[0]?.description?.trim();
         const date = pick.creation_date?.trim();
         const parts = [title];
         if (creator) parts.push(creator);
         if (date) parts.push(date);
-        return { imageUrl: pick.images!.web!.url!, caption: parts.join(' — ') };
+        return { imageUrl: pick.images!.web!.url!, caption: parts.join(' — '), link: pick.url };
       } catch {
         return null;
       }
