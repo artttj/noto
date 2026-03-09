@@ -344,11 +344,14 @@ export class ZenFeed {
     const sub = sepIdx !== -1 ? caption.slice(sepIdx + sep.length) : '';
     const subHtml = sub ? `<span class="zen-art-caption">${escapeHtml(sub)}</span>` : '';
     const linkHtml = link ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>` : '';
-    bubble.innerHTML = `<div class="zen-art"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /><span class="zen-art-title">${escapeHtml(title)}${linkHtml}</span>${subHtml}</div>`;
+    const imgHtml = link
+      ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="zen-art-img-link"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></a>`
+      : `<img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />`;
+    bubble.innerHTML = `<div class="zen-art">${imgHtml}<span class="zen-art-title">${escapeHtml(title)}${linkHtml}</span>${subHtml}</div>`;
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
-      img.addEventListener('error', () => img.remove(), { once: true });
+      img.addEventListener('error', () => (img.closest('.zen-art-img-link') ?? img).remove(), { once: true });
     }
     const first = this.feedEl.firstChild;
     if (first) {
