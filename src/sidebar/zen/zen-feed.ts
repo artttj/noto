@@ -222,7 +222,7 @@ export class ZenFeed {
     if (result && isArtResult(result)) {
       if (!this.pastFacts.some((p) => p.slice(0, 60) === result.caption.slice(0, 60))) {
         this.hideLoader();
-        this.appendArtBubble(result.imageUrl, result.caption, result.link);
+        this.appendArtBubble(result.imageUrl, result.caption, result.link, fetcher.label);
         this.pastFacts.push(result.caption);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
@@ -234,7 +234,7 @@ export class ZenFeed {
       const { text, link, icon, html } = result;
       if (!this.pastFacts.some((p) => p.slice(0, 60) === text.slice(0, 60))) {
         this.hideLoader();
-        this.appendBubbleElement(text, link, icon, html);
+        this.appendBubbleElement(text, link, icon, html, fetcher.label);
         this.pastFacts.push(text);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
@@ -286,15 +286,19 @@ export class ZenFeed {
   }
 
   private async dripZen(): Promise<void> {
-    if (document.hidden || Date.now() - this.lastActivity > ZEN_IDLE_MS) {
+    try {
+      if (document.hidden || Date.now() - this.lastActivity > ZEN_IDLE_MS) {
+        this.scheduleDrip();
+        return;
+      }
+      const multiplier = await this.addBubble();
+      this.trimOldBubbles();
+      this.feedEl.scrollTo({ top: 0, behavior: 'smooth' });
+      void this.cacheZenFeed();
+      this.scheduleDrip(multiplier);
+    } catch {
       this.scheduleDrip();
-      return;
     }
-    const multiplier = await this.addBubble();
-    this.trimOldBubbles();
-    this.feedEl.scrollTo({ top: 0, behavior: 'smooth' });
-    void this.cacheZenFeed();
-    this.scheduleDrip(multiplier);
   }
 
   private trimOldBubbles(): void {
@@ -318,14 +322,33 @@ export class ZenFeed {
     }).catch(() => {});
   }
 
-  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string): HTMLElement {
+  private attachCopyButton(bubble: HTMLElement, text: string): void {
+    const btn = document.createElement('button');
+    btn.className = 'zen-copy';
+    btn.title = 'Copy';
+    btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void navigator.clipboard.writeText(text).then(() => {
+        btn.innerHTML = '✓';
+        setTimeout(() => {
+          btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
+        }, 1500);
+      });
+    });
+    bubble.appendChild(btn);
+  }
+
+  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     const linkHtml = link
       ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>`
       : '';
     const innerContent = html ?? escapeHtml(text);
-    bubble.innerHTML = `${icon ?? SVG_BULB}<span>${innerContent}${linkHtml}</span>`;
+    const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
+    bubble.innerHTML = `${icon ?? SVG_BULB}<div class="zen-bubble-body"><span>${innerContent}${linkHtml}</span>${sourceHtml}</div>`;
+    this.attachCopyButton(bubble, text);
     const first = this.feedEl.firstChild;
     if (first) {
       this.feedEl.insertBefore(bubble, first);
@@ -335,7 +358,7 @@ export class ZenFeed {
     return bubble;
   }
 
-  private appendArtBubble(imageUrl: string, caption: string, link?: string): HTMLElement {
+  private appendArtBubble(imageUrl: string, caption: string, link?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     const sep = caption.includes(' · ') ? ' · ' : ' — ';
@@ -347,12 +370,14 @@ export class ZenFeed {
     const imgHtml = link
       ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="zen-art-img-link"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></a>`
       : `<img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />`;
-    bubble.innerHTML = `<div class="zen-art">${imgHtml}<span class="zen-art-title">${escapeHtml(title)}${linkHtml}</span>${subHtml}</div>`;
+    const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
+    bubble.innerHTML = `<div class="zen-art">${imgHtml}<span class="zen-art-title">${escapeHtml(title)}${linkHtml}</span>${subHtml}${sourceHtml}</div>`;
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
       img.addEventListener('error', () => (img.closest('.zen-art-img-link') ?? img).remove(), { once: true });
     }
+    this.attachCopyButton(bubble, caption);
     const first = this.feedEl.firstChild;
     if (first) {
       this.feedEl.insertBefore(bubble, first);
