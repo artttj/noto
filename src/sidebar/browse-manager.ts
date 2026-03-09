@@ -147,8 +147,12 @@ export class BrowseManager {
       ? `<div class="snippet-context">${escapeHtml(snippet.context.slice(0, 200))}</div>`
       : '';
 
+    const textHtml = source === 'history'
+      ? `<a class="snippet-text snippet-text--link" href="${escapeHtml(snippet.url)}" target="_blank" rel="noopener">${escapeHtml(snippet.text)}</a>`
+      : `<div class="snippet-text">${escapeHtml(snippet.text)}</div>`;
+
     card.innerHTML = `
-      <div class="snippet-text">${escapeHtml(snippet.text)}</div>
+      ${textHtml}
       ${contextHtml}
       ${tagsHtml}
       <div class="snippet-meta">

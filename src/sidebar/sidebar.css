@@ -686,6 +686,11 @@ html, body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.snippet-text--link {
+  text-decoration: none;
+  cursor: pointer;
+}
+.snippet-text--link:hover { text-decoration: underline; }
 
 .snippet-meta {
   display: flex;
