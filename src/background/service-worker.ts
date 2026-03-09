@@ -313,21 +313,6 @@ async function maybeGenerateDigest(): Promise<void> {
   }
 }
 
-async function updateBadgeForTab(tabId: number, url: string): Promise<void> {
-  try {
-    const domain = new URL(url).hostname;
-    const snippets = await getSnippetsForDomain(domain, 99);
-    const count = snippets.length;
-    if (count > 0) {
-      await chrome.action.setBadgeText({ text: count > 9 ? '9+' : String(count), tabId });
-      await chrome.action.setBadgeBackgroundColor({ color: '#5dd69c', tabId });
-    } else {
-      await chrome.action.setBadgeText({ text: '', tabId });
-    }
-  } catch {
-    await chrome.action.setBadgeText({ text: '', tabId }).catch(() => {});
-  }
-}
 
 async function checkReadLaterForTab(url: string): Promise<void> {
   const items = await getReadLater();
@@ -427,15 +412,8 @@ chrome.action.onClicked.addListener((tab) => {
   void chrome.sidePanel.open({ windowId: tab.windowId });
 });
 
-chrome.tabs.onActivated.addListener(({ tabId }) => {
-  void chrome.tabs.get(tabId).then((tab) => {
-    if (tab.url) void updateBadgeForTab(tabId, tab.url);
-  }).catch(() => {});
-});
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    void updateBadgeForTab(tabId, tab.url);
     void checkReadLaterForTab(tab.url);
   }
 });
