@@ -257,8 +257,11 @@ export class BrowseManager {
       placeholder.appendChild(header);
 
       for (const r of response.results) {
-        const item = document.createElement('div');
+        const item = document.createElement('a');
         item.className = 'related-item';
+        item.href = r.snippet.url;
+        item.target = '_blank';
+        item.rel = 'noopener';
         item.innerHTML = `
           <span class="related-text">${escapeHtml(r.snippet.text.slice(0, 120))}</span>
           <span class="related-source">${escapeHtml(truncateUrl(r.snippet.url))}</span>

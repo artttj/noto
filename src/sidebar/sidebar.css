@@ -1311,8 +1311,10 @@ html, body {
   gap: 2px;
   padding: 5px 0;
   border-bottom: 1px solid var(--c-border);
-  cursor: default;
+  cursor: pointer;
+  text-decoration: none;
 }
+.related-item:hover .related-text { text-decoration: underline; }
 .related-item:last-child { border-bottom: none; }
 
 .related-text {
