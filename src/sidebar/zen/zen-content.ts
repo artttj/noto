@@ -90,10 +90,10 @@ export const SVG_PHILOSOPHY = [
 ].join('');
 
 export const SVG_HAIKU = [
-  '<svg class="zen-bulb zen-bulb--haiku" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">',
-  '<path d="M8 2 C6 4 5 7 7 9 C9 11 8 13 6 14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>',
-  '<path d="M11 4 C10 6 10 8 11 10" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" opacity="0.6"/>',
-  '<circle cx="6" cy="14" r="0.8" fill="currentColor" opacity="0.5"/>',
+  '<svg class="zen-bulb zen-bulb--haiku" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">',
+  '<line x1="4.5" y1="5" x2="11.5" y2="5"/>',
+  '<line x1="3" y1="8.5" x2="13" y2="8.5"/>',
+  '<line x1="4.5" y1="12" x2="11.5" y2="12"/>',
   '</svg>',
 ].join('');
 
