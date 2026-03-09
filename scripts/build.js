@@ -46,6 +46,11 @@ async function build() {
     }
   }
 
+  mkdirp(path.join(dist, 'fonts'));
+  for (const font of fs.readdirSync(path.join(src, 'fonts'))) {
+    copyFile(path.join(src, 'fonts', font), path.join(dist, 'fonts', font));
+  }
+
   copyHtml(path.join(src, 'sidebar', 'sidebar.html'), path.join(dist, 'sidebar', 'sidebar.html'));
   copyHtml(path.join(src, 'settings', 'settings.html'), path.join(dist, 'settings', 'settings.html'));
   await minifyCss(path.join(src, 'sidebar', 'sidebar.css'), path.join(dist, 'sidebar', 'sidebar.css'));

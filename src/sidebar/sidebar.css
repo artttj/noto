@@ -1,3 +1,18 @@
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/instrument-serif-regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/instrument-serif-italic.woff2') format('woff2');
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :focus-visible {
@@ -258,17 +273,19 @@ html, body {
 }
 
 .cosmos-text {
-  font-size: 21px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.45;
   text-shadow: 0 0 24px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.8);
   color: rgba(255, 255, 255, 0.88);
   letter-spacing: -0.01em;
 }
 
 .cosmos-art-title {
-  font-size: 17px;
-  font-weight: 500;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
   letter-spacing: -0.01em;
@@ -333,6 +350,7 @@ html, body {
 .zen-bubble-body {
   flex: 1;
   min-width: 0;
+  font-family: 'Instrument Serif', Georgia, serif;
 }
 
 .zen-source {
