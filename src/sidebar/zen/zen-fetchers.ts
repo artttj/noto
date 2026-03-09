@@ -48,16 +48,8 @@ const REDDIT_SUBREDDITS = [
   'philosophy', 'AskScience', 'dataisbeautiful',
 ];
 
-const MET_HIGHLIGHTED_IDS = [
-  466105, 453351, 456949, 453183, 451023, 453336, 451725, 910555, 451268,
-  544502, 250939, 435641, 436573, 437769, 436440, 437900, 438814,
-  247009, 437971, 437326, 435853, 437455, 437609, 436323, 437891, 435851, 436244,
-  436851, 437447, 439933, 247008, 40055, 451270, 74813, 656430, 50486, 437329,
-  255275, 437826, 437549, 435728, 438754, 544442, 436964, 436840, 438605, 437175,
-  437879, 436658, 437423, 436918, 437869, 591855, 436105, 436106, 436792, 435802,
-  436121, 11417, 45734, 437984, 436527, 436532, 437980, 436528, 10481, 459055,
-  436524, 437331, 436533, 452658, 436529, 436534, 436530, 436526,
-];
+const MET_SEARCH_TERMS = ['painting', 'sculpture', 'portrait', 'landscape', 'still life'];
+let metIdCache: number[] = [];
 
 const GETTY_PAGES = [1000,1500,2000,3500,4000,4500,6500,7000,7500,9000,9500,12000,12500,13000,14000,14500,15000,17000,17500,18000,19000,19500,20000,20500,21000,21500,22000,22500,23000,23500,24000,24500,25000,26500,27000,27500,28500,29000,29500,30500,31000,31500,32000,32500,33500,34000,34500,35000,35500,36000,36500,37000,37500,38500,39500,40000,40500,41000,41500];
 let gettyUuidCache: string[] = [];
@@ -177,29 +169,36 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         return { imageUrl: obj.primaryImageSmall, caption: parts.join(' — '), link: obj.objectURL };
       };
 
-      try {
-        const category = ctx.pickCategory();
-        if (!category) {
-          const fallbackId = MET_HIGHLIGHTED_IDS[Math.floor(Math.random() * MET_HIGHLIGHTED_IDS.length)];
-          return await fetchObject(fallbackId);
-        }
-        const keyword = encodeURIComponent(category.split(/\s+/)[0]);
-        const searchRes = await fetch(
-          `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${keyword}&hasImages=true&isPublicDomain=true`,
+      const searchMet = async (query: string): Promise<number[]> => {
+        const res = await fetch(
+          `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${encodeURIComponent(query)}&hasImages=true&isPublicDomain=true`,
           { signal: AbortSignal.timeout(10000) },
         );
-        if (searchRes.ok) {
-          const searchData = await searchRes.json() as { total: number; objectIDs?: number[] };
-          const ids = searchData.objectIDs ?? [];
-          if (ids.length > 0) {
-            const pool = ids.slice(0, 50);
-            const objectId = pool[Math.floor(Math.random() * pool.length)];
-            const result = await fetchObject(objectId);
-            if (result) return result;
-          }
+        if (!res.ok) return [];
+        const data = await res.json() as { objectIDs?: number[] };
+        return data.objectIDs ?? [];
+      };
+
+      const pickFromIds = async (ids: number[]) => {
+        if (ids.length === 0) return null;
+        const objectId = ids[Math.floor(Math.random() * Math.min(ids.length, 200))];
+        return fetchObject(objectId);
+      };
+
+      try {
+        const category = ctx.pickCategory();
+        if (category) {
+          const keyword = category.split(/\s+/)[0];
+          const ids = await searchMet(keyword);
+          const result = await pickFromIds(ids);
+          if (result) return result;
         }
-        const fallbackId = MET_HIGHLIGHTED_IDS[Math.floor(Math.random() * MET_HIGHLIGHTED_IDS.length)];
-        return await fetchObject(fallbackId);
+
+        if (metIdCache.length === 0) {
+          const term = MET_SEARCH_TERMS[Math.floor(Math.random() * MET_SEARCH_TERMS.length)];
+          metIdCache = await searchMet(term);
+        }
+        return await pickFromIds(metIdCache);
       } catch {
         return null;
       }

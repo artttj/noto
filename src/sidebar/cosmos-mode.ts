@@ -715,32 +715,49 @@ export class CosmosMode {
 
     const FADE_MS = 500;
 
-    // Spiro and content fetch start simultaneously — spiro draws for 3s then holds
-    this.spiro?.remove();
-    const theme = await getTheme();
-    this.spiro = new SpirographCanvas(this.canvasWrap, theme === 'light');
-    const spiroPromise = this.spiro.start(this.intervalMs);
-
     const [result, source] = await this.fetchNext();
-    if (this.stopped) { this.spiro.stop(); return; }
-
-    this.renderResult(result, source);
-    await fadeEl(this.msgEl, 0, 1, FADE_MS);
-    if (this.stopped) { this.spiro.stop(); return; }
-
-    // Wait for spiro's full display window to expire
-    await spiroPromise;
     if (this.stopped) return;
 
-    // Fade message and spiro out together
-    await Promise.all([
-      fadeEl(this.msgEl, 1, 0, FADE_MS),
-      this.spiro.fadeOut(FADE_MS),
-    ]);
-    if (this.stopped) return;
+    const skipSpiro = !result
+      || !isTextResult(result)
+      || (result.html?.includes('zen-haiku') ?? false)
+      || (result.html?.includes('zen-oblique') ?? false);
 
-    this.spiro.remove();
-    this.spiro = null;
+    if (!skipSpiro) {
+      this.spiro?.remove();
+      const theme = await getTheme();
+      this.spiro = new SpirographCanvas(this.canvasWrap, theme === 'light');
+      const spiroPromise = this.spiro.start(this.intervalMs);
+
+      this.renderResult(result, source);
+      await fadeEl(this.msgEl, 0, 1, FADE_MS);
+      if (this.stopped) { this.spiro.stop(); return; }
+
+      await spiroPromise;
+      if (this.stopped) return;
+
+      await Promise.all([
+        fadeEl(this.msgEl, 1, 0, FADE_MS),
+        this.spiro.fadeOut(FADE_MS),
+      ]);
+      if (this.stopped) return;
+
+      this.spiro.remove();
+      this.spiro = null;
+    } else {
+      this.spiro?.remove();
+      this.spiro = null;
+
+      this.renderResult(result, source);
+      await fadeEl(this.msgEl, 0, 1, FADE_MS);
+      if (this.stopped) return;
+
+      await new Promise((r) => setTimeout(r, this.intervalMs));
+      if (this.stopped) return;
+
+      await fadeEl(this.msgEl, 1, 0, FADE_MS);
+      if (this.stopped) return;
+    }
 
     void this.runLoop();
   }
