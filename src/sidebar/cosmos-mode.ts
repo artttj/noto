@@ -701,7 +701,8 @@ export class CosmosMode {
       }
     }
 
-    if (source) {
+    const hasImgIcon = isTextResult(result) && result.icon?.startsWith('<img');
+    if (source && !hasImgIcon) {
       const srcEl = document.createElement('div');
       srcEl.className = 'cosmos-source';
       srcEl.textContent = source;
