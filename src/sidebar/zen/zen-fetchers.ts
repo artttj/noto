@@ -353,7 +353,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     label: '1000-Word Philosophy',
     weight: 7,
     fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
+
       try {
         if (philosophyCache.length === 0) {
           const res = await fetch('https://1000wordphilosophy.com/feed/', {
@@ -423,7 +423,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     label: 'Smithsonian Smart News',
     weight: 8,
     fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
+
       try {
         if (smithsonianCache.length === 0) {
           const res = await fetch('https://www.smithsonianmag.com/rss/smart-news/', {
@@ -450,7 +450,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     label: 'Atlas Obscura',
     weight: 8,
     fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
+
       try {
         if (atlasCache.length === 0) {
           const res = await fetch('https://www.atlasobscura.com/feeds/latest', {

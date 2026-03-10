@@ -15,6 +15,7 @@ import {
   escapeHtml,
 } from './zen-content';
 import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcher } from './zen-fetchers';
+import { translateText } from './translator';
 import { JUNK_PATTERNS } from './zen-shared';
 
 const SVG_PIN = [
@@ -277,8 +278,9 @@ export class ZenFeed {
 
     if (result && isArtResult(result)) {
       if (!this.isDuplicate(result.caption)) {
+        const caption = await translateText(result.caption, this.language);
         this.hideLoader();
-        this.appendArtBubble(result.imageUrl, result.caption, result.link, fetcher.label);
+        this.appendArtBubble(result.imageUrl, caption, result.link, fetcher.label);
         this.trackFact(result.caption);
         return this.durationMultiplier(result);
       }
@@ -287,8 +289,12 @@ export class ZenFeed {
     if (result && isTextResult(result)) {
       const { text, link, icon, html } = result;
       if (!this.isDuplicate(text)) {
+        const translated = await translateText(text, this.language);
+        const translatedHtml = html && translated !== text
+          ? html.replace(escapeHtml(text), escapeHtml(translated))
+          : html;
         this.hideLoader();
-        this.appendBubbleElement(text, link, icon, html, result.hideLabel ? undefined : fetcher.label);
+        this.appendBubbleElement(translated, link, icon, translatedHtml, result.hideLabel ? undefined : fetcher.label);
         this.trackFact(text);
         return this.durationMultiplier(result);
       }

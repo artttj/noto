@@ -3,6 +3,7 @@
 
 import { MSG } from '../shared/messages';
 import { getDripInterval, getDisabledSources, getTheme } from '../shared/storage';
+import { translateText } from './zen/translator';
 import type { Snippet } from '../shared/types';
 import { AI_PATTERNS, BLOCKED_CATEGORY_PATTERNS } from './zen/zen-content';
 import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcher } from './zen/zen-fetchers';
@@ -598,7 +599,7 @@ export class CosmosMode {
     return [null, null];
   }
 
-  private renderResult(result: ZenFetchResult, source: string | null): void {
+  private async renderResult(result: ZenFetchResult, source: string | null): Promise<void> {
     this.msgEl.innerHTML = '';
 
     if (!result) return;
@@ -606,10 +607,11 @@ export class CosmosMode {
     if (isTextResult(result) && !result.text?.trim() && !result.html?.trim()) return;
 
     if (isArtResult(result)) {
-      const sep = result.caption.includes(' · ') ? ' · ' : ' — ';
-      const sepIdx = result.caption.indexOf(sep);
-      const title = sepIdx !== -1 ? result.caption.slice(0, sepIdx) : result.caption;
-      const sub = sepIdx !== -1 ? result.caption.slice(sepIdx + sep.length) : '';
+      const caption = await translateText(result.caption, this.language);
+      const sep = caption.includes(' · ') ? ' · ' : ' — ';
+      const sepIdx = caption.indexOf(sep);
+      const title = sepIdx !== -1 ? caption.slice(0, sepIdx) : caption;
+      const sub = sepIdx !== -1 ? caption.slice(sepIdx + sep.length) : '';
 
       const img = document.createElement('img');
       img.className = 'cosmos-art-img';
@@ -657,12 +659,15 @@ export class CosmosMode {
         this.msgEl.appendChild(iconWrap);
       }
 
+      const translated = await translateText(result.text, this.language);
       const textEl = document.createElement('div');
       textEl.className = 'cosmos-text';
-      if (result.html) {
+      if (result.html && translated !== result.text) {
+        textEl.textContent = translated;
+      } else if (result.html) {
         textEl.innerHTML = result.html;
       } else {
-        textEl.textContent = result.text;
+        textEl.textContent = translated;
       }
       this.msgEl.appendChild(textEl);
 
@@ -705,7 +710,7 @@ export class CosmosMode {
       this.spiro = new SpirographCanvas(this.canvasWrap, theme === 'light');
       const spiroPromise = this.spiro.start(this.intervalMs);
 
-      this.renderResult(result, source);
+      await this.renderResult(result, source);
       await fadeEl(this.msgEl, 0, 1, FADE_MS);
       if (this.stopped) { this.spiro.stop(); return; }
 
@@ -724,7 +729,7 @@ export class CosmosMode {
       this.spiro?.remove();
       this.spiro = null;
 
-      this.renderResult(result, source);
+      await this.renderResult(result, source);
       await fadeEl(this.msgEl, 0, 1, FADE_MS);
       if (this.stopped) return;
 
