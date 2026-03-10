@@ -83,8 +83,12 @@ class SontoSidebar {
       }
     });
 
-    this.browseBtn.addEventListener('click', () => this.setMode('browse'));
-    this.chatBtn.addEventListener('click', () => this.setMode('chat'));
+    this.browseBtn.addEventListener('click', () => {
+      this.setMode(this.mode === 'browse' ? 'zen' : 'browse');
+    });
+    this.chatBtn.addEventListener('click', () => {
+      this.setMode(this.mode === 'chat' ? 'zen' : 'chat');
+    });
 
     this.themeBtn.addEventListener('click', () => void this.toggleTheme());
 

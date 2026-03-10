@@ -263,8 +263,10 @@ export class BrowseManager {
         const item = document.createElement('a');
         item.className = 'related-item';
         item.href = r.snippet.url;
-        item.target = '_blank';
-        item.rel = 'noopener';
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          void chrome.tabs.create({ url: r.snippet.url });
+        });
         item.innerHTML = `
           <span class="related-text">${escapeHtml(r.snippet.text.slice(0, 120))}</span>
           <span class="related-source">${escapeHtml(truncateUrl(r.snippet.url))}</span>
