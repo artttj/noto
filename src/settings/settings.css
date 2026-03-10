@@ -1560,6 +1560,12 @@ body {
 
 .zen-source-row:last-child { border-bottom: none; }
 
+.zen-source-divider {
+  height: 12px;
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 4px;
+}
+
 .zen-source-label {
   font-size: 13px;
   color: var(--c-text-primary);

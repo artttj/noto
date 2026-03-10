@@ -97,19 +97,22 @@ function escapeHtml(str: string): string {
 }
 
 const ZEN_SOURCES: Array<{ id: string; label: string }> = [
-  { id: 'metArtwork',          label: 'Art from The Met (New York)' },
-  { id: 'clevelandArtwork',    label: 'Art from Cleveland Museum' },
-  { id: 'gettyArtwork',        label: 'Getty Museum Art' },
-  { id: 'rijksmuseumArtwork',  label: 'Rijksmuseum (Amsterdam)' },
-  { id: 'marsRover',           label: 'Perseverance Rover Photos' },
-  { id: 'smithsonianNews',     label: 'Smithsonian Smart News' },
-  { id: 'atlasObscura',        label: 'Atlas Obscura' },
   { id: 'philosophyEssay',     label: '1000-Word Philosophy' },
+  { id: 'clevelandArtwork',    label: 'Art from Cleveland Museum' },
+  { id: 'metArtwork',          label: 'Art from The Met (New York)' },
+  { id: 'atlasObscura',        label: 'Atlas Obscura' },
+  { id: 'gettyArtwork',        label: 'Getty Museum Art' },
   { id: 'hnStory',             label: 'Hacker News Headlines' },
-  { id: 'reddit',              label: 'Reddit (Science, Space, Philosophy)' },
-  { id: 'kotowaza',            label: 'Japanese Proverbs' },
   { id: 'haiku',               label: 'Haiku' },
+  { id: 'kotowaza',            label: 'Japanese Proverbs' },
   { id: 'obliqueStrategies',   label: 'Oblique Strategies' },
+  { id: 'marsRover',           label: 'Perseverance Rover Photos' },
+  { id: 'reddit',              label: 'Reddit (Science, Space, Philosophy)' },
+  { id: 'rijksmuseumArtwork',  label: 'Rijksmuseum (Amsterdam)' },
+  { id: 'smithsonianNews',     label: 'Smithsonian Smart News' },
+];
+
+const ZEN_CUSTOM_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'customRss',           label: 'Custom RSS Feeds' },
   { id: 'customJson',          label: 'Custom JSON API Sources' },
 ];
@@ -218,38 +221,48 @@ async function init(): Promise<void> {
   const disabledSources = new Set(await getDisabledSources());
   const sourcesList = document.getElementById('zen-sources-list')!;
 
-  for (const source of ZEN_SOURCES) {
-    const row = document.createElement('div');
-    row.className = 'zen-source-row';
+  const addSourceRows = (sources: Array<{ id: string; label: string }>) => {
+    for (const source of sources) {
+      const row = document.createElement('div');
+      row.className = 'zen-source-row';
 
-    const label = document.createElement('span');
-    label.className = 'zen-source-label';
-    label.textContent = source.label;
+      const label = document.createElement('span');
+      label.className = 'zen-source-label';
+      label.textContent = source.label;
 
-    const toggleLabel = document.createElement('label');
-    toggleLabel.className = 'toggle-switch';
+      const toggleLabel = document.createElement('label');
+      toggleLabel.className = 'toggle-switch';
 
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = !disabledSources.has(source.id);
-    input.addEventListener('change', async () => {
-      if (input.checked) {
-        disabledSources.delete(source.id);
-      } else {
-        disabledSources.add(source.id);
-      }
-      await saveDisabledSources([...disabledSources]);
-    });
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = !disabledSources.has(source.id);
+      input.addEventListener('change', async () => {
+        if (input.checked) {
+          disabledSources.delete(source.id);
+        } else {
+          disabledSources.add(source.id);
+        }
+        await saveDisabledSources([...disabledSources]);
+      });
 
-    const track = document.createElement('span');
-    track.className = 'toggle-track';
+      const track = document.createElement('span');
+      track.className = 'toggle-track';
 
-    toggleLabel.appendChild(input);
-    toggleLabel.appendChild(track);
-    row.appendChild(label);
-    row.appendChild(toggleLabel);
-    sourcesList.appendChild(row);
-  }
+      toggleLabel.appendChild(input);
+      toggleLabel.appendChild(track);
+      row.appendChild(label);
+      row.appendChild(toggleLabel);
+      sourcesList.appendChild(row);
+    }
+  };
+
+  addSourceRows(ZEN_SOURCES);
+
+  const divider = document.createElement('div');
+  divider.className = 'zen-source-divider';
+  sourcesList.appendChild(divider);
+
+  addSourceRows(ZEN_CUSTOM_SOURCES);
 
   const hasAnyKey = !!openaiKey || !!geminiKey;
   const navWarning = document.getElementById('nav-ai-warning');
