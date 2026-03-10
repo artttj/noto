@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   llmProvider: 'openai',
   openaiModel: 'gpt-4.1-mini',
   geminiModel: 'gemini-2.5-flash',
-  language: 'en',
+  language: navigator.language.startsWith('de') ? 'de' : 'en',
 };
 
 export const MAX_CAPTURE_CHARS = 10000;
