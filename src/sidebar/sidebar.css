@@ -626,7 +626,7 @@ html, body {
 }
 
 .zen-bubble:has(.zen-oblique) {
-  background: var(--c-bg);
+  background: transparent;
   border-radius: 10px;
   padding: 22px 20px;
   margin-bottom: 2px;
@@ -1248,7 +1248,7 @@ html, body {
   color: rgba(0,0,0,0.90);
 }
 [data-theme="light"] .zen-bubble:has(.zen-oblique) {
-  background: #ececec;
+  background: transparent;
 }
 [data-theme="light"] .zen-oblique {
   color: #111 !important;
