@@ -49,19 +49,19 @@ For chat and embeddings, add your key in **Settings > AI**.
 
 | Source | Content |
 |---|---|
-| The Met Museum | Public domain paintings |
-| Cleveland Museum of Art | Artworks and facts |
-| NASA Mars / Perseverance | Rover and surface photos |
-| Hacker News | Top tech stories |
-| Reddit | Science, history, space, technology |
-| Getty Museum | Paintings and sculptures |
-| Smithsonian | Science and smart news |
+| 1000-Word Philosophy | Philosophy essays |
 | Atlas Obscura | Curious places and stories |
-| Trivia | Art, science, and books |
-| Quotes | Stoic, design, zen, and daily quotes |
+| Cleveland Museum of Art | Artworks and facts |
+| Getty Museum | Paintings and sculptures |
+| Haiku | Japanese haiku poems |
+| Hacker News | Top tech stories |
 | Japanese Proverbs | With English translation |
+| The Met Museum | Public domain paintings |
 | Oblique Strategies | Creative prompts |
-| Random Facts | Localized trivia |
+| Perseverance Rover | Mars surface photos |
+| Reddit | Science, history, space, philosophy |
+| Rijksmuseum | Dutch Golden Age paintings |
+| Smithsonian Smart News | Science and smart news |
 | Custom RSS | Your own feeds |
 | Custom JSON API | Any endpoint returning items |
 
