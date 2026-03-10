@@ -4,7 +4,7 @@ A calm Chrome sidebar that surfaces a slow drip of art, quotes, science, and new
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Google Chrome](https://img.shields.io/badge/Google%20Chrome-4285F4?style=for-the-badge&logo=GoogleChrome&logoColor=white)
 
-## QUICK START
+## Quick start
 
 Clone and build the extension:
 
@@ -25,21 +25,21 @@ For chat and embeddings, add your key in **Settings > AI**.
 | OpenAI | https://platform.openai.com/api-keys |
 | Gemini | https://aistudio.google.com/app/apikey |
 
-## FEATURES
+## Features
 
-- **ZEN FEED**: A slow, thoughtful feed that shows one thing at a time
-- **RICH SOURCES**: Museum art, Mars rover photos, Science news, Atlas Obscura stories, quotes, trivia, and more
-- **TWO MODES**: Scrolling feed or Cosmos mode with procedural spirograph animations
-- **THEMES**: Dark and light themes with WCAG 2.1 AA contrast compliance
-- **SAVE ANYTHING**: Highlight text anywhere and press `Alt+Shift+C` or right-click to save
-- **CHAT WITH YOUR HISTORY**: Ask questions about saved snippets using RAG with OpenAI or Gemini
-- **RELATED PAGES**: Semantic search surfaces related pages from your browsing history
-- **BACKUP & RESTORE**: Export and import all data as JSON
-- **CUSTOM SOURCES**: Add your own RSS feeds or JSON API endpoints
-- **WEEKLY DIGEST**: Optional summary of your saved content
+- **Zen feed**: A slow, thoughtful feed that shows one thing at a time
+- **Rich sources**: Museum art, Mars rover photos, Science news, Atlas Obscura stories, quotes, trivia, and more
+- **Two modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
+- **Themes**: Dark and light themes with WCAG 2.1 AA contrast compliance
+- **Save anything**: Highlight text anywhere and press `Alt+Shift+C` or right-click to save
+- **Chat with your history**: Ask questions about saved snippets using RAG with OpenAI or Gemini
+- **Related pages**: Semantic search surfaces related pages from your browsing history
+- **Backup & restore**: Export and import all data as JSON
+- **Custom sources**: Add your own RSS feeds or JSON API endpoints
+- **Weekly digest**: Optional summary of your saved content
 - **BYOK**: Bring your own API key and pay the provider directly
 
-## ZEN FEED SOURCES
+## Zen feed sources
 
 | Source | Content |
 |---|---|
@@ -61,19 +61,12 @@ For chat and embeddings, add your key in **Settings > AI**.
 
 Toggle sources in **Settings > Feed > Sources**.
 
-## LANGUAGES
+## Languages
 
 - English
 - German (Deutsch)
 
-## SHORTCUTS
-
-| Action | Keys |
-|---|---|
-| Open sidebar | `Alt+Shift+S` |
-| Save selection | `Alt+Shift+C` |
-
-## PRIVACY
+## Privacy
 
 All data stays in your browser.
 
@@ -85,7 +78,7 @@ Feed content comes from public third-party APIs. Sonto does not own or filter it
 - OpenAI Privacy: https://openai.com/policies/privacy-policy/
 - Google Gemini Terms: https://ai.google.dev/gemini-api/terms
 
-## TECH
+## Tech
 
 * TypeScript
 * Chrome Extension Manifest V3
@@ -95,6 +88,6 @@ Feed content comes from public third-party APIs. Sonto does not own or filter it
 
 Zero runtime dependencies.
 
-## LICENSE
+## License
 
 MIT. See [LICENSE](LICENSE).
