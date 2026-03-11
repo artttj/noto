@@ -128,7 +128,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'wikimediaPaintings',
     label: 'Wikimedia Commons Paintings',
-    weight: 4,
+    weight: 1,
     fetch: async () => {
       try {
         const category = COMMONS_PAINTING_CATEGORIES[Math.floor(Math.random() * COMMONS_PAINTING_CATEGORIES.length)];
