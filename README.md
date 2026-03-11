@@ -4,6 +4,19 @@ A calm Chrome sidebar that surfaces a slow drip of art, quotes, science, and new
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Google Chrome](https://img.shields.io/badge/Google%20Chrome-4285F4?style=for-the-badge&logo=GoogleChrome&logoColor=white)
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/webstore_00001.png" alt="Sonto screenshot 1" width="420" /></td>
+    <td><img src="docs/screenshots/webstore_00002.png" alt="Sonto screenshot 2" width="420" /></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/webstore_00004.png" alt="Sonto screenshot 3" width="420" /></td>
+    <td><img src="docs/screenshots/webstore_00005.png" alt="Sonto screenshot 4" width="420" /></td>
+  </tr>
+</table>
+
 ## Quick start
 
 Clone and build the extension:
