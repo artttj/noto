@@ -105,6 +105,7 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'kotowaza',            label: 'Japanese Proverbs' },
   { id: 'obliqueStrategies',   label: 'Oblique Strategies' },
   { id: 'marsRover',           label: 'Perseverance Rover Photos' },
+  { id: 'wikimediaPaintings',  label: 'Wikimedia Commons Paintings' },
   { id: 'albumOfDay',          label: 'Album of a Day' },
   { id: 'reddit',              label: 'Reddit (Science, Space, Philosophy)' },
   { id: 'rijksmuseumArtwork',  label: 'Rijksmuseum (Amsterdam)' },

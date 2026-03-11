@@ -84,6 +84,14 @@ const REDDIT_SUBREDDITS = [
   'philosophy', 'AskScience', 'dataisbeautiful',
 ];
 
+const COMMONS_PAINTING_CATEGORIES = [
+  'Category:Paintings',
+  'Category:Landscape paintings',
+  'Category:Portrait paintings',
+  'Category:Oil paintings',
+  'Category:Paintings by Vincent van Gogh',
+];
+
 const MET_SEARCH_TERMS = ['painting', 'sculpture', 'portrait', 'landscape', 'still life'];
 let metIdCache: number[] = [];
 
@@ -117,6 +125,71 @@ function isValidRedditPost(post: { stickied: boolean; over_18: boolean; score: n
 }
 
 export const ZEN_FETCHERS: ZenFetcher[] = [
+  {
+    id: 'wikimediaPaintings',
+    label: 'Wikimedia Commons Paintings',
+    weight: 4,
+    fetch: async () => {
+      try {
+        const category = COMMONS_PAINTING_CATEGORIES[Math.floor(Math.random() * COMMONS_PAINTING_CATEGORIES.length)];
+        const params = new URLSearchParams({
+          action: 'query',
+          generator: 'categorymembers',
+          gcmtitle: category,
+          gcmtype: 'file',
+          gcmlimit: '50',
+          prop: 'imageinfo|info',
+          iiprop: 'url|extmetadata',
+          iiurlwidth: '900',
+          inprop: 'url',
+          format: 'json',
+          origin: '*',
+        });
+        const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`, {
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) return null;
+
+        const data = await res.json() as {
+          query?: {
+            pages?: Record<string, {
+              title?: string;
+              fullurl?: string;
+              imageinfo?: Array<{
+                url?: string;
+                thumburl?: string;
+                extmetadata?: Record<string, { value?: string }>;
+              }>;
+            }>;
+          };
+        };
+
+        const pages = Object.values(data.query?.pages ?? {})
+          .filter((page) => page.imageinfo?.[0]?.url || page.imageinfo?.[0]?.thumburl);
+        if (pages.length === 0) return null;
+
+        const pick = pages[Math.floor(Math.random() * pages.length)];
+        const info = pick.imageinfo?.[0];
+        if (!info) return null;
+
+        const imageUrl = info.thumburl ?? info.url;
+        if (!imageUrl) return null;
+
+        const title = readCommonsTitle(pick.title, info.extmetadata);
+        const artist = readCommonsMetadata(info.extmetadata, ['Artist']);
+        const year = readCommonsYear(info.extmetadata);
+        const caption = [title, artist, year].filter(Boolean).join(' — ');
+
+        return {
+          imageUrl,
+          caption: caption || 'Painting',
+          link: pick.fullurl,
+        };
+      } catch {
+        return null;
+      }
+    },
+  },
   {
     id: 'albumOfDay',
     label: 'Album of a Day',
@@ -845,4 +918,43 @@ function hashString(value: string): number {
     hash = ((hash << 5) - hash + value.charCodeAt(i)) >>> 0;
   }
   return hash;
+}
+
+function readCommonsTitle(
+  fallbackTitle?: string,
+  metadata?: Record<string, { value?: string }>,
+): string {
+  const objectName = readCommonsMetadata(metadata, ['ObjectName', 'Title']);
+  if (objectName) return objectName;
+
+  const fileTitle = fallbackTitle?.replace(/^File:/, '').replace(/\.[a-z0-9]+$/i, '').replace(/[_]+/g, ' ').trim();
+  return fileTitle || 'Painting';
+}
+
+function readCommonsYear(metadata?: Record<string, { value?: string }>): string {
+  const raw = readCommonsMetadata(metadata, ['DateTimeOriginal', 'Date']);
+  const match = raw.match(/\b(1[5-9]\d{2}|20\d{2})\b/);
+  return match?.[1] ?? raw;
+}
+
+function readCommonsMetadata(
+  metadata: Record<string, { value?: string }> | undefined,
+  keys: string[],
+): string {
+  for (const key of keys) {
+    const value = metadata?.[key]?.value?.trim();
+    if (!value) continue;
+    const text = stripHtml(value)
+      .replace(/\s+/g, ' ')
+      .replace(/^\|+|\|+$/g, '')
+      .trim();
+    if (text) return text;
+  }
+
+  return '';
+}
+
+function stripHtml(value: string): string {
+  const doc = new DOMParser().parseFromString(value, 'text/html');
+  return doc.body.textContent?.trim() ?? '';
 }

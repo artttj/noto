@@ -42,6 +42,7 @@ For chat and embeddings, add your key in **Settings > AI**.
 
 - **Zen feed**: A slow, thoughtful feed that shows one thing at a time
 - **Rich sources**: Museum art, Mars rover photos, Science news, Atlas Obscura stories, quotes, trivia, and more
+- **Wikimedia paintings**: Random paintings pulled from deep Wikimedia Commons categories
 - **Album of a Day**: A rare daily album card with cover art and titles from a curated 700-album list via MusicBrainz
 - **Two modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
 - **Themes**: Dark and light themes with WCAG 2.1 AA contrast compliance
@@ -71,6 +72,7 @@ For chat and embeddings, add your key in **Settings > AI**.
 | Reddit | Science, history, space, philosophy |
 | Rijksmuseum | Dutch Golden Age paintings |
 | Smithsonian Smart News | Science and smart news |
+| Wikimedia Commons Paintings | Random paintings from curated Commons categories |
 | Custom RSS | Your own feeds |
 | Custom JSON API | Any endpoint returning items |
 
