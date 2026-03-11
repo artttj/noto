@@ -33,7 +33,7 @@ class SontoSidebar {
   private mode: ViewMode = 'zen';
   private snippets: Snippet[] = [];
   private language = 'en';
-  private zenDisplay: 'feed' | 'cosmos' = 'feed';
+  private zenDisplay: 'feed' | 'cosmos' = 'cosmos';
   private theme: 'dark' | 'light' = 'dark';
 
   private readonly browseBtn = qs<HTMLButtonElement>('#btn-browse');
