@@ -417,17 +417,18 @@ class SpirographCanvas {
 
 async function fadeEl(el: HTMLElement, from: number, to: number, ms: number): Promise<void> {
   return new Promise((resolve) => {
-    const start = Date.now();
-    const tick = () => {
-      const p = Math.min(1, (Date.now() - start) / ms);
-      el.style.opacity = String(from + (to - from) * p);
-      if (p < 1) {
-        requestAnimationFrame(tick);
-      } else {
-        resolve();
-      }
-    };
-    requestAnimationFrame(tick);
+    el.style.opacity = String(from);
+    el.style.transition = `opacity ${ms}ms ease`;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.opacity = String(to);
+      });
+    });
+    setTimeout(() => {
+      el.style.transition = '';
+      el.style.opacity = String(to);
+      resolve();
+    }, ms + 50);
   });
 }
 
