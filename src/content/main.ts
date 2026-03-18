@@ -125,7 +125,249 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message && message.type === 'SONTO_TOAST') {
     showToast(message.message, !!message.isError);
   }
+  if (message && message.type === 'SONTO_QUICK_SEARCH') {
+    toggleQuickSearch();
+  }
 });
+
+let quickSearchOverlay: HTMLElement | null = null;
+
+function toggleQuickSearch(): void {
+  if (quickSearchOverlay) {
+    quickSearchOverlay.remove();
+    quickSearchOverlay = null;
+    return;
+  }
+  createQuickSearchOverlay();
+}
+
+function createQuickSearchOverlay(): void {
+  const host = document.createElement('div');
+  host.id = 'sonto-quick-search';
+  const shadow = host.attachShadow({ mode: 'closed' });
+
+  const style = document.createElement('style');
+  style.textContent = `
+    :host {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2147483647;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .overlay-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    .search-container {
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(560px, 90vw);
+      max-height: 60vh;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .search-input-wrap {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #333;
+    }
+    .search-icon {
+      width: 18px;
+      height: 18px;
+      color: #666;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .search-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      color: #eee;
+      font-family: inherit;
+    }
+    .search-input::placeholder {
+      color: #666;
+    }
+    .close-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 18px;
+    }
+    .close-btn:hover {
+      background: #333;
+      color: #999;
+    }
+    .results {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .result-item {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 8px;
+      color: #ccc;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .result-item:hover, .result-item.selected {
+      background: #2a2a2a;
+    }
+    .result-item .preview {
+      color: #eee;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .result-item .meta {
+      font-size: 11px;
+      color: #666;
+    }
+    .empty-state {
+      padding: 32px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+    .loading {
+      padding: 24px;
+      text-align: center;
+      color: #666;
+    }
+  `;
+
+  const container = document.createElement('div');
+  container.innerHTML = `
+    <div class="overlay-backdrop"></div>
+    <div class="search-container">
+      <div class="search-input-wrap">
+        <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="9" cy="9" r="5"/>
+          <path d="M12.5 12.5L16 16"/>
+        </svg>
+        <input type="text" class="search-input" placeholder="Search your snippets..." autofocus />
+        <button class="close-btn">×</button>
+      </div>
+      <div class="results">
+        <div class="empty-state">Start typing to search your snippets</div>
+      </div>
+    </div>
+  `;
+
+  shadow.appendChild(style);
+  shadow.appendChild(container);
+  document.body.appendChild(host);
+  quickSearchOverlay = host;
+
+  const backdrop = shadow.querySelector('.overlay-backdrop') as HTMLElement;
+  const input = shadow.querySelector('.search-input') as HTMLInputElement;
+  const closeBtn = shadow.querySelector('.close-btn') as HTMLButtonElement;
+  const results = shadow.querySelector('.results') as HTMLElement;
+
+  const close = () => {
+    host.remove();
+    quickSearchOverlay = null;
+  };
+
+  backdrop.addEventListener('click', close);
+  closeBtn.addEventListener('click', close);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      close();
+    }
+  });
+
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  input.addEventListener('input', () => {
+    const query = input.value.trim();
+    
+    if (searchTimeout) clearTimeout(searchTimeout);
+    
+    if (!query) {
+      results.innerHTML = '<div class="empty-state">Start typing to search your snippets</div>';
+      return;
+    }
+
+    results.innerHTML = '<div class="loading">Searching...</div>';
+
+    searchTimeout = setTimeout(async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'SEARCH_CLIPS', query });
+        
+        if (response?.ok && response.clips?.length > 0) {
+          results.innerHTML = response.clips.slice(0, 10).map((clip: { id: string; text: string; timestamp: number; url?: string }) => `
+            <button class="result-item" data-id="${clip.id}" data-text="${escapeHtml(clip.text.slice(0, 200))}">
+              <div class="preview">${escapeHtml(clip.text.slice(0, 150))}${clip.text.length > 150 ? '...' : ''}</div>
+              <div class="meta">${formatTime(clip.timestamp)}${clip.url ? ' · ' + new URL(clip.url).hostname : ''}</div>
+            </button>
+          `).join('');
+
+          results.querySelectorAll('.result-item').forEach((item) => {
+            item.addEventListener('click', async () => {
+              const text = (item as HTMLElement).dataset.text || '';
+              await navigator.clipboard.writeText(text);
+              showToast('Copied to clipboard!');
+              close();
+            });
+          });
+        } else {
+          results.innerHTML = '<div class="empty-state">No snippets found</div>';
+        }
+      } catch (err) {
+        results.innerHTML = '<div class="empty-state">Search error</div>';
+      }
+    }, 300);
+  });
+
+  input.focus();
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function formatTime(ts: number): string {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+  return d.toLocaleDateString();
+}
 
 // Ctrl+C / keyboard copy — most reliable path
 document.addEventListener('copy', (e) => {
@@ -155,3 +397,144 @@ document.addEventListener('keyup', (e) => {
   const selected = window.getSelection()?.toString().trim() ?? '';
   if (selected) schedulePoll();
 });
+
+// Reading Companion - show related snippets when visiting pages
+async function initReadingCompanion(): Promise<void> {
+  try {
+    const domain = window.location.hostname.replace(/^www\./, '');
+    if (!domain) return;
+    
+    const response = await chrome.runtime.sendMessage({ 
+      type: MSG.GET_RELATED_CLIPS, 
+      domain 
+    });
+    
+    if (response?.ok && response.clips?.length > 0) {
+      createReadingCompanionBanner(response.clips);
+    }
+  } catch {
+    // silently fail
+  }
+}
+
+function createReadingCompanionBanner(clips: Array<{ id: string; text: string; timestamp: number; url?: string }>): void {
+  const existing = document.getElementById('sonto-reading-companion');
+  if (existing) return;
+
+  const host = document.createElement('div');
+  host.id = 'sonto-reading-companion';
+  const shadow = host.attachShadow({ mode: 'closed' });
+
+  const style = document.createElement('style');
+  style.textContent = `
+    :host {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2147483646;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .companion-card {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      max-width: 280px;
+      overflow: hidden;
+    }
+    .companion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #333;
+      background: #222;
+    }
+    .companion-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #e8b931;
+    }
+    .companion-close {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px;
+    }
+    .companion-close:hover { color: #999; }
+    .companion-list {
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .companion-item {
+      display: block;
+      width: 100%;
+      padding: 8px 10px;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .companion-item:hover {
+      background: #2a2a2a;
+    }
+    .companion-item .preview {
+      color: #eee;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .companion-item .meta {
+      font-size: 10px;
+      color: #666;
+    }
+  `;
+
+  const header = document.createElement('div');
+  header.innerHTML = `
+    <div class="companion-header">
+      <span class="companion-title">📖 Related from your saves</span>
+      <button class="companion-close">×</button>
+    </div>
+  `;
+
+  const list = document.createElement('div');
+  list.className = 'companion-list';
+  list.innerHTML = clips.slice(0, 3).map(clip => `
+    <button class="companion-item" data-text="${escapeHtml(clip.text.slice(0, 200))}">
+      <div class="preview">${escapeHtml(clip.text.slice(0, 100))}${clip.text.length > 100 ? '...' : ''}</div>
+      <div class="meta">${formatTime(clip.timestamp)}</div>
+    </button>
+  `).join('');
+
+  const card = document.createElement('div');
+  card.className = 'companion-card';
+  card.appendChild(header);
+  card.appendChild(list);
+
+  shadow.appendChild(style);
+  shadow.appendChild(card);
+  document.body.appendChild(host);
+
+  const closeBtn = shadow.querySelector('.companion-close') as HTMLButtonElement;
+  closeBtn.addEventListener('click', () => host.remove());
+
+  list.querySelectorAll('.companion-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      const text = (item as HTMLElement).dataset.text || '';
+      await navigator.clipboard.writeText(text);
+      showToast('Copied to clipboard!');
+    });
+  });
+}
+
+initReadingCompanion();

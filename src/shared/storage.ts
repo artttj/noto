@@ -60,6 +60,24 @@ export async function setMaxHistorySize(size: number): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.MAX_HISTORY_SIZE]: size });
 }
 
+export async function getDailyNotificationEnabled(): Promise<boolean> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.DAILY_NOTIFICATION_ENABLED);
+  return (result[STORAGE_KEYS.DAILY_NOTIFICATION_ENABLED] as boolean | undefined) ?? false;
+}
+
+export async function setDailyNotificationEnabled(enabled: boolean): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.DAILY_NOTIFICATION_ENABLED]: enabled });
+}
+
+export async function getDailyNotificationTime(): Promise<string> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.DAILY_NOTIFICATION_TIME);
+  return (result[STORAGE_KEYS.DAILY_NOTIFICATION_TIME] as string | undefined) ?? '18:00';
+}
+
+export async function setDailyNotificationTime(time: string): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.DAILY_NOTIFICATION_TIME]: time });
+}
+
 const ONBOARDING_DONE_KEY = 'sonto_onboarding_done';
 
 export async function isOnboardingDone(): Promise<boolean> {
@@ -141,4 +159,22 @@ export async function getCustomJsonSources(): Promise<CustomJsonSource[]> {
 
 export async function saveCustomJsonSources(sources: CustomJsonSource[]): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.CUSTOM_JSON_SOURCES]: sources });
+}
+
+export async function getFlashcards(): Promise<import('./types').Flashcard[]> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.FLASHCARDS);
+  return (result[STORAGE_KEYS.FLASHCARDS] as import('./types').Flashcard[] | undefined) ?? [];
+}
+
+export async function saveFlashcards(flashcards: import('./types').Flashcard[]): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.FLASHCARDS]: flashcards });
+}
+
+export async function getShowFeedToggle(): Promise<boolean> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.SHOW_FEED_TOGGLE);
+  return (result[STORAGE_KEYS.SHOW_FEED_TOGGLE] as boolean | undefined) ?? false;
+}
+
+export async function setShowFeedToggle(visible: boolean): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.SHOW_FEED_TOGGLE]: visible });
 }

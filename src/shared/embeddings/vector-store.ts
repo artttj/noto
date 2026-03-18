@@ -109,3 +109,17 @@ export async function getOldestNonPinnedClip(): Promise<ClipItem | null> {
   if (nonPinned.length === 0) return null;
   return nonPinned.reduce((oldest, c) => (c.timestamp < oldest.timestamp ? c : oldest));
 }
+
+export async function getClipsByDomain(domain: string): Promise<ClipItem[]> {
+  const all = await getAllClips();
+  const normalizedDomain = domain.replace(/^www\./, '').toLowerCase();
+  return all.filter((clip) => {
+    if (!clip.url) return false;
+    try {
+      const clipDomain = new URL(clip.url).hostname.replace(/^www\./, '').toLowerCase();
+      return clipDomain === normalizedDomain || clipDomain.endsWith(`.${normalizedDomain}`);
+    } catch {
+      return false;
+    }
+  });
+}

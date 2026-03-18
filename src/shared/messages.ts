@@ -1,7 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import type { ClipItem, ReadLaterItem } from './types';
+import type { ClipItem, ReadLaterItem, Flashcard } from './types';
 
 export const MSG = {
   CAPTURE_CLIP: 'CAPTURE_CLIP',
@@ -21,6 +21,10 @@ export const MSG = {
   EXTRACT_CATEGORIES: 'EXTRACT_CATEGORIES',
   GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
   GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
+  UPDATE_DAILY_ALARM: 'UPDATE_DAILY_ALARM',
+  QUICK_SEARCH: 'SONTO_QUICK_SEARCH',
+  GET_RELATED_CLIPS: 'GET_RELATED_CLIPS',
+  SAVE_FLASHCARD: 'SAVE_FLASHCARD',
 } as const;
 
 export interface CaptureClipMessage {
@@ -73,6 +77,20 @@ export interface GetReadLaterMessage {
   type: typeof MSG.GET_READ_LATER;
 }
 
+export interface UpdateDailyAlarmMessage {
+  type: typeof MSG.UPDATE_DAILY_ALARM;
+}
+
+export interface GetRelatedClipsMessage {
+  type: typeof MSG.GET_RELATED_CLIPS;
+  domain: string;
+}
+
+export interface SaveFlashcardMessage {
+  type: typeof MSG.SAVE_FLASHCARD;
+  flashcard: import('./types').Flashcard;
+}
+
 export type RuntimeMessage =
   | CaptureClipMessage
   | DeleteClipMessage
@@ -83,7 +101,10 @@ export type RuntimeMessage =
   | OpenSettingsMessage
   | AddReadLaterMessage
   | RemoveReadLaterMessage
-  | GetReadLaterMessage;
+  | GetReadLaterMessage
+  | UpdateDailyAlarmMessage
+  | GetRelatedClipsMessage
+  | SaveFlashcardMessage;
 
 export interface CaptureSuccessResult {
   ok: true;

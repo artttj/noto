@@ -10,6 +10,10 @@ export const STORAGE_KEYS = {
   CLIPBOARD_MONITORING: 'sonto_clipboard_monitoring',
   MAX_HISTORY_SIZE: 'sonto_max_history_size',
   CUSTOM_JSON_SOURCES: 'sonto_custom_json_sources',
+  DAILY_NOTIFICATION_ENABLED: 'sonto_daily_notification_enabled',
+  DAILY_NOTIFICATION_TIME: 'sonto_daily_notification_time',
+  FLASHCARDS: 'sonto_flashcards',
+  SHOW_FEED_TOGGLE: 'sonto_show_feed_toggle',
 } as const;
 
 export const DEFAULT_SETTINGS: AppSettings = {

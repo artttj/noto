@@ -16,7 +16,12 @@ import {
   saveReadLater,
   getMaxHistorySize,
   getClipboardMonitoring,
+  getDailyNotificationEnabled,
+  getDailyNotificationTime,
+  getFlashcards,
+  saveFlashcards,
 } from '../shared/storage';
+import { getClipsByDomain } from '../shared/embeddings/vector-store';
 import type { ClipItem, ClipContentType, ClipSource } from '../shared/types';
 
 function generateId(): string {
@@ -163,17 +168,26 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.commands.onCommand.addListener((command) => {
-  if (command !== 'capture_selection') return;
-
   void (async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) return;
-    await chrome.tabs.sendMessage(tab.id, { type: 'SONTO_CAPTURE_SHORTCUT' });
+
+    if (command === 'capture_selection') {
+      await chrome.tabs.sendMessage(tab.id, { type: 'SONTO_CAPTURE_SHORTCUT' });
+    }
+
+    if (command === 'quick_search') {
+      await chrome.tabs.sendMessage(tab.id, { type: 'SONTO_QUICK_SEARCH' });
+    }
   })();
 });
 
-chrome.action.onClicked.addListener((tab) => {
-  void chrome.sidePanel.open({ windowId: tab.windowId });
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+  } catch (e) {
+    console.error('Failed to open side panel:', e);
+  }
 });
 
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
@@ -271,4 +285,96 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
       .catch(() => sendResponse({ ok: true, items: [] }));
     return true;
   }
+
+  if (message.type === 'UPDATE_DAILY_ALARM') {
+    void setupDailyAlarm();
+    sendResponse({ ok: true });
+    return;
+  }
+
+  if (message.type === MSG.GET_RELATED_CLIPS) {
+    void (async () => {
+      try {
+        const clips = await getClipsByDomain(message.domain);
+        sendResponse({ ok: true, clips: clips.slice(0, 5) });
+      } catch (err) {
+        sendResponse({ ok: true, clips: [] });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === MSG.SAVE_FLASHCARD) {
+    void (async () => {
+      try {
+        const cards = await getFlashcards();
+        cards.push(message.flashcard);
+        await saveFlashcards(cards);
+        sendResponse({ ok: true });
+      } catch (err) {
+        sendResponse({ ok: false, message: 'Failed to save flashcard' });
+      }
+    })();
+    return true;
+  }
 });
+
+async function setupDailyAlarm(): Promise<void> {
+  const enabled = await getDailyNotificationEnabled();
+  
+  if (!enabled) {
+    await chrome.alarms.clear('daily-wrapup');
+    return;
+  }
+  
+  const timeStr = await getDailyNotificationTime();
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  
+  const now = new Date();
+  const scheduledTime = new Date();
+  scheduledTime.setHours(hours, minutes, 0, 0);
+  
+  if (scheduledTime <= now) {
+    scheduledTime.setDate(scheduledTime.getDate() + 1);
+  }
+  
+  await chrome.alarms.create('daily-wrapup', {
+    when: scheduledTime.getTime(),
+    periodInMinutes: 24 * 60,
+  });
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'daily-wrapup') {
+    void showDailyWrapup();
+  }
+});
+
+async function showDailyWrapup(): Promise<void> {
+  const allClips = await getAllClips();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const todayClips = allClips.filter((c) => c.timestamp >= today.getTime());
+  
+  const title = 'Your Daily Sonto';
+  let body = '';
+  
+  if (todayClips.length === 0) {
+    body = 'No items saved today. Open the sidebar to explore!';
+  } else if (todayClips.length === 1) {
+    body = '1 item saved today. Keep collecting!';
+  } else {
+    body = `${todayClips.length} items saved today. Open the sidebar to review!`;
+  }
+  
+  await chrome.notifications.create({
+    type: 'basic',
+    iconUrl: '../icons/icon48.png',
+    title,
+    message: body,
+    priority: 1,
+  });
+}
+
+void setupDailyAlarm();

@@ -535,6 +535,7 @@ export class CosmosMode {
       img.className = 'cosmos-art-img';
       img.src = result.imageUrl;
       img.alt = result.caption;
+      img.addEventListener('load', () => img.classList.add('loaded'));
       img.addEventListener('error', () => img.remove(), { once: true });
 
       if (result.link) {

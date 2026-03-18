@@ -76,12 +76,12 @@
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Zen Mode</div>
+          <div class="setting-group-header" data-i18n="zen_mode">Zen Mode</div>
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Display</div>
-              <div class="setting-desc">Feed scrolls continuously. Cosmos shows one message with a spirograph between each.</div>
+              <div class="setting-title" data-i18n="zen_display">Display</div>
+              <div class="setting-desc" data-i18n="zen_display_desc">Feed scrolls continuously. Cosmos shows one message with a spirograph between each.</div>
             </div>
             <div class="segmented" id="zen-display-segmented">
               <button class="seg-btn active" data-value="cosmos" type="button">Cosmos</button>
@@ -91,8 +91,19 @@
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Speed</div>
-              <div class="setting-desc">Seconds between each new item in the feed</div>
+              <div class="setting-title" data-i18n="zen_show_toggle">Show mode toggle</div>
+              <div class="setting-desc" data-i18n="zen_show_toggle_desc">Show Cosmos/Feed toggle in sidebar header</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show-feed-toggle" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="zen_speed">Speed</div>
+              <div class="setting-desc" data-i18n="zen_speed_desc">Seconds between each new item in the feed</div>
             </div>
             <div class="drip-interval-control">
               <input type="range" id="drip-interval-slider" min="5" max="100" step="5" value="30" />
@@ -106,15 +117,15 @@
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Sources</div>
+          <div class="setting-group-header" data-i18n="zen_sources">Sources</div>
           <div class="zen-sources-body">
-            <p class="zen-sources-desc">Choose which sources appear in your feed. All are enabled by default.</p>
+            <p class="zen-sources-desc" data-i18n="zen_sources_desc">Choose which sources appear in your feed. All are enabled by default.</p>
             <div id="zen-sources-list"></div>
           </div>
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Custom RSS Feeds</div>
+          <div class="setting-group-header" data-i18n="rss_feeds">Custom RSS Feeds</div>
           <div class="setting-body">
             <div id="rss-feeds-list"></div>
             <div class="rss-add-row">
@@ -126,7 +137,7 @@
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Custom JSON API Sources</div>
+          <div class="setting-group-header" data-i18n="json_sources">Custom JSON API Sources</div>
           <div class="setting-body">
             <p class="setting-hint">Add any JSON API endpoint that returns items. The endpoint must return an array or <code>{"items": [...]}</code> where each item has: <code>text</code>, optional <code>image</code>, optional <code>link</code>, optional <code>attribution</code>.</p>
             <div id="json-sources-list"></div>
@@ -143,44 +154,65 @@
       <!-- CLIPBOARD -->
       <section id="tab-clipboard" class="tab-panel hidden">
         <div class="panel-header">
-          <h1>Clipboard</h1>
-          <p>Configure how Sonto captures and stores clipboard history.</p>
+          <h1 data-i18n="clipboard_heading">Clipboard</h1>
+          <p data-i18n="clipboard_desc">Configure how Sonto captures and stores clipboard history.</p>
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Capture</div>
+          <div class="setting-group-header" data-i18n="clipboard_capture">Capture</div>
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Auto-capture on copy</div>
-              <div class="setting-desc">Automatically save text whenever you copy on any webpage. Disable to capture only via shortcut or right-click.</div>
+              <div class="setting-title" data-i18n="clipboard_auto">Auto-capture on copy</div>
+              <div class="setting-desc" data-i18n="clipboard_auto_desc">Automatically save text whenever you copy on any webpage. Disable to capture only via shortcut or right-click.</div>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="clipboard-monitoring-toggle" />
               <span class="toggle-track"></span>
             </label>
-            <span id="status-monitoring" class="saved-msg hidden">Saved</span>
+            <span id="status-monitoring" class="saved-msg hidden" data-i18n="status_saved">Saved</span>
           </div>
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Max history size</div>
-              <div class="setting-desc">Maximum number of entries to keep. Oldest entries are removed when the limit is reached. (10–5000)</div>
+              <div class="setting-title" data-i18n="clipboard_max_size">Max history size</div>
+              <div class="setting-desc" data-i18n="clipboard_max_size_desc">Maximum number of entries to keep. Oldest entries are removed when the limit is reached. (10–5000)</div>
             </div>
             <input type="number" id="max-history-size" class="setting-input-sm" min="10" max="5000" step="10" value="500" />
-            <span id="status-max-size" class="saved-msg hidden">Saved</span>
+            <span id="status-max-size" class="saved-msg hidden" data-i18n="status_saved">Saved</span>
           </div>
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Entries stored</div>
+              <div class="setting-title" data-i18n="clipboard_stored">Entries stored</div>
             </div>
             <span id="clip-count-display" class="setting-value">—</span>
           </div>
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Keyboard Shortcuts</div>
+          <div class="setting-group-header" data-i18n="daily_summary">Daily Summary</div>
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="daily_notification">Daily wrap-up notification</div>
+              <div class="setting-desc" data-i18n="daily_notification_desc">Get a summary of your saved items at the end of each day</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="daily-notification-toggle" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="setting-row" id="daily-notification-time-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="daily_time">Notification time</div>
+            </div>
+            <input type="time" id="daily-notification-time" class="setting-input-sm" value="18:00" />
+            <span id="status-daily" class="saved-msg hidden" data-i18n="status_saved">Saved</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header" data-i18n="shortcuts">Keyboard Shortcuts</div>
           <div class="shortcut-list">
             <div class="shortcut-row">
               <div class="shortcut-keys">

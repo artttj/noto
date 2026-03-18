@@ -13,6 +13,42 @@ const en: Record<string, string> = {
   general_language_desc: 'Preferred interface language',
   general_saved: 'Saved',
 
+  zen_mode: 'Zen Mode',
+  zen_display: 'Display',
+  zen_display_desc: 'Feed scrolls continuously. Cosmos shows one message with a spirograph between each.',
+  zen_speed: 'Speed',
+  zen_speed_desc: 'Seconds between each new item in the feed',
+  zen_sources: 'Sources',
+  zen_sources_desc: 'Choose which sources appear in your feed. All are enabled by default.',
+  zen_show_toggle: 'Show mode toggle',
+  zen_show_toggle_desc: 'Show Cosmos/Feed toggle in sidebar header',
+
+  rss_feeds: 'Custom RSS Feeds',
+  json_sources: 'Custom JSON API Sources',
+
+  clipboard_heading: 'Clipboard',
+  clipboard_desc: 'Configure how Sonto captures and stores clipboard history.',
+  clipboard_capture: 'Capture',
+  clipboard_auto: 'Auto-capture on copy',
+  clipboard_auto_desc: 'Automatically save text whenever you copy on any webpage. Disable to capture only via shortcut or right-click.',
+  clipboard_max_size: 'Max history size',
+  clipboard_max_size_desc: 'Maximum number of entries to keep. Oldest entries are removed when the limit is reached. (10–5000)',
+  clipboard_stored: 'Entries stored',
+
+  daily_summary: 'Daily Summary',
+  daily_notification: 'Daily wrap-up notification',
+  daily_notification_desc: 'Get a summary of your saved items at the end of each day',
+  daily_time: 'Notification time',
+
+  shortcuts: 'Keyboard Shortcuts',
+
+  data_heading: 'Data',
+  data_export: 'Export',
+  data_import: 'Import',
+  data_delete_all: 'Delete all',
+  data_snippets: 'Saved snippets',
+  data_confirm_delete: 'Delete all entries?',
+
   about_heading: 'About Sonto',
   about_desc: 'Zen feed + clipboard manager. No accounts, no backend, no tracking.',
   about_version: 'Version',
@@ -20,6 +56,9 @@ const en: Record<string, string> = {
   about_license: 'License',
   about_license_text: 'MIT — free to use and modify.',
   about_github: 'View on GitHub',
+
+  status_saved: 'Saved',
+  status_deleted: 'Deleted',
 };
 
 export default en;

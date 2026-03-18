@@ -6,6 +6,7 @@ import {
   getSettings,
   saveSettings,
   getTheme,
+  saveTheme,
   getClipboardMonitoring,
   setClipboardMonitoring,
   getMaxHistorySize,
@@ -20,6 +21,12 @@ import {
   saveCustomFeeds,
   getCustomJsonSources,
   saveCustomJsonSources,
+  getDailyNotificationEnabled,
+  setDailyNotificationEnabled,
+  getDailyNotificationTime,
+  setDailyNotificationTime,
+  getShowFeedToggle,
+  setShowFeedToggle,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
 import { clearAllClips, getClipCount } from '../shared/embeddings/vector-store';
@@ -96,6 +103,13 @@ async function initFeedTab(): Promise<void> {
     void saveZenDisplay(val as 'feed' | 'cosmos');
   });
   setZenDisplay(storedZenDisplay);
+
+  const showFeedToggle = document.getElementById('show-feed-toggle') as HTMLInputElement;
+  const storedShowFeedToggle = await getShowFeedToggle();
+  showFeedToggle.checked = storedShowFeedToggle;
+  showFeedToggle.addEventListener('change', () => {
+    void setShowFeedToggle(showFeedToggle.checked);
+  });
 
   const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
   const dripCurrentValue = document.getElementById('drip-current-value')!;
@@ -266,16 +280,22 @@ async function initClipboardTab(): Promise<void> {
   const monitoringToggle = qs<HTMLInputElement>('#clipboard-monitoring-toggle');
   const maxSizeInput = qs<HTMLInputElement>('#max-history-size');
   const clipCountEl = document.getElementById('clip-count-display');
+  const dailyToggle = qs<HTMLInputElement>('#daily-notification-toggle');
+  const dailyTimeInput = qs<HTMLInputElement>('#daily-notification-time');
 
-  const [monitoring, maxSize, count] = await Promise.all([
+  const [monitoring, maxSize, count, dailyEnabled, dailyTime] = await Promise.all([
     getClipboardMonitoring(),
     getMaxHistorySize(),
     getClipCount(),
+    getDailyNotificationEnabled(),
+    getDailyNotificationTime(),
   ]);
 
   monitoringToggle.checked = monitoring;
   maxSizeInput.value = String(maxSize);
   if (clipCountEl) clipCountEl.textContent = String(count);
+  dailyToggle.checked = dailyEnabled;
+  dailyTimeInput.value = dailyTime;
 
   monitoringToggle.addEventListener('change', async () => {
     await setClipboardMonitoring(monitoringToggle.checked);
@@ -290,6 +310,18 @@ async function initClipboardTab(): Promise<void> {
     } else {
       maxSizeInput.value = String(maxSize);
     }
+  });
+
+  dailyToggle.addEventListener('change', async () => {
+    await setDailyNotificationEnabled(dailyToggle.checked);
+    await chrome.runtime.sendMessage({ type: 'UPDATE_DAILY_ALARM' });
+    showStatus('status-daily');
+  });
+
+  dailyTimeInput.addEventListener('change', async () => {
+    await setDailyNotificationTime(dailyTimeInput.value);
+    await chrome.runtime.sendMessage({ type: 'UPDATE_DAILY_ALARM' });
+    showStatus('status-daily');
   });
 }
 

@@ -11,6 +11,7 @@ import {
   getTheme,
   saveTheme,
   getReadLater,
+  getShowFeedToggle,
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager } from './clipboard-manager';
@@ -46,7 +47,7 @@ class SontoSidebar {
 
   async init(): Promise<void> {
     qs<HTMLButtonElement>('#btn-settings').addEventListener('click', () => {
-      void chrome.runtime.sendMessage({ type: MSG.OPEN_SETTINGS });
+      void chrome.runtime.openOptionsPage();
     });
 
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
@@ -114,17 +115,24 @@ class SontoSidebar {
     this.initReadLaterBar();
 
     try {
-      const [settings, onboardingDone, theme, zenDisplay] = await Promise.all([
+      const [settings, onboardingDone, theme, zenDisplay, showFeedToggle] = await Promise.all([
         getSettings(),
         isOnboardingDone(),
         getTheme(),
         getZenDisplay(),
+        getShowFeedToggle(),
       ]);
       this.language = settings.language ?? 'en';
       this.theme = theme;
       this.zenDisplay = zenDisplay;
       this.applyTheme(theme);
       this.syncDisplayToggle(zenDisplay);
+      
+      const zdtEl = document.getElementById('zen-display-toggle');
+      if (zdtEl) {
+        zdtEl.classList.toggle('hidden', !showFeedToggle);
+      }
+      
       if (!onboardingDone) {
         await setOnboardingDone();
       }

@@ -4,6 +4,7 @@
 import { MSG } from '../shared/messages';
 import type { ClipItem, ClipContentType } from '../shared/types';
 import { escapeHtml } from '../shared/utils';
+import { exportToNotion, exportToMarkdown, exportToJson } from '../shared/export';
 
 function qs<T extends Element>(selector: string, parent: ParentNode = document): T {
   return parent.querySelector<T>(selector)!;
@@ -139,7 +140,18 @@ export class ClipboardManager {
       </div>
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy to clipboard">Copy</button>
+        <button class="clip-btn clip-btn-flashcard" title="Make Flashcard">⚡</button>
+        <button class="clip-btn clip-btn-export" title="Export">
+          <span class="export-icon">↑</span>
+          Export
+        </button>
         <button class="clip-btn clip-btn-delete" title="Delete">Delete</button>
+      </div>
+      <div class="export-menu hidden">
+        <button class="export-option" data-export="notion">Notion</button>
+        <button class="export-option" data-export="markdown">Markdown</button>
+        <button class="export-option" data-export="json">JSON</button>
+        <button class="export-option" data-export="clipboard">Copy as Markdown</button>
       </div>
     `;
 
@@ -153,6 +165,57 @@ export class ClipboardManager {
 
     qs<HTMLButtonElement>('.clip-btn-delete', card).addEventListener('click', () => {
       void this.deleteClip(clip.id, card);
+    });
+
+    qs<HTMLButtonElement>('.clip-btn-flashcard', card).addEventListener('click', () => {
+      void this.createFlashcard(clip);
+    });
+
+    const exportBtn = qs<HTMLButtonElement>('.clip-btn-export', card);
+    const exportMenu = qs<HTMLElement>('.export-menu', card);
+    
+    exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMenu.classList.toggle('hidden');
+      document.querySelectorAll('.export-menu:not(.hidden)').forEach(menu => {
+        if (menu !== exportMenu) menu.classList.add('hidden');
+      });
+    });
+
+    document.addEventListener('click', () => {
+      exportMenu.classList.add('hidden');
+    });
+
+    exportMenu.querySelectorAll('.export-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = (option as HTMLElement).dataset.export;
+        
+        switch (type) {
+          case 'notion':
+            exportToNotion(clip);
+            break;
+          case 'markdown':
+          case 'clipboard':
+            const md = exportToMarkdown(clip);
+            void navigator.clipboard.writeText(md).then(() => {
+              const btn = qs<HTMLButtonElement>('.clip-btn-export', card);
+              btn.textContent = 'Copied!';
+              setTimeout(() => { btn.innerHTML = '<span class="export-icon">↑</span>Export'; }, 1500);
+            });
+            break;
+          case 'json':
+            const json = exportToJson(clip);
+            void navigator.clipboard.writeText(json).then(() => {
+              const btn = qs<HTMLButtonElement>('.clip-btn-export', card);
+              btn.textContent = 'JSON Copied!';
+              setTimeout(() => { btn.innerHTML = '<span class="export-icon">↑</span>Export'; }, 1500);
+            });
+            break;
+        }
+        
+        exportMenu.classList.add('hidden');
+      });
     });
 
     return card;
@@ -176,5 +239,37 @@ export class ClipboardManager {
 
       if (this.clips.length === 0) this.render();
     }, 200);
+  }
+
+  private async createFlashcard(clip: ClipItem): Promise<void> {
+    const flashcard = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      front: clip.text.slice(0, 200),
+      back: '',
+      sourceClipId: clip.id,
+      createdAt: Date.now(),
+      nextReviewAt: Date.now(),
+      interval: 1,
+      easeFactor: 2.5,
+      reviewCount: 0,
+    };
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: MSG.SAVE_FLASHCARD,
+        flashcard,
+      });
+      this.showFlashcardCreated();
+    } catch {
+      // ignore
+    }
+  }
+
+  private showFlashcardCreated(): void {
+    const toast = document.createElement('div');
+    toast.className = 'flashcard-toast';
+    toast.textContent = 'Flashcard created!';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
   }
 }
