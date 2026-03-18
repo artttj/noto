@@ -5,8 +5,6 @@ import { MSG } from '../shared/messages';
 import type { ClipItem, ClipContentType } from '../shared/types';
 import { escapeHtml } from '../shared/utils';
 
-export type ClipFilter = 'all' | 'text' | 'link' | 'code' | 'email' | 'pinned';
-
 function qs<T extends Element>(selector: string, parent: ParentNode = document): T {
   return parent.querySelector<T>(selector)!;
 }
@@ -54,129 +52,48 @@ function truncateUrl(url: string): string {
   }
 }
 
-function exportAsMarkdown(clips: ClipItem[]): string {
-  return clips
-    .map((c) => {
-      const lines = [`## ${formatDate(c.timestamp)}`];
-      if (c.title) lines.push(`**${c.title}**`);
-      lines.push('');
-      if (c.contentType === 'code') {
-        lines.push('```');
-        lines.push(c.text);
-        lines.push('```');
-      } else {
-        lines.push(c.text);
-      }
-      if (c.url) lines.push('', `Source: ${c.url}`);
-      return lines.join('\n');
-    })
-    .join('\n\n---\n\n');
-}
-
-function exportAsJson(clips: ClipItem[]): string {
-  return JSON.stringify(clips, null, 2);
-}
-
-function downloadFile(content: string, filename: string, mime: string): void {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export class ClipboardManager {
   private clips: ClipItem[] = [];
-  private filtered: ClipItem[] = [];
-  private filter: ClipFilter = 'all';
   private listEl: HTMLElement;
-  private countEl: HTMLElement;
 
-  constructor(
-    listEl: HTMLElement,
-    countEl: HTMLElement,
-  ) {
+  constructor(listEl: HTMLElement) {
     this.listEl = listEl;
-    this.countEl = countEl;
   }
 
   async load(): Promise<void> {
     const response = await chrome.runtime.sendMessage({ type: MSG.GET_ALL_CLIPS });
     this.clips = response?.ok ? (response.clips as ClipItem[]) : [];
-    this.applyFilter();
     this.render();
   }
 
   async search(query: string): Promise<void> {
     if (!query.trim()) {
-      this.applyFilter();
-      this.render();
+      await this.load();
       return;
     }
     const response = await chrome.runtime.sendMessage({ type: MSG.SEARCH_CLIPS, query });
-    const results: ClipItem[] = response?.ok ? response.clips : [];
-    this.filtered = this.applyFilterToList(results);
-    this.updateCount();
+    this.clips = response?.ok ? response.clips : [];
     this.render();
-  }
-
-  setFilter(filter: ClipFilter): void {
-    this.filter = filter;
-    this.applyFilter();
-    this.render();
-  }
-
-  private applyFilter(): void {
-    this.filtered = this.applyFilterToList(this.clips);
-    this.updateCount();
-  }
-
-  private applyFilterToList(list: ClipItem[]): ClipItem[] {
-    if (this.filter === 'all') return list;
-    if (this.filter === 'pinned') return list.filter((c) => c.pinned);
-    return list.filter((c) => c.contentType === this.filter);
-  }
-
-  private updateCount(): void {
-    const pinned = this.clips.filter((c) => c.pinned).length;
-    this.countEl.textContent = String(this.clips.length);
-
-    const allTab = document.querySelector<HTMLElement>('[data-filter="all"] .filter-count');
-    const pinnedTab = document.querySelector<HTMLElement>('[data-filter="pinned"] .filter-count');
-    if (allTab) allTab.textContent = String(this.clips.length);
-    if (pinnedTab) pinnedTab.textContent = String(pinned);
-
-    const typeFilters: ClipFilter[] = ['text', 'link', 'code', 'email'];
-    for (const f of typeFilters) {
-      const tab = document.querySelector<HTMLElement>(`[data-filter="${f}"] .filter-count`);
-      if (tab) tab.textContent = String(this.clips.filter((c) => c.contentType === f).length);
-    }
   }
 
   render(): void {
     this.listEl.innerHTML = '';
 
-    if (this.filtered.length === 0) {
+    if (this.clips.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'clips-empty';
-      if (this.clips.length === 0) {
-        empty.innerHTML = `
-          <div class="empty-icon">⌘C</div>
-          <p>Your clipboard history is empty.</p>
-          <p class="empty-hint">Copy any text on a web page and it will appear here.</p>
-        `;
-      } else {
-        empty.innerHTML = `<p>No clips match this filter.</p>`;
-      }
+      empty.innerHTML = `
+        <div class="empty-icon">⌘C</div>
+        <p>Your clipboard history is empty.</p>
+        <p class="empty-hint">Copy any text on a web page and it will appear here.</p>
+      `;
       this.listEl.appendChild(empty);
       return;
     }
 
     let currentDay = '';
 
-    for (const clip of this.filtered) {
+    for (const clip of this.clips) {
       const day = new Date(clip.timestamp).toLocaleDateString(undefined, {
         weekday: 'long',
         month: 'short',
@@ -197,7 +114,7 @@ export class ClipboardManager {
 
   private buildCard(clip: ClipItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = `clip-card clip-type-${clip.contentType}${clip.pinned ? ' clip-pinned' : ''}`;
+    card.className = `clip-card clip-type-${clip.contentType}`;
     card.dataset.id = clip.id;
 
     const preview = clip.contentType === 'code'
@@ -206,10 +123,6 @@ export class ClipboardManager {
 
     const sourceInfo = clip.url
       ? `<a class="clip-source-url" href="${escapeHtml(clip.url)}" target="_blank" rel="noopener">${escapeHtml(truncateUrl(clip.url))}</a>`
-      : '';
-
-    const tags = clip.tags?.length
-      ? `<div class="clip-tags">${clip.tags.map((t) => `<span class="clip-tag">${escapeHtml(t)}</span>`).join('')}</div>`
       : '';
 
     card.innerHTML = `
@@ -223,13 +136,9 @@ export class ClipboardManager {
       <div class="clip-body">
         ${preview}
         ${sourceInfo ? `<div class="clip-meta">${sourceInfo}</div>` : ''}
-        ${tags}
       </div>
-      <div class="clip-actions">
+      <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy to clipboard">Copy</button>
-        <button class="clip-btn clip-btn-pin${clip.pinned ? ' active' : ''}" title="${clip.pinned ? 'Unpin' : 'Pin'}">
-          ${clip.pinned ? 'Unpin' : 'Pin'}
-        </button>
         <button class="clip-btn clip-btn-delete" title="Delete">Delete</button>
       </div>
     `;
@@ -242,10 +151,6 @@ export class ClipboardManager {
       });
     });
 
-    qs<HTMLButtonElement>('.clip-btn-pin', card).addEventListener('click', () => {
-      void this.togglePin(clip, card);
-    });
-
     qs<HTMLButtonElement>('.clip-btn-delete', card).addEventListener('click', () => {
       void this.deleteClip(clip.id, card);
     });
@@ -253,26 +158,10 @@ export class ClipboardManager {
     return card;
   }
 
-  private async togglePin(clip: ClipItem, card: HTMLElement): Promise<void> {
-    const updated = { ...clip, pinned: !clip.pinned };
-    await chrome.runtime.sendMessage({ type: MSG.UPDATE_CLIP, clip: updated });
-
-    const idx = this.clips.findIndex((c) => c.id === clip.id);
-    if (idx !== -1) this.clips[idx] = updated;
-
-    card.classList.toggle('clip-pinned', !!updated.pinned);
-    const btn = qs<HTMLButtonElement>('.clip-btn-pin', card);
-    btn.textContent = updated.pinned ? 'Unpin' : 'Pin';
-    btn.classList.toggle('active', !!updated.pinned);
-
-    this.updateCount();
-  }
-
   private async deleteClip(id: string, card: HTMLElement): Promise<void> {
     card.classList.add('clip-removing');
     await chrome.runtime.sendMessage({ type: MSG.DELETE_CLIP, id });
     this.clips = this.clips.filter((c) => c.id !== id);
-    this.applyFilter();
 
     setTimeout(() => {
       card.remove();
@@ -285,37 +174,7 @@ export class ClipboardManager {
         }
       });
 
-      if (this.filtered.length === 0) this.render();
+      if (this.clips.length === 0) this.render();
     }, 200);
-  }
-
-  async clearAll(): Promise<void> {
-    const label = this.filter === 'all'
-      ? `all ${this.clips.length} clips`
-      : `${this.filtered.length} ${this.filter} clips`;
-    if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
-
-    if (this.filter === 'all') {
-      await chrome.runtime.sendMessage({ type: MSG.CLEAR_CLIPS });
-      this.clips = [];
-    } else {
-      for (const clip of [...this.filtered]) {
-        await chrome.runtime.sendMessage({ type: MSG.DELETE_CLIP, id: clip.id });
-        this.clips = this.clips.filter((c) => c.id !== clip.id);
-      }
-    }
-
-    this.applyFilter();
-    this.render();
-  }
-
-  exportMarkdown(): void {
-    const date = new Date().toISOString().slice(0, 10);
-    downloadFile(exportAsMarkdown(this.filtered), `clipboard-${date}.md`, 'text/markdown');
-  }
-
-  exportJson(): void {
-    const date = new Date().toISOString().slice(0, 10);
-    downloadFile(exportAsJson(this.filtered), `clipboard-${date}.json`, 'application/json');
   }
 }

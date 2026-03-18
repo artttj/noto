@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   READ_LATER: 'sonto_read_later',
   CLIPBOARD_MONITORING: 'sonto_clipboard_monitoring',
   MAX_HISTORY_SIZE: 'sonto_max_history_size',
+  CUSTOM_JSON_SOURCES: 'sonto_custom_json_sources',
 } as const;
 
 export const DEFAULT_SETTINGS: AppSettings = {

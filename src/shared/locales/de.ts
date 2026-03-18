@@ -2,9 +2,13 @@
 // Licensed under the MIT License.
 
 const de: Record<string, string> = {
+  nav_feed: 'Feed',
+  nav_clipboard: 'Zwischenablage',
+  nav_data: 'Daten',
   nav_about: 'Über',
   brand_sub: 'Einstellungen',
 
+  feed_heading: 'Feed',
   general_language: 'Sprache',
   general_language_desc: 'Bevorzugte Oberflächensprache',
   general_saved: 'Gespeichert',

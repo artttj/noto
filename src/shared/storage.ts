@@ -70,3 +70,75 @@ export async function isOnboardingDone(): Promise<boolean> {
 export async function setOnboardingDone(): Promise<void> {
   await chrome.storage.local.set({ [ONBOARDING_DONE_KEY]: true });
 }
+
+const DISABLED_SOURCES_KEY = 'sonto_disabled_sources';
+const DRIP_INTERVAL_KEY = 'sonto_drip_interval_ms';
+const CUSTOM_FEEDS_KEY = 'sonto_custom_feeds';
+const ZEN_SOURCE_SIGNALS_KEY = 'sonto_zen_source_signals';
+const ZEN_DISPLAY_KEY = 'sonto_zen_display';
+
+export async function getDisabledSources(): Promise<string[]> {
+  const result = await chrome.storage.local.get(DISABLED_SOURCES_KEY);
+  return (result[DISABLED_SOURCES_KEY] as string[] | undefined) ?? [];
+}
+
+export async function saveDisabledSources(ids: string[]): Promise<void> {
+  await chrome.storage.local.set({ [DISABLED_SOURCES_KEY]: ids });
+}
+
+export async function getDripInterval(): Promise<number> {
+  const result = await chrome.storage.local.get(DRIP_INTERVAL_KEY);
+  return (result[DRIP_INTERVAL_KEY] as number | undefined) ?? 15000;
+}
+
+export async function saveDripInterval(ms: number): Promise<void> {
+  await chrome.storage.local.set({ [DRIP_INTERVAL_KEY]: ms });
+}
+
+export type CustomFeed = { url: string; label: string };
+
+export async function getCustomFeeds(): Promise<CustomFeed[]> {
+  const result = await chrome.storage.local.get(CUSTOM_FEEDS_KEY);
+  return (result[CUSTOM_FEEDS_KEY] as CustomFeed[] | undefined) ?? [];
+}
+
+export async function saveCustomFeeds(feeds: CustomFeed[]): Promise<void> {
+  await chrome.storage.local.set({ [CUSTOM_FEEDS_KEY]: feeds });
+}
+
+export async function getZenSourceSignals(): Promise<Record<string, number>> {
+  const result = await chrome.storage.local.get(ZEN_SOURCE_SIGNALS_KEY);
+  const raw = result[ZEN_SOURCE_SIGNALS_KEY] as Record<string, unknown> | undefined;
+  if (!raw) return {};
+  return Object.fromEntries(
+    Object.entries(raw).filter((entry): entry is [string, number] => typeof entry[1] === 'number'),
+  );
+}
+
+export async function bumpZenSourceSignal(sourceId: string, amount: number): Promise<void> {
+  if (!sourceId || !Number.isFinite(amount) || amount === 0) return;
+  const current = await getZenSourceSignals();
+  current[sourceId] = Math.max(0, Math.min(50, (current[sourceId] ?? 0) + amount));
+  await chrome.storage.local.set({ [ZEN_SOURCE_SIGNALS_KEY]: current });
+}
+
+export async function getZenDisplay(): Promise<'feed' | 'cosmos'> {
+  const result = await chrome.storage.local.get(ZEN_DISPLAY_KEY);
+  const val = result[ZEN_DISPLAY_KEY] as string | undefined;
+  return val === 'feed' ? 'feed' : 'cosmos';
+}
+
+export async function saveZenDisplay(mode: 'feed' | 'cosmos'): Promise<void> {
+  await chrome.storage.local.set({ [ZEN_DISPLAY_KEY]: mode });
+}
+
+export type CustomJsonSource = { url: string; label: string };
+
+export async function getCustomJsonSources(): Promise<CustomJsonSource[]> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.CUSTOM_JSON_SOURCES);
+  return (result[STORAGE_KEYS.CUSTOM_JSON_SOURCES] as CustomJsonSource[] | undefined) ?? [];
+}
+
+export async function saveCustomJsonSources(sources: CustomJsonSource[]): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.CUSTOM_JSON_SOURCES]: sources });
+}

@@ -18,13 +18,21 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-tab="clipboard" type="button">
+        <button class="nav-item active" data-tab="feed" type="button">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2" width="12" height="16" rx="2"/>
+            <path d="M7 6h6M7 9.5h6M7 13h4"/>
+          </svg>
+          <span data-i18n="nav_feed">Feed</span>
+        </button>
+
+        <button class="nav-item" data-tab="clipboard" type="button">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <rect x="6" y="2" width="8" height="4" rx="1"/>
             <path d="M6 4H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1"/>
             <path d="M8 11h4M8 14h2"/>
           </svg>
-          <span>Clipboard</span>
+          <span data-i18n="nav_clipboard">Clipboard</span>
         </button>
 
         <button class="nav-item" data-tab="data" type="button">
@@ -33,7 +41,7 @@
             <path d="M3 5v10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5"/>
             <path d="M3 10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/>
           </svg>
-          <span>Data</span>
+          <span data-i18n="nav_data">Data</span>
         </button>
 
         <button class="nav-item" data-tab="about" type="button">
@@ -48,25 +56,95 @@
     </aside>
 
     <main class="tab-content">
-      <!-- CLIPBOARD -->
-      <section id="tab-clipboard" class="tab-panel">
+      <!-- FEED -->
+      <section id="tab-feed" class="tab-panel">
         <div class="panel-header">
-          <h1>Clipboard</h1>
-          <p>Configure how Sonto captures and stores clipboard history.</p>
+          <h1 data-i18n="feed_heading">Feed</h1>
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header" data-i18n="general_language">Language</div>
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Interface language</div>
-              <div class="setting-desc">Language used for the UI</div>
+              <div class="setting-title" data-i18n="general_language">Language</div>
+              <div class="setting-desc" data-i18n="general_language_desc">Interface language</div>
             </div>
             <div class="segmented" id="language-segmented">
               <button class="seg-btn" data-value="en" type="button">English</button>
               <button class="seg-btn" data-value="de" type="button">Deutsch</button>
             </div>
           </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Zen Mode</div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title">Display</div>
+              <div class="setting-desc">Feed scrolls continuously. Cosmos shows one message with a spirograph between each.</div>
+            </div>
+            <div class="segmented" id="zen-display-segmented">
+              <button class="seg-btn active" data-value="cosmos" type="button">Cosmos</button>
+              <button class="seg-btn" data-value="feed" type="button">Feed</button>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title">Speed</div>
+              <div class="setting-desc">Seconds between each new item in the feed</div>
+            </div>
+            <div class="drip-interval-control">
+              <input type="range" id="drip-interval-slider" min="5" max="100" step="5" value="30" />
+              <div class="drip-labels">
+                <span>5s</span>
+                <span id="drip-current-value">30s</span>
+                <span>100s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Sources</div>
+          <div class="zen-sources-body">
+            <p class="zen-sources-desc">Choose which sources appear in your feed. All are enabled by default.</p>
+            <div id="zen-sources-list"></div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Custom RSS Feeds</div>
+          <div class="setting-body">
+            <div id="rss-feeds-list"></div>
+            <div class="rss-add-row">
+              <input id="rss-url-input" type="url" placeholder="https://example.com/feed.xml" class="rss-url-input" />
+              <button id="rss-add-btn" class="btn btn-primary btn-sm" type="button">Add Feed</button>
+            </div>
+            <p class="setting-hint rss-feed-error" id="rss-feed-error" style="display:none;color:var(--c-error)"></p>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Custom JSON API Sources</div>
+          <div class="setting-body">
+            <p class="setting-hint">Add any JSON API endpoint that returns items. The endpoint must return an array or <code>{"items": [...]}</code> where each item has: <code>text</code>, optional <code>image</code>, optional <code>link</code>, optional <code>attribution</code>.</p>
+            <div id="json-sources-list"></div>
+            <div class="rss-add-row">
+              <input id="json-source-url-input" type="url" placeholder="https://api.example.com/items" class="rss-url-input" />
+              <input id="json-source-label-input" type="text" placeholder="Label (optional)" class="rss-url-input" style="max-width:140px" />
+              <button id="json-source-add-btn" class="btn btn-primary btn-sm" type="button">Add Source</button>
+            </div>
+            <p class="setting-hint" id="json-source-error" style="display:none;color:var(--c-error)"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CLIPBOARD -->
+      <section id="tab-clipboard" class="tab-panel hidden">
+        <div class="panel-header">
+          <h1>Clipboard</h1>
+          <p>Configure how Sonto captures and stores clipboard history.</p>
         </div>
 
         <div class="setting-group">
@@ -87,7 +165,7 @@
           <div class="setting-row">
             <div class="setting-label">
               <div class="setting-title">Max history size</div>
-              <div class="setting-desc">Maximum number of entries to keep. Oldest non-pinned entries are removed when the limit is reached. (10–5000)</div>
+              <div class="setting-desc">Maximum number of entries to keep. Oldest entries are removed when the limit is reached. (10–5000)</div>
             </div>
             <input type="number" id="max-history-size" class="setting-input-sm" min="10" max="5000" step="10" value="500" />
             <span id="status-max-size" class="saved-msg hidden">Saved</span>
@@ -137,50 +215,17 @@
       <section id="tab-data" class="tab-panel hidden">
         <div class="panel-header">
           <h1>Data</h1>
-          <p>Export, import, and manage your clipboard history.</p>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header">Export</div>
-          <div class="setting-body">
-            <p class="setting-hint" style="margin-top:0">Download all your clipboard entries and settings as a JSON file.</p>
-            <div style="margin-top:12px">
-              <button id="btn-export-backup" class="btn btn-primary btn-sm" type="button">Export Backup</button>
-              <span id="export-status" class="saved-msg hidden">Downloaded</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header">Import</div>
-          <div class="setting-body">
-            <p class="setting-hint" style="margin-top:0">Restore from a previously exported backup file.</p>
-            <div class="setting-row" style="padding:10px 0 0;border:none">
-              <div class="setting-label">
-                <div class="setting-title">Merge mode</div>
-                <div class="setting-desc">Keep existing entries and add imported ones on top</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="import-merge" checked />
-                <span class="toggle-track"></span>
-              </label>
-            </div>
-            <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
-              <button id="btn-import-backup" class="btn btn-ghost btn-sm" type="button">Choose File</button>
-              <input id="import-file" type="file" accept=".json" style="display:none" />
-              <span id="status-import" class="saved-msg hidden">Imported</span>
-            </div>
-          </div>
+          <p>Manage your clipboard history.</p>
         </div>
 
         <div class="setting-group">
           <div class="setting-group-header">Danger Zone</div>
           <div class="setting-body">
-            <p class="setting-hint" style="margin-top:0">
+            <p class="setting-hint">
               <span id="snippet-count-data">0</span> entries stored.
               Permanently deletes all clipboard entries. This cannot be undone.
             </p>
-            <div style="margin-top:12px">
+            <div class="setting-body-action">
               <button id="btn-delete-all" class="btn btn-danger" type="button">Delete All</button>
               <span id="status-delete" class="saved-msg hidden">Deleted</span>
             </div>

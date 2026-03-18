@@ -2,32 +2,20 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../../shared/messages';
+import { bumpZenSourceSignal, getDripInterval, getDisabledSources, getZenSourceSignals } from '../../shared/storage';
 import {
+  AI_PATTERNS,
+  SVG_BULB,
   ZEN_DRIP_MS,
   ZEN_IDLE_MS,
   ZEN_INITIAL_BATCH,
   ZEN_MAX_BUBBLES,
   escapeHtml,
-  SVG_BULB,
 } from './zen-content';
 import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcherWithSignals } from './zen-fetchers';
 import { translateText } from './translator';
 
-const SVG_PIN = [
-  '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">',
-  '<path d="M5.5 1L7 4.5H10L7.5 6.5l1 3.5L5.5 8 2 10l1-3.5L.5 4.5H4z"/>',
-  '</svg>',
-].join('');
-
-const SVG_PIN_FILLED = [
-  '<svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" stroke="none">',
-  '<path d="M5.5 1L7 4.5H10L7.5 6.5l1 3.5L5.5 8 2 10l1-3.5L.5 4.5H4z"/>',
-  '</svg>',
-].join('');
-
-const AI_PATTERNS = [
-  /\bai\b/i, /\bllm\b/i, /\bchatgpt\b/i, /\bgemini\b/i, /\bprompt engineering\b/i,
-];
+const SVG_COPY = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
 
 export class ZenFeed {
   private pastFacts: string[] = [];
@@ -36,25 +24,23 @@ export class ZenFeed {
   private lastActivity = Date.now();
   private language: string;
   private _starting = false;
+  private disabledSources = new Set<string>();
   private dripCount = 0;
+  private sourceSignals: Record<string, number> = {};
 
   constructor(
     private readonly feedEl: HTMLElement,
-    { language }: { language: string; snippets: () => unknown[] },
+    { language }: { language: string },
   ) {
     this.language = language;
 
-    document.addEventListener('pointermove', () => {
-      this.lastActivity = Date.now();
-    });
-    document.addEventListener('keydown', () => {
-      this.lastActivity = Date.now();
-    });
+    document.addEventListener('pointermove', () => { this.lastActivity = Date.now(); });
+    document.addEventListener('keydown', () => { this.lastActivity = Date.now(); });
 
     this.feedEl.addEventListener('click', (e) => {
       const bubble = (e.target as HTMLElement).closest<HTMLElement>('.zen-bubble');
       if (!bubble) return;
-      if ((e.target as HTMLElement).closest('.zen-copy, .zen-pin')) return;
+      if ((e.target as HTMLElement).closest('.zen-copy')) return;
       const isSpotlit = bubble.classList.contains('spotlight');
       this.feedEl.querySelectorAll('.zen-bubble').forEach((b) => b.classList.remove('spotlight'));
       if (!isSpotlit) bubble.classList.add('spotlight');
@@ -63,11 +49,19 @@ export class ZenFeed {
 
   async start(): Promise<void> {
     if (this._starting) return;
-
     if (this.zenDripTimer && this.feedEl.querySelectorAll('.zen-bubble').length > 0) return;
 
     this._starting = true;
     this.stop();
+
+    try {
+      const [disabled, intervalMs, sourceSignals] = await Promise.all([
+        getDisabledSources(), getDripInterval(), getZenSourceSignals(),
+      ]);
+      this.disabledSources = new Set(disabled);
+      this.dripIntervalMs = intervalMs;
+      this.sourceSignals = sourceSignals;
+    } catch {}
 
     try {
       const hasBubbles = this.feedEl.querySelectorAll('.zen-bubble').length > 0;
@@ -147,14 +141,18 @@ export class ZenFeed {
     void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
   }
 
+  private isValidFact(text: string): boolean {
+    return text.length >= 50 && !text.includes('[NULL]') && !AI_PATTERNS.some((p) => p.test(text));
+  }
+
   private async addBubble(): Promise<number> {
     this.dripCount++;
 
-    const fetcher = pickFetcherWithSignals(ZEN_FETCHERS, {}, new Set());
+    const fetcher = pickFetcherWithSignals(ZEN_FETCHERS, this.sourceSignals, this.disabledSources);
 
     const ctx = {
       language: this.language,
-      isValidFact: (t: string) => t.length >= 50 && !t.includes('[NULL]') && !AI_PATTERNS.some((p) => p.test(t)),
+      isValidFact: (t: string) => this.isValidFact(t),
       pickCategory: () => null,
     };
 
@@ -176,14 +174,7 @@ export class ZenFeed {
         const translated = await translateText(text, this.language);
         const useHtml = translated === text ? html : undefined;
         this.hideLoader();
-        this.appendBubbleElement(
-          translated,
-          link,
-          icon,
-          useHtml,
-          fetcher.id,
-          result.hideLabel ? undefined : fetcher.label,
-        );
+        this.appendBubbleElement(translated, link, icon, useHtml, fetcher.id, result.hideLabel ? undefined : fetcher.label);
         this.trackFact(text);
         return this.durationMultiplier(result);
       }
@@ -215,12 +206,11 @@ export class ZenFeed {
   }
 
   private trimOldBubbles(): void {
-    const bubbles = this.feedEl.querySelectorAll<HTMLElement>('.zen-bubble:not(.zen-pinned)');
     const all = this.feedEl.querySelectorAll<HTMLElement>('.zen-bubble');
     const excess = all.length - ZEN_MAX_BUBBLES;
     let removed = 0;
-    for (let i = bubbles.length - 1; i >= 0 && removed < excess; i--) {
-      const old = bubbles[i];
+    for (let i = all.length - 1; i >= 0 && removed < excess; i--) {
+      const old = all[i];
       old.style.transition = 'opacity 0.6s ease';
       old.style.opacity = '0';
       setTimeout(() => old.remove(), 600);
@@ -232,78 +222,42 @@ export class ZenFeed {
     const items = Array.from(this.feedEl.querySelectorAll<HTMLElement>('.zen-bubble'))
       .map((el) => el.querySelector('span')?.textContent ?? '')
       .filter(Boolean);
-    void chrome.storage.session
-      .set({ sonto_zen_feed: items, sonto_zen_last_drip: Date.now() })
-      .catch(() => {});
+    void chrome.storage.session.set({
+      sonto_zen_feed: items,
+      sonto_zen_last_drip: Date.now(),
+    }).catch(() => {});
   }
 
-  private attachCopyButton(bubble: HTMLElement, text: string): void {
+  private attachCopyButton(bubble: HTMLElement, text: string, sourceId?: string): void {
     const btn = document.createElement('button');
     btn.className = 'zen-copy';
     btn.title = 'Copy';
-    btn.innerHTML =
-      '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
+    btn.setAttribute('aria-label', 'Copy text');
+    btn.innerHTML = SVG_COPY;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       void navigator.clipboard.writeText(text).then(() => {
+        if (sourceId) this.trackSourceSignal(sourceId, 2);
         btn.innerHTML = '✓';
-        setTimeout(() => {
-          btn.innerHTML =
-            '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
-        }, 1500);
+        setTimeout(() => { btn.innerHTML = SVG_COPY; }, 1500);
       });
     });
     bubble.appendChild(btn);
   }
 
-  private attachPinButton(bubble: HTMLElement, text: string, url?: string): void {
-    const btn = document.createElement('button');
-    btn.className = 'zen-pin';
-    btn.title = 'Save to clipboard history';
-    btn.innerHTML = SVG_PIN;
-
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (bubble.classList.contains('zen-pinned')) return;
-      bubble.classList.add('zen-pinned');
-      btn.innerHTML = SVG_PIN_FILLED;
-      btn.title = 'Saved';
-
-      await chrome.runtime
-        .sendMessage({
-          type: MSG.CAPTURE_CLIP,
-          text: text.slice(0, 500),
-          url: url ?? location.href,
-          title: 'Saved from Zen feed',
-          source: 'manual',
-        })
-        .catch(() => {});
-    });
-
-    bubble.appendChild(btn);
-  }
-
-  private appendBubbleElement(
-    text: string,
-    link?: string,
-    icon?: string,
-    html?: string,
-    _sourceId?: string,
-    source?: string,
-  ): HTMLElement {
+  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, sourceId?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     if (html?.includes('zen-oblique')) bubble.classList.add('zen-bubble--oblique');
-    if (!html && !link && !source && / [\u2014-] /.test(text))
-      bubble.classList.add('zen-bubble--quote');
+    if (!html && !link && !source && / [\u2014-] /.test(text)) bubble.classList.add('zen-bubble--quote');
     const linkHtml = link
       ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>`
       : '';
     const innerContent = html ?? escapeHtml(text);
     const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
     bubble.innerHTML = `${icon ?? SVG_BULB}<div class="zen-bubble-body"><div class="zen-bubble-text">${innerContent}${linkHtml}</div>${sourceHtml}</div>`;
-    this.attachCopyButton(bubble, text);
-    this.attachPinButton(bubble, text, link);
+    this.attachCopyButton(bubble, text, sourceId);
+    this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {
       this.feedEl.insertBefore(bubble, first);
@@ -313,13 +267,7 @@ export class ZenFeed {
     return bubble;
   }
 
-  private appendArtBubble(
-    imageUrl: string,
-    caption: string,
-    link?: string,
-    _sourceId?: string,
-    source?: string,
-  ): HTMLElement {
+  private appendArtBubble(imageUrl: string, caption: string, link?: string, sourceId?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     const sep = caption.includes(' · ') ? ' · ' : ' — ';
@@ -327,9 +275,7 @@ export class ZenFeed {
     const title = sepIdx !== -1 ? caption.slice(0, sepIdx) : caption;
     const sub = sepIdx !== -1 ? caption.slice(sepIdx + sep.length) : '';
     const subHtml = sub ? `<span class="zen-art-caption">${escapeHtml(sub)}</span>` : '';
-    const linkHtml = link
-      ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>`
-      : '';
+    const linkHtml = link ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>` : '';
     const imgHtml = link
       ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="zen-art-img-link"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></a>`
       : `<img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />`;
@@ -338,14 +284,10 @@ export class ZenFeed {
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
-      img.addEventListener(
-        'error',
-        () => (img.closest('.zen-art-img-link') ?? img).remove(),
-        { once: true },
-      );
+      img.addEventListener('error', () => (img.closest('.zen-art-img-link') ?? img).remove(), { once: true });
     }
-    this.attachCopyButton(bubble, caption);
-    this.attachPinButton(bubble, caption, link);
+    this.attachCopyButton(bubble, caption, sourceId);
+    this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {
       this.feedEl.insertBefore(bubble, first);
@@ -367,5 +309,18 @@ export class ZenFeed {
 
   private hideLoader(): void {
     this.feedEl.querySelector('.zen-loading')?.remove();
+  }
+
+  private attachSourceInteractions(bubble: HTMLElement, sourceId?: string): void {
+    if (!sourceId) return;
+    bubble.addEventListener('click', () => this.trackSourceSignal(sourceId, 1));
+    bubble.querySelectorAll<HTMLAnchorElement>('a').forEach((a) => {
+      a.addEventListener('click', () => this.trackSourceSignal(sourceId, 2));
+    });
+  }
+
+  private trackSourceSignal(sourceId: string, amount: number): void {
+    this.sourceSignals[sourceId] = (this.sourceSignals[sourceId] ?? 0) + amount;
+    void bumpZenSourceSignal(sourceId, amount).catch(() => {});
   }
 }

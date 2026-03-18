@@ -44,15 +44,16 @@
   --c-error-bg:  rgba(200,60,60,0.08);
   --c-error-bd:  rgba(200,60,60,0.2);
 
-  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --t: 150ms;
+  --ease: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --t: 160ms;
 
-  --r-sm: 4px;
-  --r-md: 6px;
-  --r-lg: 8px;
+  --r-sm: 5px;
+  --r-md: 8px;
+  --r-lg: 13px;
+  --r-xl: 21px;
 
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.5);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.48);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.56);
 
   --sidebar-w: 220px;
   --font: 'DM Sans', system-ui, -apple-system, sans-serif;
@@ -92,8 +93,8 @@ body {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 20px 16px 14px;
+  gap: 8px;
+  padding: 16px;
   border-bottom: 1px solid var(--c-border);
 }
 
@@ -190,13 +191,13 @@ body {
 
 .tab-panel {
   max-width: 600px;
-  padding: 36px 36px 80px;
+  padding: 32px 32px 64px;
 }
 
 .tab-panel.hidden { display: none; }
 
 .panel-header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .panel-header h1 {
@@ -219,7 +220,7 @@ body {
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .setting-group-header {
@@ -1584,6 +1585,14 @@ body {
   position: absolute;
 }
 
+.toggle-switch input:focus-visible + .toggle-track {
+  outline: 2px solid #5b9fd6;
+  outline-offset: 2px;
+}
+[data-theme="light"] .toggle-switch input:focus-visible + .toggle-track {
+  outline-color: #2563eb;
+}
+
 .toggle-track {
   position: absolute;
   inset: 0;
@@ -1676,8 +1685,32 @@ body {
 .setting-hint {
   font-size: 12px;
   color: var(--c-text-3);
-  margin-top: 8px;
+  margin-top: 0;
   line-height: 1.5;
+}
+
+.setting-body-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.setting-row--borderless {
+  padding: 10px 0 0;
+  border: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .history-domain-controls {

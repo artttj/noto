@@ -4,6 +4,8 @@
 import { MSG } from '../shared/messages';
 import {
   getSettings,
+  getZenDisplay,
+  saveZenDisplay,
   isOnboardingDone,
   setOnboardingDone,
   getTheme,
@@ -12,7 +14,7 @@ import {
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager } from './clipboard-manager';
-import type { ClipFilter } from './clipboard-manager';
+import { CosmosMode } from './cosmos-mode';
 import { ZenFeed } from './zen/zen-feed';
 import { escapeHtml } from '../shared/utils';
 
@@ -25,6 +27,7 @@ function qs<T extends HTMLElement>(sel: string): T {
 class SontoSidebar {
   private mode: ViewMode = 'zen';
   private language = 'en';
+  private zenDisplay: 'feed' | 'cosmos' = 'cosmos';
   private theme: 'dark' | 'light' = 'dark';
 
   private readonly clipboardBtn = qs<HTMLButtonElement>('#btn-clipboard');
@@ -32,13 +35,14 @@ class SontoSidebar {
   private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
   private readonly zenFeedEl = qs<HTMLElement>('#zen-feed');
+  private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly clipListEl = qs<HTMLElement>('#clip-list');
-  private readonly clipCountEl = qs<HTMLElement>('#clip-count');
   private readonly searchInputEl = qs<HTMLInputElement>('#clipboard-search');
 
-  private readonly clipManager = new ClipboardManager(this.clipListEl, this.clipCountEl);
+  private readonly clipManager = new ClipboardManager(this.clipListEl);
 
   private zenFeed: ZenFeed | null = null;
+  private cosmosMode: CosmosMode | null = null;
 
   async init(): Promise<void> {
     qs<HTMLButtonElement>('#btn-settings').addEventListener('click', () => {
@@ -61,10 +65,6 @@ class SontoSidebar {
     this.clipboardBtn.addEventListener('click', toggleClipboard);
     this.themeBtn.addEventListener('click', () => void this.toggleTheme());
 
-    qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () =>
-      void this.clipManager.clearAll(),
-    );
-
     let searchDebounce: ReturnType<typeof setTimeout> | null = null;
     const doSearch = () => void this.clipManager.search(this.searchInputEl.value);
     this.searchInputEl.addEventListener('input', () => {
@@ -79,63 +79,104 @@ class SontoSidebar {
       }
     });
 
-    document.querySelectorAll<HTMLButtonElement>('.filter-tab').forEach((btn) => {
+    const zdtEl = document.getElementById('zen-display-toggle')!;
+    zdtEl.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const filter = (btn.dataset.filter ?? 'all') as ClipFilter;
-        document.querySelectorAll('.filter-tab').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.searchInputEl.value = '';
-        this.clipManager.setFilter(filter);
+        const display = btn.dataset.display as 'feed' | 'cosmos';
+        if (!display) return;
+        if (this.mode !== 'zen') this.setMode('zen');
+        if (display !== this.zenDisplay) void saveZenDisplay(display);
       });
     });
 
-    this.initExportDropdown();
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.sonto_zen_display) {
+        const newDisplay = changes.sonto_zen_display.newValue as 'feed' | 'cosmos';
+        void this.switchZenDisplay(newDisplay);
+      }
+      if (area === 'local' && changes.sonto_drip_interval_ms) {
+        const ms = changes.sonto_drip_interval_ms.newValue as number;
+        this.zenFeed?.setDripInterval(ms);
+        this.cosmosMode?.setIntervalMs(ms);
+      }
+      if (area === 'local' && changes.sonto_theme) {
+        const newTheme = changes.sonto_theme.newValue as 'dark' | 'light';
+        this.theme = newTheme;
+        this.applyTheme(newTheme);
+        if (this.cosmosMode && this.zenDisplay === 'cosmos') {
+          this.cosmosMode.stop();
+          this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+          void this.cosmosMode.start();
+        }
+      }
+    });
+
     this.initReadLaterBar();
 
     try {
-      const [settings, onboardingDone, theme] = await Promise.all([
+      const [settings, onboardingDone, theme, zenDisplay] = await Promise.all([
         getSettings(),
         isOnboardingDone(),
         getTheme(),
+        getZenDisplay(),
       ]);
       this.language = settings.language ?? 'en';
       this.theme = theme;
+      this.zenDisplay = zenDisplay;
       this.applyTheme(theme);
+      this.syncDisplayToggle(zenDisplay);
       if (!onboardingDone) {
         await setOnboardingDone();
       }
     } catch {}
 
-    this.zenFeed = new ZenFeed(this.zenFeedEl, {
-      language: this.language,
-      snippets: () => [],
-    });
-    await this.zenFeed.restorePastFacts();
+    if (this.zenDisplay === 'cosmos') {
+      this.zenFeedEl.classList.add('hidden');
+      this.cosmosViewEl.classList.remove('hidden');
+      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+    } else {
+      this.zenFeed = new ZenFeed(this.zenFeedEl, { language: this.language });
+      await this.zenFeed.restorePastFacts();
+    }
 
     await this.clipManager.load();
 
-    void this.zenFeed.start();
+    if (this.zenDisplay === 'cosmos') {
+      void this.cosmosMode!.start();
+    } else {
+      void this.zenFeed!.start();
+    }
   }
 
-  private initExportDropdown(): void {
-    const exportBtn = document.getElementById('btn-export')!;
-    const exportMenu = document.getElementById('export-menu')!;
+  private async switchZenDisplay(display: 'feed' | 'cosmos'): Promise<void> {
+    if (display === this.zenDisplay) return;
 
-    exportBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      exportMenu.classList.toggle('hidden');
-    });
+    this.zenFeed?.stop();
+    this.cosmosMode?.stop();
+    this.zenDisplay = display;
+    this.syncDisplayToggle(display);
 
-    document.addEventListener('click', () => exportMenu.classList.add('hidden'));
+    if (display === 'cosmos') {
+      this.zenFeedEl.classList.add('hidden');
+      this.cosmosViewEl.classList.remove('hidden');
+      this.zenFeed = null;
+      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+      if (this.mode === 'zen') void this.cosmosMode.start();
+    } else {
+      this.cosmosViewEl.classList.add('hidden');
+      this.zenFeedEl.classList.remove('hidden');
+      this.cosmosMode = null;
+      this.zenFeed = new ZenFeed(this.zenFeedEl, { language: this.language });
+      await this.zenFeed.restorePastFacts();
+      if (this.mode === 'zen') void this.zenFeed.start();
+    }
+  }
 
-    document.getElementById('btn-export-md')!.addEventListener('click', () => {
-      this.clipManager.exportMarkdown();
-      exportMenu.classList.add('hidden');
-    });
-
-    document.getElementById('btn-export-json')!.addEventListener('click', () => {
-      this.clipManager.exportJson();
-      exportMenu.classList.add('hidden');
+  private syncDisplayToggle(display: 'feed' | 'cosmos'): void {
+    document.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach((btn) => {
+      const active = btn.dataset.display === display;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
     });
   }
 
@@ -183,15 +224,11 @@ class SontoSidebar {
       const row = document.createElement('div');
       row.className = 'read-later-item';
       const domain = (() => {
-        try {
-          return new URL(item.url).hostname;
-        } catch {
-          return item.url.slice(0, 40);
-        }
+        try { return new URL(item.url).hostname; } catch { return item.url.slice(0, 40); }
       })();
       row.innerHTML = `
         <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" class="rl-link">${escapeHtml(item.title || domain)}</a>
-        <button class="rl-remove" data-url="${escapeHtml(item.url)}" type="button">✕</button>
+        <button class="rl-remove" data-url="${escapeHtml(item.url)}" type="button" aria-label="Remove from read later">✕</button>
       `;
       row.querySelector('.rl-remove')!.addEventListener('click', async (e) => {
         const url = (e.currentTarget as HTMLButtonElement).dataset.url!;
@@ -229,14 +266,18 @@ class SontoSidebar {
   private setMode(mode: ViewMode): void {
     this.mode = mode;
     this.clipboardBtn.classList.toggle('active', mode === 'clipboard');
-    this.clipboardBtn.setAttribute('aria-selected', String(mode === 'clipboard'));
     this.viewZen.classList.toggle('hidden', mode !== 'zen');
     this.viewClipboard.classList.toggle('hidden', mode !== 'clipboard');
 
     if (mode === 'zen') {
-      void this.zenFeed?.start();
+      if (this.zenDisplay === 'cosmos') {
+        void this.cosmosMode?.start();
+      } else {
+        void this.zenFeed?.start();
+      }
     } else {
       this.zenFeed?.stop();
+      this.cosmosMode?.stop();
       void this.clipManager.load();
     }
   }

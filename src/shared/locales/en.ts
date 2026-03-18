@@ -2,9 +2,13 @@
 // Licensed under the MIT License.
 
 const en: Record<string, string> = {
+  nav_feed: 'Feed',
+  nav_clipboard: 'Clipboard',
+  nav_data: 'Data',
   nav_about: 'About',
   brand_sub: 'Settings',
 
+  feed_heading: 'Feed',
   general_language: 'Language',
   general_language_desc: 'Preferred interface language',
   general_saved: 'Saved',

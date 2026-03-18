@@ -14,6 +14,22 @@
         <span class="brand-name">Sonto</span>
       </div>
       <div class="header-actions">
+        <div id="zen-display-toggle" class="mode-toggle" role="tablist" aria-label="Feed display">
+          <button class="mode-btn zdt-btn active" data-display="cosmos" type="button" role="tab" aria-selected="true" aria-label="Cosmos">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+              <circle cx="10" cy="10" r="2.5"/>
+              <ellipse cx="10" cy="10" rx="8.5" ry="3.5" transform="rotate(0 10 10)"/>
+              <ellipse cx="10" cy="10" rx="8.5" ry="3.5" transform="rotate(60 10 10)"/>
+              <ellipse cx="10" cy="10" rx="8.5" ry="3.5" transform="rotate(120 10 10)"/>
+            </svg>
+          </button>
+          <button class="mode-btn zdt-btn" data-display="feed" type="button" role="tab" aria-selected="false" aria-label="Feed">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="2" width="12" height="16" rx="2"/>
+              <path d="M7 6h6M7 9.5h6M7 13h4"/>
+            </svg>
+          </button>
+        </div>
         <button id="btn-clipboard" class="icon-btn" type="button" aria-label="Clipboard history">
           <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <rect x="6" y="2" width="8" height="4" rx="1"/>
@@ -42,41 +58,11 @@
     <!-- ZEN VIEW -->
     <div id="view-zen" class="view zen-view">
       <div id="zen-feed" class="zen-feed"></div>
+      <div id="cosmos-view" class="cosmos-view hidden"></div>
     </div>
 
     <!-- CLIPBOARD VIEW -->
     <div id="view-clipboard" class="view hidden">
-      <div class="clip-toolbar">
-        <div class="filter-tabs">
-          <button class="filter-tab active" data-filter="all" type="button">
-            All <span class="filter-count">0</span>
-          </button>
-          <button class="filter-tab" data-filter="text" type="button">
-            Text <span class="filter-count">0</span>
-          </button>
-          <button class="filter-tab" data-filter="link" type="button">
-            Links <span class="filter-count">0</span>
-          </button>
-          <button class="filter-tab" data-filter="code" type="button">
-            Code <span class="filter-count">0</span>
-          </button>
-          <button class="filter-tab" data-filter="pinned" type="button">
-            Pinned <span class="filter-count">0</span>
-          </button>
-        </div>
-        <div class="clip-actions">
-          <span id="clip-count" class="clip-total-count hidden">0</span>
-          <div class="export-dropdown" id="export-dropdown">
-            <button id="btn-export" class="link-btn" type="button">Export ▾</button>
-            <div class="export-menu hidden" id="export-menu">
-              <button id="btn-export-md" type="button">Markdown</button>
-              <button id="btn-export-json" type="button">JSON</button>
-            </div>
-          </div>
-          <button id="btn-clear-all" class="link-btn danger" type="button">Clear</button>
-        </div>
-      </div>
-
       <div class="browse-search-bar">
         <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
           <circle cx="9" cy="9" r="5" />
