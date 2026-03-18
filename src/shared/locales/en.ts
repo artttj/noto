@@ -35,10 +35,15 @@ const en: Record<string, string> = {
   clipboard_max_size_desc: 'Maximum number of entries to keep. Oldest entries are removed when the limit is reached. (10–5000)',
   clipboard_stored: 'Entries stored',
 
+  related_popup: 'Related clips popup',
+  related_popup_desc: 'Show a floating card with related clips from your saves when visiting a page',
+
   daily_summary: 'Daily Summary',
   daily_notification: 'Daily wrap-up notification',
   daily_notification_desc: 'Get a summary of your saved items at the end of each day',
   daily_time: 'Notification time',
+  badge_counter: 'Badge counter',
+  badge_counter_desc: 'Show daily capture count on the extension icon',
 
   shortcuts: 'Keyboard Shortcuts',
 

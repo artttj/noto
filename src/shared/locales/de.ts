@@ -35,10 +35,15 @@ const de: Record<string, string> = {
   clipboard_max_size_desc: 'Maximale Anzahl der Einträge. Älteste Einträge werden entfernt. (10–5000)',
   clipboard_stored: 'Gespeicherte Einträge',
 
+  related_popup: 'Verwandte Clips anzeigen',
+  related_popup_desc: 'Zeigt eine Karte mit verwandten Clips aus deinen Einträgen, wenn du eine Seite besuchst',
+
   daily_summary: 'Tägliche Zusammenfassung',
   daily_notification: 'Tägliche Benachrichtigung',
   daily_notification_desc: 'Erhalte eine Zusammenfassung deiner gespeicherten Einträge am Ende jedes Tages',
   daily_time: 'Uhrzeit',
+  badge_counter: 'Badge-Zähler',
+  badge_counter_desc: 'Tägliche Anzahl der Clips auf dem Erweiterungssymbol anzeigen',
 
   shortcuts: 'Tastenkürzel',
 
