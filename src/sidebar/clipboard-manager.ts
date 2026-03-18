@@ -5,10 +5,11 @@ import { MSG } from '../shared/messages';
 import type { ClipItem, ClipContentType } from '../shared/types';
 import { escapeHtml } from '../shared/utils';
 import { highlightCode } from './syntax-highlight';
-import { getApplicableTransforms } from './clip-transforms';
+import { getApplicableTransforms } from '../shared/clip-transforms';
 
 const TEXT_PREVIEW_CHARS = 280;
 const CODE_PREVIEW_CHARS = 300;
+const COPY_FEEDBACK_MS = 1500;
 
 function qs<T extends Element>(selector: string, parent: ParentNode = document): T {
   const el = parent.querySelector<T>(selector);
@@ -37,6 +38,7 @@ function contentTypeLabel(type: ClipContentType): string {
     case 'link': return 'Link';
     case 'code': return 'Code';
     case 'email': return 'Email';
+    case 'image': return 'Image';
     default: return 'Text';
   }
 }
@@ -46,6 +48,7 @@ function contentTypeIcon(type: ClipContentType): string {
     case 'link': return '↗';
     case 'code': return '{}';
     case 'email': return '@';
+    case 'image': return '▨';
     default: return '¶';
   }
 }
@@ -130,15 +133,20 @@ export class ClipboardManager {
       if (clip) {
         void navigator.clipboard.writeText(clip.text).then(() => {
           const btn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
-          if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }
-        });
+          if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, COPY_FEEDBACK_MS); }
+        }).catch(() => {});
       }
       return true;
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedIndex >= 0) {
       const card = cards[this.selectedIndex];
       const id = card.dataset.id;
-      if (id) void this.deleteClip(id, card);
+      if (id) {
+        void this.deleteClip(id, card);
+        if (this.selectedIndex >= this.clips.length - 1) {
+          this.selectedIndex = Math.max(this.clips.length - 2, -1);
+        }
+      }
       return true;
     }
     return false;
@@ -262,8 +270,8 @@ export class ClipboardManager {
       void navigator.clipboard.writeText(clip.text).then(() => {
         const btn = qs<HTMLButtonElement>('.clip-btn-copy', card);
         btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-      });
+        setTimeout(() => { btn.textContent = 'Copy'; }, COPY_FEEDBACK_MS);
+      }).catch(() => {});
     };
 
     qs<HTMLButtonElement>('.clip-btn-copy', card).addEventListener('click', copyClip);
@@ -299,8 +307,8 @@ export class ClipboardManager {
         const result = t.transform(clip.text);
         void navigator.clipboard.writeText(result).then(() => {
           const copyBtn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
-          if (copyBtn) { copyBtn.textContent = 'Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500); }
-        });
+          if (copyBtn) { copyBtn.textContent = 'Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, COPY_FEEDBACK_MS); }
+        }).catch(() => {});
         this.closeTransformMenu();
       });
       menu.appendChild(btn);

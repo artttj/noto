@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../shared/messages';
+import { TRANSFORMS } from '../shared/clip-transforms';
 
 function showToast(message: string, isError = false): void {
   const existing = document.getElementById('sonto-toast');
@@ -315,15 +316,12 @@ function createQuickSearchOverlay(): void {
     }
   });
 
-  const COMMANDS = [
-    { id: 'format-json', label: 'Format JSON', keywords: ['format', 'json', 'pretty'], transform: (t: string) => JSON.stringify(JSON.parse(t.trim()), null, 2) },
-    { id: 'uppercase', label: 'UPPERCASE', keywords: ['upper', 'case', 'caps'], transform: (t: string) => t.toUpperCase() },
-    { id: 'lowercase', label: 'lowercase', keywords: ['lower', 'case'], transform: (t: string) => t.toLowerCase() },
-    { id: 'title-case', label: 'Title Case', keywords: ['title', 'case'], transform: (t: string) => t.replace(/\b\w/g, (c) => c.toUpperCase()) },
-    { id: 'extract-urls', label: 'Extract URLs', keywords: ['extract', 'urls', 'links'], transform: (t: string) => (t.match(/https?:\/\/[^\s<>"']+/g) ?? []).join('\n') },
-    { id: 'strip-html', label: 'Strip HTML', keywords: ['strip', 'html', 'tags'], transform: (t: string) => t.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() },
-    { id: 'trim', label: 'Trim whitespace', keywords: ['trim', 'whitespace', 'clean'], transform: (t: string) => t.replace(/\s+/g, ' ').trim() },
-  ];
+  const COMMANDS = TRANSFORMS.map((t) => ({
+    id: t.id,
+    label: t.label,
+    keywords: t.id.replace(/-/g, ' ').split(' '),
+    transform: t.transform,
+  }));
 
   let selectedIdx = -1;
 

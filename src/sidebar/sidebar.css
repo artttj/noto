@@ -83,10 +83,10 @@
   --ease: cubic-bezier(0.4, 0.0, 0.2, 1);
   --t:    160ms;
 
-  --r-sm: 5px;
+  --r-sm: 4px;
   --r-md: 8px;
-  --r-lg: 13px;
-  --r-xl: 21px;
+  --r-lg: 12px;
+  --r-xl: 20px;
 
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.48), var(--glass-gloss);
   --shadow-md: 0 4px 24px rgba(0,0,0,0.56), var(--glass-gloss);
@@ -117,7 +117,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px;
+  padding: 8px;
   border-bottom: 1px solid var(--c-border);
   flex-shrink: 0;
   background: var(--c-header-bg);
@@ -129,13 +129,13 @@ html, body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .brand-icon {
   width: 22px;
   height: 22px;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   flex-shrink: 0;
 }
 
@@ -1105,9 +1105,9 @@ html, body {
 .clip-card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-bottom: 6px;
+  border-radius: var(--r-md);
+  padding: 12px;
+  margin-bottom: 8px;
   transition: border-color 0.15s, background 0.15s, opacity 0.2s, transform 0.2s;
   cursor: default;
 }
@@ -1177,9 +1177,9 @@ html, body {
 
 .clip-code-preview {
   margin: 0;
-  padding: 6px 8px;
+  padding: 8px;
   background: rgba(255,255,255,0.04);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -1235,7 +1235,7 @@ html, body {
 
 .clip-card-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--c-border);
@@ -1249,7 +1249,7 @@ html, body {
   padding: 6px 11px;
   min-height: 44px;
   min-width: 44px;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--c-border);
   background: transparent;
   color: var(--c-text-2);
@@ -1356,9 +1356,9 @@ html, body {
 .clip-transform-menu {
   background: var(--c-bg);
   border: 1px solid var(--c-border-hi);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   padding: 4px;
-  margin-top: 6px;
+  margin-top: 8px;
   box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
@@ -1429,7 +1429,7 @@ html, body {
   gap: 4px;
   background: none;
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   color: rgba(255,255,255,0.5);
   font-family: var(--font);
   font-size: 11px;
@@ -1437,7 +1437,7 @@ html, body {
   min-height: 44px;
   cursor: pointer;
   pointer-events: auto;
-  margin-top: 10px;
+  margin-top: 12px;
   transition: color 0.2s, border-color 0.2s;
 }
 

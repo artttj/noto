@@ -362,13 +362,8 @@ async function updateCaptureBadge(): Promise<void> {
   if (!enabled) return;
 
   const todayKey = new Date().toDateString();
-  const result = await chrome.storage.session.get('badge_date');
-  let count = 0;
-
-  if (result.badge_date === todayKey) {
-    const countResult = await chrome.storage.session.get('badge_count');
-    count = (countResult.badge_count as number) ?? 0;
-  }
+  const result = await chrome.storage.session.get(['badge_date', 'badge_count']);
+  let count = result.badge_date === todayKey ? ((result.badge_count as number) ?? 0) : 0;
 
   count++;
   await chrome.storage.session.set({ badge_date: todayKey, badge_count: count });
