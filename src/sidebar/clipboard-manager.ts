@@ -274,8 +274,6 @@ export class ClipboardManager {
       </div>
     `;
 
-    createIcons({ icons, attrs: { strokeWidth: 1.5 } });
-
     const copyClip = () => {
       void navigator.clipboard.writeText(clip.text).then(() => {
         const btn = qs<HTMLButtonElement>('.clip-btn-copy', card);

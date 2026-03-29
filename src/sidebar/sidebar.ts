@@ -148,15 +148,21 @@ class SontoSidebar {
 
     this.initReadLaterBar();
 
+    // Load settings and show default view immediately
+    const settingsPromise = Promise.all([
+      getSettings(),
+      getTheme(),
+      getZenDisplay(),
+      getShowFeedToggle(),
+      getDefaultView(),
+      isOnboardingDone(),
+    ]);
+
+    // Start loading clipboard data immediately
+    const loadPromise = this.refreshDomainAndLoad();
+
     try {
-      const [settings, onboardingDone, theme, zenDisplay, showFeedToggle, defaultView] = await Promise.all([
-        getSettings(),
-        isOnboardingDone(),
-        getTheme(),
-        getZenDisplay(),
-        getShowFeedToggle(),
-        getDefaultView(),
-      ]);
+      const [settings, theme, zenDisplay, showFeedToggle, defaultView, onboardingDone] = await settingsPromise;
       this.language = settings.language ?? 'en';
       this.theme = theme;
       this.zenDisplay = zenDisplay;
@@ -164,44 +170,43 @@ class SontoSidebar {
       this.applyTheme(theme);
       this.syncDisplayToggle(zenDisplay);
       this.syncModeButtons();
-      
+
       const zdtEl = document.getElementById('zen-display-toggle');
       if (zdtEl) {
         zdtEl.classList.toggle('hidden', !showFeedToggle);
       }
-      
+
       if (!onboardingDone) {
         await setOnboardingDone();
       }
-    } catch (err) {
-      console.error('[Sonto] Failed to initialize settings:', err);
-    }
 
-    if (this.zenDisplay === 'cosmos') {
-      this.zenFeedEl.classList.add('hidden');
-      this.cosmosViewEl.classList.remove('hidden');
-      this.ensureCosmosMode();
-    } else {
-      this.zenFeed = new ZenFeed(this.zenFeedEl, { language: this.language });
-      await this.zenFeed.restorePastFacts();
-    }
-
-    if (this.mode === 'clipboard') {
-      this.viewZen.classList.add('hidden');
-      this.viewClipboard.classList.remove('hidden');
-    }
-
-    await this.refreshDomainAndLoad();
-
-    if (this.mode === 'zen') {
-      if (this.zenDisplay === 'cosmos') {
-        void this.cosmosMode!.start();
-      } else {
-        void this.zenFeed!.start();
+      // Show the correct view immediately
+      if (this.mode === 'clipboard') {
+        this.viewZen.classList.add('hidden');
+        this.viewClipboard.classList.remove('hidden');
       }
-    }
 
-    createIcons({ icons, attrs: { strokeWidth: 1.5 } });
+      createIcons({ icons, attrs: { strokeWidth: 1.5 } });
+
+      // Wait for clipboard data
+      await loadPromise;
+
+      // Only initialize zen/cosmos if needed
+      if (this.mode === 'zen') {
+        if (this.zenDisplay === 'cosmos') {
+          this.zenFeedEl.classList.add('hidden');
+          this.cosmosViewEl.classList.remove('hidden');
+          this.ensureCosmosMode();
+          void this.cosmosMode!.start();
+        } else {
+          this.zenFeed = new ZenFeed(this.zenFeedEl, { language: this.language });
+          await this.zenFeed.restorePastFacts();
+          void this.zenFeed.start();
+        }
+      }
+    } catch (err) {
+      console.error('[Sonto] Failed to initialize:', err);
+    }
   }
 
   private async switchZenDisplay(display: 'feed' | 'cosmos'): Promise<void> {
