@@ -49,61 +49,58 @@
 
     <!-- CLIPBOARD VIEW -->
     <div id="view-clipboard" class="view hidden">
-      <div class="browse-search-bar">
-        <svg class="search-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
-          <circle cx="9" cy="9" r="5" />
-          <path d="M12.5 12.5L16 16" stroke-linecap="round" />
-        </svg>
-        <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
-        <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
+      <div class="view-tabs">
+        <button id="nav-browse" class="view-tab active" type="button">Browse</button>
+        <button id="nav-prompts" class="view-tab" type="button">Prompts</button>
       </div>
 
-      <div id="read-later-bar" class="read-later-bar hidden">
-        <span id="read-later-count"></span>
-        <button id="btn-view-later" class="rl-btn" type="button">View queue</button>
-      </div>
-      <div id="read-later-list" class="read-later-list hidden"></div>
+      <div id="browse-content">
+        <div class="browse-search-bar">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="9" cy="9" r="5" />
+            <path d="M12.5 12.5L16 16" stroke-linecap="round" />
+          </svg>
+          <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
+          <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
+        </div>
 
-      <div id="clip-list" class="clip-list"></div>
-    </div>
+        <div id="read-later-bar" class="read-later-bar hidden">
+          <span id="read-later-count"></span>
+          <button id="btn-view-later" class="rl-btn" type="button">View queue</button>
+        </div>
+        <div id="read-later-list" class="read-later-list hidden"></div>
 
-    <!-- PROMPTS VIEW -->
-    <div id="view-prompts" class="view hidden">
-      <div class="browse-search-bar">
-        <svg class="search-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
-          <circle cx="9" cy="9" r="5" />
-          <path d="M12.5 12.5L16 16" stroke-linecap="round" />
-        </svg>
-        <label for="prompts-search" class="visually-hidden">Search prompts</label>
-        <input type="search" id="prompts-search" class="browse-search-input" placeholder="Search prompts..." aria-label="Search prompts" />
-        <button id="btn-add-prompt" class="icon-btn-small" type="button" title="Add prompt" aria-label="Add new prompt">
-          <i data-lucide="plus"></i>
-        </button>
+        <div id="clip-list" class="clip-list"></div>
       </div>
 
-      <div id="prompt-modal" class="prompt-modal hidden">
-        <div class="prompt-modal-content">
-          <h3 class="prompt-modal-title">New Prompt</h3>
-          <textarea id="prompt-input" class="prompt-textarea" placeholder="Enter your prompt text..." rows="6"></textarea>
-          <div class="prompt-modal-actions">
-            <button id="prompt-cancel" class="prompt-btn prompt-btn-secondary" type="button">Cancel</button>
-            <button id="prompt-save" class="prompt-btn prompt-btn-primary" type="button">Save</button>
+      <div id="prompts-content" class="hidden">
+        <div class="browse-search-bar">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="9" cy="9" r="5" />
+            <path d="M12.5 12.5L16 16" stroke-linecap="round" />
+          </svg>
+          <label for="prompts-search" class="visually-hidden">Search prompts</label>
+          <input type="search" id="prompts-search" class="browse-search-input" placeholder="Search prompts..." aria-label="Search prompts" />
+          <button id="btn-add-prompt" class="icon-btn-small" type="button" title="Add prompt" aria-label="Add new prompt">
+            <i data-lucide="plus"></i>
+          </button>
+        </div>
+
+        <div id="prompt-modal" class="prompt-modal hidden">
+          <div class="prompt-modal-content">
+            <h3 class="prompt-modal-title">New Prompt</h3>
+            <textarea id="prompt-input" class="prompt-textarea" placeholder="Enter your prompt text..." rows="6"></textarea>
+            <div class="prompt-modal-actions">
+              <button id="prompt-cancel" class="prompt-btn prompt-btn-secondary" type="button">Cancel</button>
+              <button id="prompt-save" class="prompt-btn prompt-btn-primary" type="button">Save</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div id="prompts-list" class="clip-list"></div>
+        <div id="prompts-list" class="clip-list"></div>
+      </div>
     </div>
 
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav">
-      <button id="nav-browse" class="bnav-btn active" type="button" aria-label="Browse" title="Browse">
-        <i data-lucide="clock"></i>
-      </button>
-      <button id="nav-prompts" class="bnav-btn" type="button" aria-label="Prompts" title="Prompts">
-        <i data-lucide="sparkles"></i>
-      </button>
-    </nav>
   </div>
 
   <script type="module" src="sidebar.js"></script>

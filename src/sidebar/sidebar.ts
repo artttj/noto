@@ -33,7 +33,8 @@ class SontoSidebar {
   private readonly navPrompts = qs<HTMLButtonElement>('#nav-prompts');
   private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
-  private readonly viewPrompts = qs<HTMLElement>('#view-prompts');
+  private readonly browseContent = qs<HTMLElement>('#browse-content');
+  private readonly promptsContent = qs<HTMLElement>('#prompts-content');
   private readonly zenFeedEl = qs<HTMLElement>('#zen-feed');
   private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly clipListEl = qs<HTMLElement>('#clip-list');
@@ -48,11 +49,15 @@ class SontoSidebar {
   private promptModalController!: PromptModalController;
 
   private currentDomain = '';
+  private currentTab: 'browse' | 'prompts' = 'browse';
 
   async init(): Promise<void> {
     this.settingsBtn.addEventListener('click', () => {
       void chrome.runtime.openOptionsPage();
     });
+
+    this.navBrowse.addEventListener('click', () => this.switchTab('browse'));
+    this.navPrompts.addEventListener('click', () => this.switchTab('prompts'));
 
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
       if (message.type === MSG.CLIP_ADDED) {
@@ -63,35 +68,35 @@ class SontoSidebar {
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         const mode = this.viewController?.getMode();
-        if (mode === 'clipboard') {
+        if (mode === 'clipboard' || mode === 'prompts') {
           void (async () => {
             await this.refreshDomain();
-            await this.clipManager.load(this.currentDomain);
+            if (this.currentTab === 'browse') {
+              await this.clipManager.load(this.currentDomain);
+            } else {
+              await this.promptsManager.load();
+            }
           })();
-        } else if (mode === 'prompts') {
-          void this.promptsManager.load();
         }
       }
     });
 
     document.addEventListener('keydown', (e) => {
       const mode = this.viewController?.getMode();
-      if (mode === 'clipboard') {
-        if (e.key === '/' && document.activeElement !== this.searchInputEl) {
+      if (mode === 'clipboard' || mode === 'prompts') {
+        if (e.key === '/' && document.activeElement !== this.searchInputEl && document.activeElement !== this.promptsSearchEl) {
           e.preventDefault();
-          this.searchInputEl.focus();
+          if (this.currentTab === 'browse') {
+            this.searchInputEl.focus();
+          } else {
+            this.promptsSearchEl.focus();
+          }
           return;
         }
-        if (document.activeElement === this.searchInputEl) return;
-        if (this.clipManager.handleKey(e)) {
+        if (this.currentTab === 'browse' && document.activeElement === this.searchInputEl) return;
+        if (this.currentTab === 'prompts' && document.activeElement === this.promptsSearchEl) return;
+        if (this.currentTab === 'browse' && this.clipManager.handleKey(e)) {
           e.preventDefault();
-          return;
-        }
-      }
-      if (mode === 'prompts') {
-        if (e.key === '/' && document.activeElement !== this.promptsSearchEl) {
-          e.preventDefault();
-          this.promptsSearchEl.focus();
           return;
         }
       }
@@ -138,7 +143,7 @@ class SontoSidebar {
         this.viewController?.setZenTheme(newTheme);
       }
       if (area === 'local' && changes.sonto_prompts) {
-        if (this.viewController?.getMode() === 'prompts') {
+        if (this.currentTab === 'prompts') {
           void this.promptsManager.load();
         }
       }
@@ -198,15 +203,11 @@ class SontoSidebar {
     this.viewController = new ViewController({
       viewZen: this.viewZen,
       viewClipboard: this.viewClipboard,
-      viewPrompts: this.viewPrompts,
       feedBtn: this.feedBtn,
       backBtn: this.backBtn,
-      navBrowse: this.navBrowse,
-      navPrompts: this.navPrompts,
       zenFeedEl: this.zenFeedEl,
       cosmosViewEl: this.cosmosViewEl,
       clipManager: this.clipManager,
-      promptsManager: this.promptsManager,
       language: this.language,
     }, this.language);
 
@@ -221,6 +222,22 @@ class SontoSidebar {
       this.currentDomain = tab?.url ? new URL(tab.url).hostname.replace(/^www\./, '') : '';
     } catch {
       this.currentDomain = '';
+    }
+  }
+
+  private switchTab(tab: 'browse' | 'prompts'): void {
+    if (this.currentTab === tab) return;
+    this.currentTab = tab;
+
+    this.browseContent.classList.toggle('hidden', tab !== 'browse');
+    this.promptsContent.classList.toggle('hidden', tab !== 'prompts');
+    this.navBrowse.classList.toggle('active', tab === 'browse');
+    this.navPrompts.classList.toggle('active', tab === 'prompts');
+
+    if (tab === 'browse') {
+      void this.clipManager.load(this.currentDomain);
+    } else {
+      void this.promptsManager.load();
     }
   }
 }

@@ -5,23 +5,18 @@ import { saveDefaultView, getZenDisplay } from '../../shared/storage';
 import { ZenFeed } from '../zen/zen-feed';
 import { CosmosMode } from '../cosmos-mode';
 import { ClipboardManager } from '../clipboard-manager';
-import { PromptsManager } from '../prompts-manager';
 
-type ViewMode = 'zen' | 'clipboard' | 'prompts';
+type ViewMode = 'zen' | 'clipboard';
 type ZenDisplay = 'feed' | 'cosmos';
 
 interface ViewControllerDeps {
   viewZen: HTMLElement;
   viewClipboard: HTMLElement;
-  viewPrompts: HTMLElement;
   feedBtn: HTMLButtonElement;
   backBtn: HTMLButtonElement;
-  navBrowse: HTMLButtonElement;
-  navPrompts: HTMLButtonElement;
   zenFeedEl: HTMLElement;
   cosmosViewEl: HTMLElement;
   clipManager: ClipboardManager;
-  promptsManager: PromptsManager;
   language: string;
   onViewChange?: (mode: ViewMode) => void;
   onZenDisplayChange?: (display: ZenDisplay) => void;
@@ -47,8 +42,6 @@ export class ViewController {
 
     this.deps.feedBtn.addEventListener('click', () => this.setMode('zen'));
     this.deps.backBtn.addEventListener('click', () => this.setMode('clipboard'));
-    this.deps.navBrowse.addEventListener('click', () => this.setMode('clipboard'));
-    this.deps.navPrompts.addEventListener('click', () => this.setMode('prompts'));
 
     this.syncUI();
 
@@ -96,17 +89,13 @@ export class ViewController {
           void this.zenFeed.start();
         }
       }
-    } else if (mode === 'prompts') {
-      this.zenFeed?.stop();
-      this.cosmosMode?.stop();
-      void this.deps.promptsManager.load();
     } else {
       this.zenFeed?.stop();
       this.cosmosMode?.stop();
       void this.deps.clipManager.load();
     }
 
-    void saveDefaultView(mode === 'prompts' ? 'clipboard' : mode);
+    void saveDefaultView(mode);
     this.deps.onViewChange?.(mode);
   }
 
@@ -175,10 +164,7 @@ export class ViewController {
   private syncUI(): void {
     this.deps.viewZen.classList.toggle('hidden', this.mode !== 'zen');
     this.deps.viewClipboard.classList.toggle('hidden', this.mode !== 'clipboard');
-    this.deps.viewPrompts.classList.toggle('hidden', this.mode !== 'prompts');
     this.deps.feedBtn.classList.toggle('hidden', this.mode === 'zen');
     this.deps.backBtn.classList.toggle('hidden', this.mode !== 'zen');
-    this.deps.navBrowse.classList.toggle('active', this.mode === 'clipboard');
-    this.deps.navPrompts.classList.toggle('active', this.mode === 'prompts');
   }
 }
