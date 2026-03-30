@@ -206,6 +206,36 @@ describe('Screenshot Generation', () => {
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
+  it('captures zen cosmos mode variant 2', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 420, 800);
+    await setTheme(sidebar, 'dark');
+    await setZenDisplay(sidebar, 'cosmos');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '.header');
+
+    await sidebar.click('#btn-feed');
+    await delay(3000);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_2');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures zen cosmos mode variant 3', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 420, 800);
+    await setTheme(sidebar, 'dark');
+    await setZenDisplay(sidebar, 'cosmos');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '.header');
+
+    await sidebar.click('#btn-feed');
+    await delay(4500);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_3');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
   it('captures zen feed mode', async () => {
     const sidebar = await getSidebarPage(browser, extensionId);
     await setViewport(sidebar, 420, 800);
@@ -219,6 +249,66 @@ describe('Screenshot Generation', () => {
     await delay(2000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures zen feed mode variant 2', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 420, 800);
+    await setTheme(sidebar, 'dark');
+    await setZenDisplay(sidebar, 'feed');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '.header');
+
+    await sidebar.click('#btn-feed');
+    await delay(4000);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_2');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures zen feed mode variant 3', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 420, 800);
+    await setTheme(sidebar, 'dark');
+    await setZenDisplay(sidebar, 'feed');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '.header');
+
+    await sidebar.click('#btn-feed');
+    await delay(6000);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_3');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures zen feed light mode', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 420, 800);
+    await setTheme(sidebar, 'light');
+    await setZenDisplay(sidebar, 'feed');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '.header');
+
+    await sidebar.click('#btn-feed');
+    await delay(3000);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_light');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures zen cosmos light mode', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 420, 800);
+    await setTheme(sidebar, 'light');
+    await setZenDisplay(sidebar, 'cosmos');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '.header');
+
+    await sidebar.click('#btn-feed');
+    await delay(2500);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_light');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
