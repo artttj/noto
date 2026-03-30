@@ -191,6 +191,7 @@ class SontoSidebar {
     this.promptModalController = new PromptModalController({
       modal: qs('#prompt-modal'),
       input: qs('#prompt-input'),
+      labelInput: qs('#prompt-label-input'),
       cancelBtn: qs('#prompt-cancel'),
       saveBtn: qs('#prompt-save'),
       addBtn: qs('#btn-add-prompt'),

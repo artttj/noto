@@ -8,6 +8,7 @@ const COLOR_ORDER: PromptColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 
 interface PromptModalDeps {
   modal: HTMLElement;
   input: HTMLTextAreaElement;
+  labelInput: HTMLInputElement;
   cancelBtn: HTMLButtonElement;
   saveBtn: HTMLButtonElement;
   addBtn: HTMLButtonElement;
@@ -44,6 +45,7 @@ export class PromptModalController {
   show(): void {
     this.deps.modal.classList.remove('hidden');
     this.deps.input.value = '';
+    this.deps.labelInput.value = '';
     this.selectedColor = undefined;
     this.updateColorSelection();
     this.deps.input.focus();
@@ -52,6 +54,7 @@ export class PromptModalController {
   hide(): void {
     this.deps.modal.classList.add('hidden');
     this.deps.input.value = '';
+    this.deps.labelInput.value = '';
     this.selectedColor = undefined;
     this.updateColorSelection();
   }
@@ -69,8 +72,10 @@ export class PromptModalController {
       return;
     }
 
+    const label = this.deps.labelInput.value.trim() || undefined;
+
     try {
-      await savePrompt(text, this.selectedColor);
+      await savePrompt(text, this.selectedColor, label);
       await this.deps.onSaved?.();
       this.hide();
     } catch (err) {

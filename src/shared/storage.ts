@@ -265,12 +265,13 @@ export async function getAllPrompts(): Promise<PromptItem[]> {
   return prompts?.sort((a, b) => b.createdAt - a.createdAt) ?? [];
 }
 
-export async function savePrompt(text: string, color?: PromptColor): Promise<PromptItem> {
+export async function savePrompt(text: string, color?: PromptColor, label?: string): Promise<PromptItem> {
   const prompts = await getAllPrompts();
   const newPrompt: PromptItem = {
     id: `${Date.now()}-${crypto.randomUUID()}`,
     text,
     color,
+    label,
     createdAt: Date.now(),
   };
   const updatedPrompts = [...prompts, newPrompt];
