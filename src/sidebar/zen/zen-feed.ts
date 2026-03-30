@@ -185,7 +185,15 @@ export class ZenFeed {
   }
 
   private async loadInitialBubbles(count: number): Promise<void> {
-    await Promise.all(Array.from({ length: count }, () => this.addBubble()));
+    let loaded = 0;
+    let attempts = 0;
+    const maxAttempts = count * 3;
+
+    while (loaded < count && attempts < maxAttempts) {
+      await this.addBubble();
+      loaded++;
+      attempts++;
+    }
   }
 
   private async dripZen(): Promise<void> {
