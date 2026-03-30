@@ -117,7 +117,7 @@ export async function saveDisabledSources(ids: string[]): Promise<void> {
 
 export async function getDripInterval(): Promise<number> {
   const result = await chrome.storage.local.get(DRIP_INTERVAL_KEY);
-  return (result[DRIP_INTERVAL_KEY] as number | undefined) ?? 15000;
+  return (result[DRIP_INTERVAL_KEY] as number | undefined) ?? 30000;
 }
 
 export async function saveDripInterval(ms: number): Promise<void> {
