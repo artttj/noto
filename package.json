@@ -8,16 +8,21 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "node scripts/build.js",
-    "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test": "vitest --config vitest.unit.config.ts",
+    "test:ui": "vitest --ui --config vitest.unit.config.ts",
+    "test:e2e": "vitest --config vitest.e2e.config.ts",
+    "test:e2e:ui": "vitest --ui --config vitest.e2e.config.ts",
+    "screenshots": "vitest --config vitest.e2e.config.ts test/e2e/screenshots.test.ts"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.37",
+    "@types/puppeteer": "^5.4.7",
+    "@vitest/ui": "^3.0.0",
     "esbuild": "^0.25.0",
-    "typescript": "^5.9.3",
-    "vitest": "^3.0.0",
     "jsdom": "^26.0.0",
-    "@vitest/ui": "^3.0.0"
+    "puppeteer": "^24.40.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "kotowaza": "^1.0.1",

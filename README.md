@@ -1,6 +1,6 @@
 # <img src="icons/icon128.png" width="36" alt="" valign="middle" /> SONTO
 
-A calm Chrome sidebar that works as a clipboard and prompt manager. No API keys needed. Save text snippets, organize prompts, and browse your copy history.
+A calm Chrome sidebar that works as a clipboard manager with an optional zen feed. No API keys needed. Save text snippets, organize prompts, and browse your copy history. Take a break with art, quotes, and interesting content.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Google Chrome](https://img.shields.io/badge/Google%20Chrome-4285F4?style=for-the-badge&logo=GoogleChrome&logoColor=white)
 
@@ -34,12 +34,25 @@ No API keys needed. The extension works entirely in your browser.
 
 ## Features
 
-- **Clipboard history**: Automatically save copied text. Press Alt+Shift+C or right-click to capture manually
-- **Prompt management**: Save and organize your favorite AI prompts
+### Clipboard Manager (Main View)
+
+- **Clipboard history**: Automatically saves copied text. Press Alt+Shift+C or right-click to capture manually
+- **Prompt management**: Save and organize your favorite AI prompts with the + button
 - **Pin important items**: Keep frequently used snippets at the top
-- **Zen feed**: A slow feed with art, quotes, and interesting content when you need a break
-- **Two modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
+- **Search**: Quickly find items in your history with the search bar
+- **Domain filtering**: See related clips when visiting a page
+
+### Zen Feed (Secondary View)
+
+- **Zen mode**: A slow feed with art, quotes, and interesting content when you need a break
+- **Two display modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
+- **16 content sources**: Museums, philosophy, news, and more
+- **Customizable**: Toggle sources in Settings > Feed
+
+### General
+
 - **Themes**: Dark and light themes with WCAG 2.1 AA contrast compliance
+- **Languages**: English and German
 - **Backup & restore**: Export and import all data as JSON
 - **Fully local**: All data stays in your browser. No accounts, no tracking
 
@@ -48,29 +61,33 @@ No API keys needed. The extension works entirely in your browser.
 | Source | Content |
 |---|---|
 | 1000-Word Philosophy | Philosophy essays |
+| Art from Cleveland Museum | Artworks and facts |
+| Art from The Met | Public domain paintings |
 | Atlas Obscura | Curious places and stories |
-| Album of a Day | A rare daily pick from 200 Pitchfork and 500 Rolling Stone albums |
-| Cleveland Museum of Art | Artworks and facts |
-| Getty Museum | Paintings and sculptures |
+| Getty Museum Art | Paintings and sculptures |
+| Hacker News Headlines | Top tech stories |
 | Haiku | Japanese haiku poems |
-| Hacker News | Top tech stories |
 | Japanese Proverbs | With English translation |
-| The Met Museum | Public domain paintings |
 | Oblique Strategies | Creative prompts |
-| Perseverance Rover | Mars surface photos |
-| Reddit | Science, history, space, philosophy |
+| Perseverance Rover Photos | Mars surface photos |
+| Wikimedia Commons Paintings | Random paintings from curated categories |
+| Album of a Day | A rare daily pick from 200 Pitchfork and 500 Rolling Stone albums |
+| Reddit | Science, space, philosophy |
 | Rijksmuseum | Dutch Golden Age paintings |
 | Smithsonian Smart News | Science and smart news |
-| Wikimedia Commons Paintings | Random paintings from curated Commons categories |
-| Custom RSS | Your own feeds |
-| Custom JSON API | Any endpoint returning items |
+| Custom RSS Feeds | Your own feeds |
+| Custom JSON API Sources | Any endpoint returning items |
 
 Toggle sources in **Settings > Feed > Sources**.
 
-## Languages
+## Keyboard shortcuts
 
-- English
-- German (Deutsch)
+| Shortcut | Action |
+|---|---|
+| Alt+Shift+S | Open sidebar |
+| Alt+Shift+C | Capture selected text |
+| Alt+Shift+F | Quick search snippets |
+| / (in clipboard view) | Focus search |
 
 ## Privacy
 
@@ -87,6 +104,17 @@ Feed content comes from public third-party APIs. Sonto does not own or filter it
 * esbuild bundling
 
 Zero runtime dependencies.
+
+## Development
+
+```bash
+npm install          # Install dependencies
+npm run build        # Build extension to dist/
+npm run typecheck    # Type check
+npm test             # Run unit tests
+npm run test:e2e     # Run e2e tests (requires Chrome)
+npm run screenshots  # Generate screenshots for docs
+```
 
 ## License
 
