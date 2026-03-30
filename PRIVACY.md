@@ -4,35 +4,33 @@
 
 Sonto has no accounts, no analytics, and no telemetry.
 
-Sonto stores data locally in your browser so the extension can work. This may include saved snippets, settings, recent chat sessions, read later items, custom RSS feeds, custom JSON sources, and local browsing history data used by the sidebar.
+All data is stored locally in your browser using Chrome's storage APIs and IndexedDB. This includes:
 
-### 2. API Keys
+- Saved clips (text, source URL, page title, timestamp)
+- Read later items (URL, title)
+- Collections (grouped clips)
+- Settings (language, theme, feed preferences)
+- Custom RSS and JSON feed sources
+- Seen feed items (to avoid repeats)
 
-Your API keys for OpenAI and Gemini are stored locally on your device using `chrome.storage.local`. They are never sent to any Sonto server. They are only used to authenticate your requests directly to the AI provider you selected.
+### 2. Browsing History
 
-### 3. Browsing History and Saved Content
+Sonto does not read your browser history. It only captures text you explicitly save via clipboard, right-click menu, or keyboard shortcut.
 
-Sonto can read your browser history so it can show recent pages, find related pages, and answer questions about your own browsing activity.
+### 3. Saved Content
 
-When you save highlighted text, Sonto stores the selected text, the page URL, the page title, a timestamp, and sometimes a small amount of surrounding page context so the saved item is more useful later.
+When you save text, Sonto stores the selected text, the page URL, the page title, and a timestamp. This data stays in your browser.
 
-This data is stored locally in your browser. Sonto does not operate its own backend or sync server.
+### 4. Third-Party Services
 
-### 4. AI Features
+The Zen feed fetches content from public APIs (museums, news sites, quote services). Sonto does not own this content.
 
-If you enable AI features, relevant data such as your question, saved snippets, and related browsing history entries is sent directly from your browser to the AI provider you selected through their official API.
+If you add custom RSS feeds or JSON endpoints, Sonto will fetch from those URLs you specify.
 
-Sonto is not involved in that transfer and does not store that data on its own servers.
+### 5. No Backend
 
-### 5. Third-Party Services
-
-Sonto can fetch content from public third-party feeds and APIs, including sources you configure yourself such as custom RSS feeds or custom JSON endpoints.
-
-If you use AI features, you also interact directly with third-party AI providers. Review their privacy policies:
-
-- [OpenAI](https://openai.com/policies/privacy-policy/)
-- [Google AI](https://ai.google.dev/gemini-api/terms)
+Sonto does not operate a server. Nothing is sent to the extension developer. All data remains on your device.
 
 ### 6. Open Source
 
-Sonto is open source. You can review the full code at [github.com/artttj/sonto](https://github.com/artttj/sonto). Report issues or questions in the [issue tracker](https://github.com/artttj/sonto/issues).
+The full source code is available at [github.com/artttj/sonto](https://github.com/artttj/sonto). Report issues or questions in the [issue tracker](https://github.com/artttj/sonto/issues).
