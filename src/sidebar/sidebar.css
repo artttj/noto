@@ -1271,6 +1271,14 @@ html, body {
   margin-bottom: 6px;
 }
 
+.clip-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
 .clip-type-badge {
   display: inline-flex;
   align-items: center;
@@ -1929,6 +1937,80 @@ html, body {
 .color-dot-purple { background: #a064ff; }
 .color-dot-gray   { background: #8c8c8c; }
 
+/* Prompts Filters */
+.prompts-filters {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 0;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.prompts-filters.hidden {
+  display: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.filter-chip:hover {
+  background: var(--c-elevated);
+  border-color: var(--c-border-hi);
+}
+
+.filter-chip.active {
+  background: var(--c-active-bg);
+  border-color: var(--c-border-hi);
+  color: var(--c-text);
+}
+
+.filter-chip-color {
+  background: var(--chip-bg);
+  border-color: var(--chip-border);
+}
+
+.filter-chip-color:hover {
+  background: var(--chip-bg);
+  border-color: var(--chip-border);
+  filter: brightness(1.1);
+}
+
+.filter-chip-color.active {
+  background: var(--chip-bg);
+  border-color: var(--c-text);
+}
+
+.filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.filter-label {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filter-count {
+  opacity: 0.6;
+  font-size: 10px;
+}
+
 /* Prompt Color Tag */
 .prompt-color-tag {
   display: inline-block;
@@ -1936,7 +2018,6 @@ html, body {
   height: 10px;
   border-radius: 50%;
   border: 2px solid;
-  margin-right: 6px;
   flex-shrink: 0;
 }
 

@@ -39,11 +39,12 @@ class SontoSidebar {
   private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly clipListEl = qs<HTMLElement>('#clip-list');
   private readonly promptsListEl = qs<HTMLElement>('#prompts-list');
+  private readonly promptsFiltersEl = qs<HTMLElement>('#prompts-filters');
   private readonly searchInputEl = qs<HTMLInputElement>('#clipboard-search');
   private readonly promptsSearchEl = qs<HTMLInputElement>('#prompts-search');
 
   private readonly clipManager = new ClipboardManager(this.clipListEl);
-  private readonly promptsManager = new PromptsManager(this.promptsListEl, this.promptsSearchEl);
+  private readonly promptsManager = new PromptsManager(this.promptsListEl, this.promptsSearchEl, this.promptsFiltersEl);
   private readonly themeController = new ThemeController(this.themeBtn);
   private viewController!: ViewController;
   private promptModalController!: PromptModalController;

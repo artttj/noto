@@ -91,12 +91,15 @@ function showEditModal(prompt: PromptItem, onSave: (updates: { text: string; lab
 export class PromptsManager {
   private prompts: PromptItem[] = [];
   private listEl: HTMLElement;
+  private filtersEl: HTMLElement;
   private searchEl: HTMLInputElement;
   private isLoading = false;
+  private activeColor: PromptColor | null = null;
 
-  constructor(listEl: HTMLElement, searchEl: HTMLInputElement) {
+  constructor(listEl: HTMLElement, searchEl: HTMLInputElement, filtersEl: HTMLElement) {
     this.listEl = listEl;
     this.searchEl = searchEl;
+    this.filtersEl = filtersEl;
   }
 
   async load(): Promise<void> {
@@ -107,8 +110,68 @@ export class PromptsManager {
       console.error('[Sonto] Failed to load prompts:', err);
     } finally {
       this.setLoading(false);
+      this.renderFilters();
       this.render();
     }
+  }
+
+  private renderFilters(): void {
+    const colorCounts = new Map<PromptColor, { count: number; label?: string }>();
+
+    for (const p of this.prompts) {
+      if (p.color) {
+        const existing = colorCounts.get(p.color);
+        if (existing) {
+          existing.count++;
+        } else {
+          colorCounts.set(p.color, { count: 1, label: p.label });
+        }
+      }
+    }
+
+    if (colorCounts.size === 0) {
+      this.filtersEl.classList.add('hidden');
+      return;
+    }
+
+    this.filtersEl.classList.remove('hidden');
+    this.filtersEl.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.className = 'filter-chip' + (this.activeColor === null ? ' active' : '');
+    allBtn.textContent = 'All';
+    allBtn.addEventListener('click', () => {
+      this.activeColor = null;
+      this.renderFilters();
+      this.render();
+    });
+    this.filtersEl.appendChild(allBtn);
+
+    for (const color of COLOR_ORDER) {
+      const data = colorCounts.get(color);
+      if (!data) continue;
+
+      const styles = PROMPT_COLORS[color];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-chip filter-chip-color' + (this.activeColor === color ? ' active' : '');
+      btn.style.setProperty('--chip-bg', styles.bg);
+      btn.style.setProperty('--chip-border', styles.border);
+      btn.innerHTML = `
+        <span class="filter-dot" style="background: ${styles.hex}"></span>
+        <span class="filter-label">${data.label ? escapeHtml(data.label) : color.charAt(0).toUpperCase() + color.slice(1)}</span>
+        <span class="filter-count">${data.count}</span>
+      `;
+      btn.addEventListener('click', () => {
+        this.activeColor = color;
+        this.renderFilters();
+        this.render();
+      });
+      this.filtersEl.appendChild(btn);
+    }
+
+    createIcons({ icons, attrs: { strokeWidth: 1.5 } });
   }
 
   async search(query: string): Promise<void> {
@@ -125,6 +188,7 @@ export class PromptsManager {
       console.error('[Sonto] Search failed:', err);
     } finally {
       this.setLoading(false);
+      this.renderFilters();
       this.render();
     }
   }
@@ -132,26 +196,31 @@ export class PromptsManager {
   render(): void {
     this.listEl.innerHTML = '';
 
+    const filtered = this.activeColor
+      ? this.prompts.filter(p => p.color === this.activeColor)
+      : this.prompts;
+
     if (this.isLoading) {
       this.renderLoading();
       return;
     }
 
-    if (this.prompts.length === 0) {
+    if (filtered.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'clips-empty';
       const hasSearch = this.searchEl.value.trim().length > 0;
+      const hasFilter = this.activeColor !== null;
       empty.innerHTML = `
         <div class="empty-icon"><i data-lucide="sparkles"></i></div>
-        <p>${hasSearch ? 'No prompts found.' : 'No prompts saved yet.'}</p>
-        <p class="empty-hint">${hasSearch ? 'Try a different search term.' : 'Right-click selected text on any page to save as a prompt.'}</p>
+        <p>${hasFilter ? 'No prompts with this color.' : hasSearch ? 'No prompts found.' : 'No prompts saved yet.'}</p>
+        <p class="empty-hint">${hasFilter ? 'Try a different filter.' : hasSearch ? 'Try a different search term.' : 'Right-click selected text on any page to save as a prompt.'}</p>
       `;
       this.listEl.appendChild(empty);
       createIcons({ icons, attrs: { strokeWidth: 1.5 } });
       return;
     }
 
-    for (const prompt of this.prompts) {
+    for (const prompt of filtered) {
       this.listEl.appendChild(this.buildCard(prompt));
     }
 
@@ -172,11 +241,13 @@ export class PromptsManager {
 
     card.innerHTML = `
       <div class="clip-header">
-        ${colorDot}
-        <span class="clip-type-badge clip-badge-prompt">
-          <span class="clip-type-icon">✦</span>
-          ${prompt.label ? escapeHtml(prompt.label) : 'Prompt'}
-        </span>
+        <div class="clip-header-left">
+          ${colorDot}
+          <span class="clip-type-badge clip-badge-prompt">
+            <span class="clip-type-icon">✦</span>
+            ${prompt.label ? escapeHtml(prompt.label) : 'Prompt'}
+          </span>
+        </div>
         <span class="clip-time">${this.formatDate(prompt.createdAt)}</span>
       </div>
       <div class="clip-body${needsExpand ? ' clip-body-expandable' : ''}" ${needsExpand ? 'title="Click to view full text"' : ''}>
@@ -227,6 +298,7 @@ export class PromptsManager {
 
     setTimeout(() => {
       card.remove();
+      this.renderFilters();
       if (this.prompts.length === 0) this.render();
     }, 200);
   }
