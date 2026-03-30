@@ -1,114 +1,14 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { MSG, type RuntimeMessage } from '../shared/messages';
-import {
-  addClip,
-  deleteClip,
-  getAllClips,
-  updateClip,
-  clearAllClips,
-  searchClips,
-} from '../shared/embeddings/vector-store';
-import { MAX_CAPTURE_CHARS } from '../shared/constants';
-import {
-  getReadLater,
-  saveReadLater,
-  getMaxHistorySize,
-  getClipboardMonitoring,
-  getDailyNotificationEnabled,
-  getDailyNotificationTime,
-  getBadgeCounterEnabled,
-} from '../shared/storage';
-import { getClipsByDomain } from '../shared/embeddings/vector-store';
-import { buildTags } from '../shared/utils';
-import type { ClipItem, ClipContentType, ClipSource } from '../shared/types';
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function detectContentType(text: string): ClipContentType {
-  const trimmed = text.trim();
-  if (/^https?:\/\/\S+$/.test(trimmed)) return 'link';
-  if (/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(trimmed)) return 'email';
-  if (/^```[\s\S]*```$/.test(trimmed) || /^\s{4}/.test(trimmed) || /[{}()[\];]/.test(trimmed.slice(0, 80))) return 'code';
-  return 'text';
-}
-
-function normalizeText(text: string): string {
-  return text.replace(/\s+/g, ' ').trim().toLowerCase();
-}
-
-async function isRepeatOfRecentClip(text: string): Promise<boolean> {
-  const normalized = normalizeText(text);
-  const all = await getAllClips();
-  if (all.length === 0) return false;
-
-  const CHECK_RECENT_COUNT = 5;
-  const recent = all.slice(0, CHECK_RECENT_COUNT);
-  return recent.some(clip => normalizeText(clip.text) === normalized);
-}
-
-async function enforceHistoryLimit(): Promise<void> {
-  const [maxSize, all] = await Promise.all([getMaxHistorySize(), getAllClips()]);
-  if (all.length <= maxSize) return;
-
-  const nonPinned = all.filter((c) => !c.pinned);
-  const toRemove = nonPinned.slice(-(all.length - maxSize));
-  await Promise.all(toRemove.map((c) => deleteClip(c.id)));
-}
-
-async function captureClip(
-  text: string,
-  source: ClipSource,
-  url?: string,
-  title?: string,
-  explicitContentType?: ClipContentType,
-): Promise<void> {
-  const trimmed = text.slice(0, MAX_CAPTURE_CHARS);
-  if (!trimmed.trim()) throw new Error('Nothing to save.');
-
-  const monitoring = await getClipboardMonitoring();
-  if (!monitoring && source === 'clipboard') throw new Error('Clipboard monitoring is off.');
-
-  if (await isRepeatOfRecentClip(trimmed)) throw new Error('Already in clipboard history.');
-
-  const contentType = explicitContentType ?? detectContentType(trimmed);
-  const tags = buildTags(url);
-
-  const clip: ClipItem = {
-    id: generateId(),
-    text: trimmed,
-    contentType,
-    source,
-    timestamp: Date.now(),
-    ...(url ? { url } : {}),
-    ...(title ? { title } : {}),
-    ...(tags.length ? { tags } : {}),
-  };
-
-  await addClip(clip);
-  await enforceHistoryLimit();
-  void chrome.runtime.sendMessage({ type: MSG.CLIP_ADDED }).catch(() => {});
-  void updateCaptureBadge();
-}
-
-async function checkReadLaterForTab(url: string): Promise<void> {
-  const items = await getReadLater();
-  const idx = items.findIndex((i) => i.url === url);
-  if (idx === -1) return;
-
-  const item = items[idx];
-  items.splice(idx, 1);
-  await saveReadLater(items);
-
-  try {
-    await captureClip(item.title ? `${item.title} — ${url}` : url, 'manual', url, item.title);
-  } catch (err) {
-    console.error('[Sonto] read-later capture failed:', err);
-  }
-}
+import { MSG } from '../shared/messages';
+import { registerAllHandlers } from './handlers';
+import { handleMessage } from './message-router';
+import { clipHandler } from './clip-handler';
+import { readLaterHandler } from './read-later-handler';
+import { notificationHandler, setupAlarmListener } from './notification-handler';
+import { badgeHandler } from './badge-handler';
+import type { RuntimeMessage } from '../shared/messages';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -132,7 +32,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (!text.trim()) return;
     void (async () => {
       try {
-        await captureClip(text, 'context-menu', url, title);
+        await clipHandler.capture(text, 'context-menu', url, title);
         if (tab?.id) {
           void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: 'Saved to clipboard history.' }).catch(() => {});
         }
@@ -151,11 +51,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     const title = info.linkUrl ? undefined : tab?.title;
     if (!url) return;
     void (async () => {
-      const items = await getReadLater();
-      if (!items.some((i) => i.url === url)) {
-        items.push({ url, title, addedAt: Date.now() });
-        await saveReadLater(items);
-      }
+      await readLaterHandler.add(url, title);
     })();
     return;
   }
@@ -171,7 +67,7 @@ chrome.commands.onCommand.addListener((command) => {
     }
 
     if (command === 'quick_search') {
-      await chrome.tabs.sendMessage(tab.id, { type: 'SONTO_QUICK_SEARCH' });
+      await chrome.tabs.sendMessage(tab.id, { type: MSG.QUICK_SEARCH });
     }
   })();
 });
@@ -186,205 +82,25 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    void checkReadLaterForTab(tab.url);
-  }
-});
-
-chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResponse) => {
-  if (message.type === MSG.OPEN_SETTINGS) {
-    void chrome.runtime.openOptionsPage();
-    sendResponse({ ok: true });
-    return;
-  }
-
-  if (message.type === MSG.CAPTURE_CLIP) {
-    const { text, url, title, source, contentType } = message;
-    void captureClip(text, source, url, title, contentType)
-      .then(() => sendResponse({ ok: true, type: MSG.CAPTURE_SUCCESS }))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        sendResponse({ ok: false, type: MSG.CAPTURE_ERROR, message: msg });
-      });
-    return true;
-  }
-
-  if (message.type === MSG.DELETE_CLIP) {
-    void deleteClip(message.id)
-      .then(() => sendResponse({ ok: true }))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        sendResponse({ ok: false, message: msg });
-      });
-    return true;
-  }
-
-  if (message.type === MSG.GET_ALL_CLIPS) {
-    void getAllClips()
-      .then((clips) => sendResponse({ ok: true, clips }))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        sendResponse({ ok: false, message: msg });
-      });
-    return true;
-  }
-
-  if (message.type === MSG.SEARCH_CLIPS) {
-    void searchClips(message.query)
-      .then((clips) => sendResponse({ ok: true, clips }))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        sendResponse({ ok: false, message: msg });
-      });
-    return true;
-  }
-
-  if (message.type === MSG.UPDATE_CLIP) {
-    void updateClip(message.clip)
-      .then(() => sendResponse({ ok: true }))
-      .catch(() => sendResponse({ ok: false }));
-    return true;
-  }
-
-  if (message.type === MSG.CLEAR_CLIPS) {
-    void clearAllClips()
-      .then(() => sendResponse({ ok: true }))
-      .catch(() => sendResponse({ ok: false }));
-    return true;
-  }
-
-  if (message.type === MSG.ADD_READ_LATER) {
     void (async () => {
-      const items = await getReadLater();
-      if (!items.some((i) => i.url === message.url)) {
-        items.push({ url: message.url, title: message.title, addedAt: Date.now() });
-        await saveReadLater(items);
-      }
-      sendResponse({ ok: true });
-    })();
-    return true;
-  }
-
-  if (message.type === MSG.REMOVE_READ_LATER) {
-    void (async () => {
-      const items = await getReadLater();
-      await saveReadLater(items.filter((i) => i.url !== message.url));
-      sendResponse({ ok: true });
-    })();
-    return true;
-  }
-
-  if (message.type === MSG.GET_READ_LATER) {
-    void getReadLater()
-      .then((items) => sendResponse({ ok: true, items }))
-      .catch(() => sendResponse({ ok: true, items: [] }));
-    return true;
-  }
-
-  if (message.type === 'UPDATE_DAILY_ALARM') {
-    void setupDailyAlarm();
-    sendResponse({ ok: true });
-    return;
-  }
-
-  if (message.type === MSG.GET_RELATED_CLIPS) {
-    void (async () => {
-      try {
-        const clips = await getClipsByDomain(message.domain);
-        sendResponse({ ok: true, clips: clips.slice(0, 5) });
-      } catch (err) {
-        sendResponse({ ok: true, clips: [] });
+      const item = await readLaterHandler.checkUrl(tab.url!);
+      if (item) {
+        try {
+          await clipHandler.capture(item.title ? `${item.title} — ${tab.url}` : tab.url!, 'manual', tab.url, item.title);
+        } catch (err) {
+          console.error('[Sonto] read-later capture failed:', err);
+        }
       }
     })();
-    return true;
-  }
-
-});
-
-async function setupDailyAlarm(): Promise<void> {
-  const enabled = await getDailyNotificationEnabled();
-  
-  if (!enabled) {
-    await chrome.alarms.clear('daily-wrapup');
-    return;
-  }
-  
-  const timeStr = await getDailyNotificationTime();
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  
-  const now = new Date();
-  const scheduledTime = new Date();
-  scheduledTime.setHours(hours, minutes, 0, 0);
-  
-  if (scheduledTime <= now) {
-    scheduledTime.setDate(scheduledTime.getDate() + 1);
-  }
-  
-  await chrome.alarms.create('daily-wrapup', {
-    when: scheduledTime.getTime(),
-    periodInMinutes: 24 * 60,
-  });
-}
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'daily-wrapup') {
-    void showDailyWrapup();
   }
 });
 
-async function showDailyWrapup(): Promise<void> {
-  const allClips = await getAllClips();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const todayClips = allClips.filter((c) => c.timestamp >= today.getTime());
-  
-  const title = 'Your Daily Sonto';
-  let body = '';
-  
-  if (todayClips.length === 0) {
-    body = 'No items saved today. Open the sidebar to explore!';
-  } else if (todayClips.length === 1) {
-    body = '1 item saved today. Keep collecting!';
-  } else {
-    body = `${todayClips.length} items saved today. Open the sidebar to review!`;
-  }
-  
-  await chrome.notifications.create({
-    type: 'basic',
-    iconUrl: '../icons/icon48.png',
-    title,
-    message: body,
-    priority: 1,
-  });
-}
+chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
+  return handleMessage(message, sender, sendResponse);
+});
 
-async function updateCaptureBadge(): Promise<void> {
-  const enabled = await getBadgeCounterEnabled();
-  if (!enabled) return;
+registerAllHandlers();
+setupAlarmListener(notificationHandler);
 
-  const todayKey = new Date().toDateString();
-  const result = await chrome.storage.session.get(['badge_date', 'badge_count']);
-  let count = result.badge_date === todayKey ? ((result.badge_count as number) ?? 0) : 0;
-
-  count++;
-  await chrome.storage.session.set({ badge_date: todayKey, badge_count: count });
-  await chrome.action.setBadgeText({ text: String(count) });
-  await chrome.action.setBadgeBackgroundColor({ color: '#e8b931' });
-}
-
-async function restoreBadge(): Promise<void> {
-  const enabled = await getBadgeCounterEnabled();
-  if (!enabled) { await chrome.action.setBadgeText({ text: '' }); return; }
-
-  const todayKey = new Date().toDateString();
-  const result = await chrome.storage.session.get(['badge_date', 'badge_count']);
-  if (result.badge_date === todayKey && result.badge_count > 0) {
-    await chrome.action.setBadgeText({ text: String(result.badge_count) });
-    await chrome.action.setBadgeBackgroundColor({ color: '#e8b931' });
-  } else {
-    await chrome.action.setBadgeText({ text: '' });
-  }
-}
-
-void setupDailyAlarm();
-void restoreBadge();
+void notificationHandler.setupDailyAlarm();
+void badgeHandler.restoreBadge();

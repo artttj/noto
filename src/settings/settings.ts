@@ -28,8 +28,6 @@ import {
   setBadgeCounterEnabled,
   getReadingCompanionEnabled,
   setReadingCompanionEnabled,
-  getShowFeedToggle,
-  setShowFeedToggle,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
 import { clearAllClips, getClipCount } from '../shared/embeddings/vector-store';
@@ -106,13 +104,6 @@ async function initFeedTab(): Promise<void> {
     void saveZenDisplay(val as 'feed' | 'cosmos');
   });
   setZenDisplay(storedZenDisplay);
-
-  const showFeedToggle = document.getElementById('show-feed-toggle') as HTMLInputElement;
-  const storedShowFeedToggle = await getShowFeedToggle();
-  showFeedToggle.checked = storedShowFeedToggle;
-  showFeedToggle.addEventListener('change', () => {
-    void setShowFeedToggle(showFeedToggle.checked);
-  });
 
   const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
   const dripCurrentValue = document.getElementById('drip-current-value')!;

@@ -404,9 +404,13 @@ function formatTime(ts: number): string {
   return d.toLocaleDateString();
 }
 
-document.addEventListener('copy', () => {
+document.addEventListener('copy', (e) => {
   if (!monitoringEnabled) return;
-  schedulePoll();
+
+  const selected = window.getSelection()?.toString().trim() ?? '';
+  if (selected) {
+    sendClip(selected, 'clipboard');
+  }
 });
 
 document.addEventListener('mouseup', () => {

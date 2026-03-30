@@ -17,8 +17,6 @@ import haikuData from './haiku-data.json';
 import albumOfDayAlbums from './album-of-a-day.json';
 
 const DAY_MS = 86_400_000;
-import haikuData from './haiku-data.json';
-import albumOfDayAlbums from './album-of-a-day.json';
 
 export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string; hideLabel?: boolean };
 export type ZenArtResult = { imageUrl: string; caption: string; link?: string };

@@ -190,15 +190,6 @@ export async function saveCustomJsonSources(sources: CustomJsonSource[]): Promis
   await chrome.storage.local.set({ [STORAGE_KEYS.CUSTOM_JSON_SOURCES]: sources });
 }
 
-export async function getShowFeedToggle(): Promise<boolean> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.SHOW_FEED_TOGGLE);
-  return (result[STORAGE_KEYS.SHOW_FEED_TOGGLE] as boolean | undefined) ?? false;
-}
-
-export async function setShowFeedToggle(visible: boolean): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.SHOW_FEED_TOGGLE]: visible });
-}
-
 export async function getCollections(): Promise<import('./types').Collection[]> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.COLLECTIONS);
   return (result[STORAGE_KEYS.COLLECTIONS] as import('./types').Collection[] | undefined) ?? [];

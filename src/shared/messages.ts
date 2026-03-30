@@ -32,6 +32,7 @@ export interface CaptureClipMessage {
   url?: string;
   title?: string;
   source: ClipItem['source'];
+  contentType?: ClipItem['contentType'];
 }
 
 export interface DeleteClipMessage {

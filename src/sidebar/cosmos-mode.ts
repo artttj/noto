@@ -170,6 +170,7 @@ class SpirographCanvas {
   private resizeTimer = 0;
   private drawTimer = 0;
   private resolveStart: (() => void) | null = null;
+  private removed = false;
 
   private style: 'dense' | 'open' | 'geometric' = 'dense';
   private stepsTotal = 0;
@@ -413,6 +414,11 @@ class SpirographCanvas {
     this.ro.disconnect();
     clearTimeout(this.resizeTimer);
     this.canvas.remove();
+    this.removed = true;
+  }
+
+  isRemoved(): boolean {
+    return this.removed;
   }
 }
 
@@ -735,7 +741,8 @@ export class CosmosMode {
     if (saveText) {
       const saveBtn = document.createElement('button');
       saveBtn.className = 'cosmos-save';
-      saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a2 2a2 13 4 17"/><path d="M23 7a2 4a2 13v14a2 18v8a2 4v10"/></svg>`;
+      const SAVE_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+      saveBtn.innerHTML = `${SAVE_ICON} <span>Save</span>`;
       saveBtn.addEventListener('click', () => {
         void chrome.runtime.sendMessage({
           type: MSG.CAPTURE_CLIP,
@@ -743,8 +750,8 @@ export class CosmosMode {
           url: saveLink,
           source: 'manual',
         }).then((res) => {
-          saveBtn.textContent = res?.ok ? 'Saved' : 'Already saved';
-          setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
+          saveBtn.innerHTML = res?.ok ? 'Saved' : 'Already saved';
+          setTimeout(() => { saveBtn.innerHTML = `${SAVE_ICON} <span>Save</span>`; }, 2000);
         });
       });
       this.msgEl.appendChild(saveBtn);
@@ -773,7 +780,7 @@ export class CosmosMode {
 
     if (!skipSpiro) {
       const theme = await getTheme();
-      const needsNewSpiro = !this.spiro || this.spiro.removed;
+      const needsNewSpiro = !this.spiro || this.spiro.isRemoved();
 
       if (needsNewSpiro) {
         this.spiro?.remove();
@@ -784,7 +791,7 @@ export class CosmosMode {
 
       await this.renderResult(result, source);
       await fadeEl(this.msgEl, 0, 1, FADE_MS);
-      if (this.stopped) { this.spiro.stop(); return; }
+      if (this.stopped) { this.spiro?.stop(); return; }
 
       await spiroPromise;
       if (this.stopped) return;

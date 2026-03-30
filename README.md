@@ -1,6 +1,6 @@
 # <img src="icons/icon128.png" width="36" alt="" valign="middle" /> SONTO
 
-A calm Chrome sidebar that surfaces a slow drip of art, quotes, science, and news, so you get interesting things to pause on, without social media noise.
+A calm Chrome sidebar that works as a clipboard and prompt manager. No API keys needed. Save text snippets, organize prompts, and browse your copy history.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Google Chrome](https://img.shields.io/badge/Google%20Chrome-4285F4?style=for-the-badge&logo=GoogleChrome&logoColor=white)
 
@@ -30,29 +30,18 @@ npm run build
 
 Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, then select the `dist/` folder.
 
-The Zen feed works without an API key.
-For chat and embeddings, add your key in **Settings > AI**.
-
-| Provider | Get a key |
-|---|---|
-| OpenAI | https://platform.openai.com/api-keys |
-| Gemini | https://aistudio.google.com/app/apikey |
+No API keys needed. The extension works entirely in your browser.
 
 ## Features
 
-- **Zen feed**: A slow, thoughtful feed that shows one thing at a time
-- **Rich sources**: Museum art, Mars rover photos, Science news, Atlas Obscura stories, quotes, trivia, and more
-- **Wikimedia paintings**: Random paintings pulled from deep Wikimedia Commons categories
-- **Album of a Day**: A rare daily album card with cover art and titles from a curated 700-album list via MusicBrainz
+- **Clipboard history**: Automatically save copied text. Press Alt+Shift+C or right-click to capture manually
+- **Prompt management**: Save and organize your favorite AI prompts
+- **Pin important items**: Keep frequently used snippets at the top
+- **Zen feed**: A slow feed with art, quotes, and interesting content when you need a break
 - **Two modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
 - **Themes**: Dark and light themes with WCAG 2.1 AA contrast compliance
-- **Save anything**: Highlight text anywhere and press `Alt+Shift+C` or right-click to save
-- **Chat with your history**: Ask questions about saved snippets using RAG with OpenAI or Gemini
-- **Related pages**: Semantic search surfaces related pages from your browsing history
 - **Backup & restore**: Export and import all data as JSON
-- **Custom sources**: Add your own RSS feeds or JSON API endpoints
-- **Weekly digest**: Optional summary of your saved content
-- **BYOK**: Bring your own API key and pay the provider directly
+- **Fully local**: All data stays in your browser. No accounts, no tracking
 
 ## Zen feed sources
 
@@ -85,22 +74,16 @@ Toggle sources in **Settings > Feed > Sources**.
 
 ## Privacy
 
-All data stays in your browser.
-
-API calls go directly to OpenAI or Google.
-No proxy, no analytics, no tracking.
+All data stays in your browser. No backend. No analytics. No tracking.
 
 Feed content comes from public third-party APIs. Sonto does not own or filter it.
-
-- OpenAI Privacy: https://openai.com/policies/privacy-policy/
-- Google Gemini Terms: https://ai.google.dev/gemini-api/terms
 
 ## Tech
 
 * TypeScript
 * Chrome Extension Manifest V3
 * Side Panel API
-* IndexedDB with cosine similarity search
+* IndexedDB
 * esbuild bundling
 
 Zero runtime dependencies.
