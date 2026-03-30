@@ -2,11 +2,91 @@
 // Licensed under the MIT License.
 
 import { createIcons, icons } from 'lucide';
-import { MSG } from '../shared/messages';
-import { getAllPrompts, deletePrompt, type PromptItem } from '../shared/storage';
+import { getAllPrompts, deletePrompt, updatePrompt, type PromptItem, type PromptColor } from '../shared/storage';
 import { escapeHtml } from '../shared/utils';
 
 const COPY_FEEDBACK_MS = 1500;
+
+const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
+  red:    { bg: 'rgba(255,90,90,0.12)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
+  orange: { bg: 'rgba(255,160,60,0.12)', border: 'rgba(255,160,60,0.9)', hex: '#ffa03c' },
+  yellow: { bg: 'rgba(255,210,60,0.12)', border: 'rgba(255,210,60,0.9)', hex: '#ffd23c' },
+  green:  { bg: 'rgba(60,200,100,0.12)', border: 'rgba(60,200,100,0.9)', hex: '#3cc864' },
+  blue:   { bg: 'rgba(60,140,255,0.12)', border: 'rgba(60,140,255,0.9)', hex: '#3c8cff' },
+  purple: { bg: 'rgba(160,100,255,0.12)', border: 'rgba(160,100,255,0.9)', hex: '#a064ff' },
+  gray:   { bg: 'rgba(140,140,140,0.12)', border: 'rgba(140,140,140,0.9)', hex: '#8c8c8c' },
+};
+
+const COLOR_ORDER: PromptColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
+
+let editModal: HTMLElement | null = null;
+
+function initEditModal(): void {
+  if (editModal) return;
+
+  editModal = document.createElement('div');
+  editModal.id = 'prompt-edit-modal';
+  editModal.className = 'prompt-modal hidden';
+  editModal.innerHTML = `
+    <div class="prompt-modal-content">
+      <h3 class="prompt-modal-title">Edit Prompt</h3>
+      <textarea id="prompt-edit-input" class="prompt-textarea" rows="6"></textarea>
+      <input type="text" id="prompt-edit-label" class="prompt-label-input" placeholder="Label (optional)" maxlength="30" />
+      <div class="prompt-color-picker">
+        ${COLOR_ORDER.map(c => `<button type="button" class="color-dot color-dot-${c}" data-color="${c}" title="${c}"></button>`).join('')}
+      </div>
+      <div class="prompt-modal-actions">
+        <button id="prompt-edit-cancel" class="prompt-btn prompt-btn-secondary" type="button">Cancel</button>
+        <button id="prompt-edit-save" class="prompt-btn prompt-btn-primary" type="button">Save</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(editModal);
+}
+
+function showEditModal(prompt: PromptItem, onSave: (updates: { text: string; label?: string; color?: PromptColor }) => void): void {
+  initEditModal();
+  if (!editModal) return;
+
+  const input = editModal.querySelector('#prompt-edit-input') as HTMLTextAreaElement;
+  const labelInput = editModal.querySelector('#prompt-edit-label') as HTMLInputElement;
+  const colorDots = editModal.querySelectorAll('.color-dot');
+
+  input.value = prompt.text;
+  labelInput.value = prompt.label ?? '';
+
+  let selectedColor: PromptColor | undefined = prompt.color;
+  colorDots.forEach(dot => {
+    dot.classList.toggle('selected', (dot as HTMLElement).dataset.color === selectedColor);
+    dot.addEventListener('click', () => {
+      const color = (dot as HTMLElement).dataset.color as PromptColor;
+      selectedColor = selectedColor === color ? undefined : color;
+      colorDots.forEach(d => d.classList.toggle('selected', (d as HTMLElement).dataset.color === selectedColor));
+    });
+  });
+
+  const cancelBtn = editModal.querySelector('#prompt-edit-cancel') as HTMLButtonElement;
+  const saveBtn = editModal.querySelector('#prompt-edit-save') as HTMLButtonElement;
+
+  const close = () => {
+    editModal?.classList.add('hidden');
+  };
+
+  cancelBtn.onclick = close;
+  editModal.onclick = (e) => { if (e.target === editModal) close(); };
+
+  saveBtn.onclick = () => {
+    onSave({
+      text: input.value.trim(),
+      label: labelInput.value.trim() || undefined,
+      color: selectedColor,
+    });
+    close();
+  };
+
+  editModal.classList.remove('hidden');
+  input.focus();
+}
 
 export class PromptsManager {
   private prompts: PromptItem[] = [];
@@ -40,7 +120,7 @@ export class PromptsManager {
     try {
       const all = await getAllPrompts();
       const q = query.toLowerCase();
-      this.prompts = all.filter(p => p.text.toLowerCase().includes(q));
+      this.prompts = all.filter(p => p.text.toLowerCase().includes(q) || (p.label?.toLowerCase().includes(q) ?? false));
     } catch (err) {
       console.error('[Sonto] Search failed:', err);
     } finally {
@@ -85,12 +165,17 @@ export class PromptsManager {
 
     const preview = escapeHtml(prompt.text.slice(0, 280));
     const needsExpand = prompt.text.length > 280;
+    const colorStyles = prompt.color ? PROMPT_COLORS[prompt.color] : null;
+    const colorDot = colorStyles
+      ? `<span class="prompt-color-tag" style="background: ${colorStyles.bg}; border-color: ${colorStyles.border};"></span>`
+      : '';
 
     card.innerHTML = `
       <div class="clip-header">
+        ${colorDot}
         <span class="clip-type-badge clip-badge-prompt">
           <span class="clip-type-icon">✦</span>
-          Prompt
+          ${prompt.label ? escapeHtml(prompt.label) : 'Prompt'}
         </span>
         <span class="clip-time">${this.formatDate(prompt.createdAt)}</span>
       </div>
@@ -100,6 +185,7 @@ export class PromptsManager {
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i><span class="clip-btn-label">Copy</span></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
+        <button class="clip-btn clip-btn-edit" title="Edit" aria-label="Edit this prompt"><i data-lucide="pencil"></i></button>
         <button class="clip-btn clip-btn-delete" title="Delete" aria-label="Delete this prompt"><i data-lucide="trash-2"></i></button>
       </div>
     `;
@@ -117,6 +203,15 @@ export class PromptsManager {
 
     card.querySelector<HTMLButtonElement>('.clip-btn-copy')?.addEventListener('click', copyPrompt);
     card.addEventListener('dblclick', copyPrompt);
+
+    card.querySelector<HTMLButtonElement>('.clip-btn-edit')?.addEventListener('click', () => {
+      showEditModal(prompt, async (updates) => {
+        if (updates.text) {
+          await updatePrompt(prompt.id, updates);
+          await this.load();
+        }
+      });
+    });
 
     card.querySelector<HTMLButtonElement>('.clip-btn-delete')?.addEventListener('click', () => {
       void this.deletePrompt(prompt.id, card);

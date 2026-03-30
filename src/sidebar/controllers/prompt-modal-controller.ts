@@ -1,7 +1,9 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { savePrompt } from '../../shared/storage';
+import { savePrompt, type PromptColor } from '../../shared/storage';
+
+const COLOR_ORDER: PromptColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
 
 interface PromptModalDeps {
   modal: HTMLElement;
@@ -14,9 +16,12 @@ interface PromptModalDeps {
 
 export class PromptModalController {
   private deps: PromptModalDeps;
+  private selectedColor: PromptColor | undefined;
+  private colorDots: NodeListOf<HTMLButtonElement>;
 
   constructor(deps: PromptModalDeps) {
     this.deps = deps;
+    this.colorDots = deps.modal.querySelectorAll('.color-dot');
   }
 
   init(): void {
@@ -26,17 +31,35 @@ export class PromptModalController {
     this.deps.modal.addEventListener('click', (e) => {
       if (e.target === this.deps.modal) this.hide();
     });
+
+    this.colorDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const color = dot.dataset.color as PromptColor;
+        this.selectedColor = this.selectedColor === color ? undefined : color;
+        this.updateColorSelection();
+      });
+    });
   }
 
   show(): void {
     this.deps.modal.classList.remove('hidden');
     this.deps.input.value = '';
+    this.selectedColor = undefined;
+    this.updateColorSelection();
     this.deps.input.focus();
   }
 
   hide(): void {
     this.deps.modal.classList.add('hidden');
     this.deps.input.value = '';
+    this.selectedColor = undefined;
+    this.updateColorSelection();
+  }
+
+  private updateColorSelection(): void {
+    this.colorDots.forEach(dot => {
+      dot.classList.toggle('selected', dot.dataset.color === this.selectedColor);
+    });
   }
 
   private async save(): Promise<void> {
@@ -47,7 +70,7 @@ export class PromptModalController {
     }
 
     try {
-      await savePrompt(text);
+      await savePrompt(text, this.selectedColor);
       await this.deps.onSaved?.();
       this.hide();
     } catch (err) {

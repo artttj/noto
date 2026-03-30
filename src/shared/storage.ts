@@ -249,9 +249,13 @@ export async function getRecentlySeenBySource(source: string, withinMs: number):
 
 const PROMPTS_KEY = 'sonto_prompts';
 
+export type PromptColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray';
+
 export interface PromptItem {
   id: string;
   text: string;
+  label?: string;
+  color?: PromptColor;
   createdAt: number;
 }
 
@@ -261,16 +265,23 @@ export async function getAllPrompts(): Promise<PromptItem[]> {
   return prompts?.sort((a, b) => b.createdAt - a.createdAt) ?? [];
 }
 
-export async function savePrompt(text: string): Promise<PromptItem> {
+export async function savePrompt(text: string, color?: PromptColor): Promise<PromptItem> {
   const prompts = await getAllPrompts();
   const newPrompt: PromptItem = {
     id: `${Date.now()}-${crypto.randomUUID()}`,
     text,
+    color,
     createdAt: Date.now(),
   };
   const updatedPrompts = [...prompts, newPrompt];
   await chrome.storage.local.set({ [PROMPTS_KEY]: updatedPrompts });
   return newPrompt;
+}
+
+export async function updatePrompt(id: string, updates: Partial<Pick<PromptItem, 'text' | 'label' | 'color'>>): Promise<void> {
+  const prompts = await getAllPrompts();
+  const updatedPrompts = prompts.map(p => p.id === id ? { ...p, ...updates } : p);
+  await chrome.storage.local.set({ [PROMPTS_KEY]: updatedPrompts });
 }
 
 export async function deletePrompt(id: string): Promise<void> {
