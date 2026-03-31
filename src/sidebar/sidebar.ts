@@ -12,7 +12,8 @@ import {
   getDefaultView,
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
-import { ClipboardManager } from './clipboard-manager';
+import { ClipboardManager, PROMPT_COLORS } from './clipboard-manager';
+import type { PromptColor } from '../shared/storage';
 import { PromptsManager } from './prompts-manager';
 import {
   ThemeController,
@@ -240,7 +241,8 @@ class SontoSidebar {
 
     addClipColors.querySelectorAll('.color-dot').forEach((dot) => {
       dot.addEventListener('click', () => {
-        const color = (dot as HTMLElement).dataset.color;
+        const color = (dot as HTMLElement).dataset.color as PromptColor;
+        if (!PROMPT_COLORS[color]) return;
         selectedClipColor = selectedClipColor === color ? undefined : color;
         updateClipColorSelection();
       });

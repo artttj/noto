@@ -94,7 +94,8 @@ export class PromptModalController {
         await this.deps.onSaved?.();
       }
       this.hide();
-    } catch {
+    } catch (err) {
+      console.error('[Sonto] Failed to save prompt:', err);
       this.hide();
     }
   }

@@ -10,7 +10,7 @@ import { insertTextToActiveTab } from '../shared/tab-operations';
 import { highlightCode } from './syntax-highlight';
 import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify, moveCardToTop } from './utils';
 
-const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
+export const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
   red:    { bg: 'rgba(255,90,90,0.18)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
   orange: { bg: 'rgba(255,160,60,0.18)', border: 'rgba(255,160,60,0.9)', hex: '#ffa03c' },
   yellow: { bg: 'rgba(200,160,20,0.25)', border: 'rgba(200,160,20,0.9)', hex: '#c8a014' },
