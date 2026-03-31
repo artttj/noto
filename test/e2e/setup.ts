@@ -113,7 +113,7 @@ export async function takeScreenshot(page: Page, name: string): Promise<string> 
     fs.mkdirSync(screenshotDir, { recursive: true });
   }
   const screenshotPath = path.join(screenshotDir, `${name}.png`);
-  await page.screenshot({ path: screenshotPath, fullPage: true });
+  await page.screenshot({ path: screenshotPath, fullPage: true, omitBackground: false });
   return screenshotPath;
 }
 

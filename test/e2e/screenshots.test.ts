@@ -421,13 +421,21 @@ describe('Screenshot Generation', () => {
     await setViewport(sidebar, 420, 800);
     await setTheme(sidebar, 'dark');
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
-    await waitForElement(sidebar, '#btn-add-prompt');
+    await waitForElement(sidebar, '#nav-prompts');
 
+    // Switch to prompts tab first
     await sidebar.evaluate(() => {
-      const btn = document.querySelector('#btn-add-prompt') as HTMLElement;
-      if (btn) btn.click();
+      const promptsTab = document.querySelector('#nav-prompts') as HTMLElement;
+      if (promptsTab) promptsTab.click();
     });
-    await delay(300);
+    await delay(500);
+
+    // Click add prompt button
+    await sidebar.click('#btn-add-prompt');
+
+    // Wait for modal to be visible
+    await sidebar.waitForSelector('#prompt-modal:not(.hidden)', { timeout: 5000 });
+    await delay(500);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_prompt_modal');
     expect(fs.existsSync(screenshotPath)).toBe(true);
