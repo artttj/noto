@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Sonto is a Chrome browser extension (Manifest V3) that provides a calm sidebar feed of art, quotes, science, and news. Users can save highlights from any webpage and chat with their saved content using RAG (Retrieval-Augmented Generation).
+Sonto is a Chrome browser extension (Manifest V3) that provides a calm sidebar feed of art, quotes, science, and news, paired with a clipboard history manager. Users can save text snippets from any webpage and browse their history in the sidebar.
 
 **License:** MIT
 **Runtime dependencies:** 1 (`kotowaza` — Japanese proverbs dataset)
@@ -28,24 +28,27 @@ Communication between contexts uses `chrome.runtime.sendMessage` with typed mess
 ```
 src/
 ├── background/
-│   └── service-worker.ts          # Extension lifecycle, snippet storage,
-│                                  # history sync, context menus, alarms,
-│                                  # duplicate detection, AI category extraction,
-│                                  # weekly digest generation
+│   ├── service-worker.ts          # Extension lifecycle, context menus,
+│   │                              # keyboard shortcuts, badge management
+│   ├── message-router.ts          # Message routing dispatcher
+│   ├── handlers.ts                # Aggregates all message handlers
+│   ├── clip-handler.ts            # Text capture and storage logic
+│   ├── read-later-handler.ts      # Read Later queue management
+│   ├── related-clips-handler.ts   # Domain-based clip lookup
+│   └── badge-handler.ts           # Extension badge counter
 ├── content/
-│   └── main.ts                    # Text capture (Alt+Shift+C), context extraction,
-│                                  # Shadow DOM toast notifications
+│   └── main.ts                    # Text capture (Alt+Shift+C), Shadow DOM
+│                                  # toast notifications, quick search overlay
 ├── settings/
 │   ├── settings.ts                # Multi-tab settings page controller
 │   ├── settings.html              # Settings page markup
 │   └── settings.css               # Settings page styles
 ├── sidebar/
 │   ├── sidebar.ts                 # Main sidebar controller, view switching,
-│   │                              # theme toggle, reading assistant bar
-│   ├── browse-manager.ts          # Snippet library: filtering, pin/delete,
-│   │                              # related discovery, export (MD/JSON)
-│   ├── chat-manager.ts            # RAG chat: query embedding, context retrieval,
-│   │                              # LLM calls, citations, session persistence
+│   │                              # theme toggle, reading companion bar
+│   ├── clipboard-manager.ts       # Snippet library: filtering, pin/delete,
+│   │                              # export (MD/JSON), domain grouping
+│   ├── prompts-manager.ts         # Saved prompts with color labels
 │   ├── cosmos-mode.ts             # Procedural spirograph canvas animations
 │   │                              # with three generative pattern types
 │   ├── sidebar.html               # Sidebar markup
@@ -54,69 +57,59 @@ src/
 │   └── zen/
 │       ├── zen-feed.ts            # Scrolling feed with timed drip, weighted
 │       │                          # source selection, engagement signals
-│       ├── zen-fetchers.ts        # 16 content source fetchers (public APIs,
+│       ├── zen-fetchers.ts        # 15 content source fetchers (public APIs,
 │       │                          # RSS, museums, science, philosophy, art)
 │       ├── zen-content.ts         # Content rendering helpers, Oblique Strategies
-│       ├── zen-shared.ts          # Shared zen types and utilities
 │       ├── translator.ts          # Feed content translation layer
 │       ├── album-of-a-day.json    # Curated album list (~700 albums)
 │       ├── haiku-data.json        # Haiku poetry dataset
 │       └── quotes-data.json       # Quotes dataset
 └── shared/
-    ├── types.ts                   # Core interfaces: Snippet, ChatMessage,
-    │                              # ChatSession, ReadLaterItem, ProviderStrategy
-    ├── constants.ts               # Storage keys, model lists, DB config,
-    │                              # search parameters
-    ├── messages.ts                # Typed message protocol (20 message types)
-    │                              # for service worker communication
+    ├── types.ts                   # Core interfaces: ClipItem, ReadLaterItem,
+    │                              # Collection, PromptItem
+    ├── constants.ts               # Storage keys, DB config
+    ├── messages.ts                # Typed message protocol for service worker
+    │                              # communication
     ├── storage.ts                 # chrome.storage.local operations for all
     │                              # persisted settings and state
     ├── backup.ts                  # Full data export/import as JSON
     ├── rss-parser.ts              # RSS/Atom feed parser using DOMParser
-    ├── markdown.ts                # Markdown-to-HTML renderer (bold, italic,
-    │                              # code, lists, tables, headings)
+    ├── markdown.ts                # Markdown-to-HTML renderer
     ├── i18n.ts                    # Internationalization with data-i18n binding
     ├── utils.ts                   # HTML escaping
     ├── locales/
     │   ├── en.ts                  # English locale
     │   └── de.ts                  # German locale
-    ├── providers/
-    │   ├── index.ts               # Strategy pattern: getProviderStrategy()
-    │   ├── openai.ts              # OpenAI Chat Completions API client
-    │   ├── gemini.ts              # Google Gemini API client
-    │   └── errors.ts              # Provider error classes
     └── embeddings/
-        ├── engine.ts              # Embedding generation (OpenAI text-embedding-3-small
-        │                          # or Gemini text-embedding-004)
-        └── vector-store.ts        # IndexedDB vector store with cosine similarity
+        └── vector-store.ts        # IndexedDB store for clips (text search only)
 ```
 
 ## Data Layer
 
-**IndexedDB** (`sonto_db`, version 2): Stores snippets with their embedding vectors. Indexed by URL for duplicate detection and domain-based lookups.
+**IndexedDB** (`sonto_db`, version 2): Stores clips with metadata. Indexed by timestamp, content type, and pinned status. Supports text search via `toLowerCase().includes()`.
 
-**chrome.storage.local**: Settings, API keys, theme preference, chat sessions, read later queue, digest state, custom feed sources, zen source engagement signals.
+**chrome.storage.local**: Settings, theme preference, read later queue, custom feed sources, zen source engagement signals, prompts.
 
-**chrome.storage.session**: Ephemeral feed caches and extracted interest categories.
+**chrome.storage.session**: Ephemeral feed caches and seen item tracking.
 
-No data leaves the device except for direct API calls to OpenAI or Google when the user has configured an API key and uses AI features.
+No data leaves the device. All processing happens locally.
 
 ## Key Subsystems
 
 ### Zen Feed Engine
-Weighted random selection across 16 public API sources. Sources are boosted by user engagement (clicks, copies, pins). New items drip on a configurable timer (default 15 seconds). Every 5th drip resurfaces a saved snippet. AI-generated facts and stats are injected based on interest categories extracted from saved content. All sources filter out AI-related content.
-
-### Vector Search
-Snippets are embedded on save using OpenAI `text-embedding-3-small` (1536 dims) or Gemini `text-embedding-004` (768 dims). Queries are embedded at search time and matched via cosine similarity over the full IndexedDB store. Top-K results (default 10) are returned.
-
-### RAG Chat
-User questions are embedded, top-K similar snippets retrieved, then sent as context to an LLM (OpenAI or Gemini). Responses include citation chips linking to source snippets, grounding confidence notes, and follow-up suggestions. Sessions are persisted and browsable.
-
-### Browser History Sync
-A 30-minute alarm reads `chrome.history`, embeds page titles, and stores them as searchable snippets. Configurable domain allow/block lists. Batch processing (100 items per sync, max 500 total, last 30 days).
+Weighted random selection across 15 public API sources. Sources are boosted by user engagement (clicks, copies, pins). New items drip on a configurable timer (default 30 seconds). All sources filter out AI-related and inappropriate content.
 
 ### Cosmos Mode
 Procedural spirograph canvas animations between content cards. Three pattern generators (dense center, open ring, geometric lobe) with randomized parametric equations, color cycling, and canvas compositing. Adapts to dark/light theme.
+
+### Clipboard Manager
+Captures text via hotkey (Alt+Shift+C), context menu, or clipboard monitoring. Stores up to 500 items with pinning, domain grouping, and full-text search. Export to Markdown or JSON.
+
+### Read Later
+Quick-save URLs for later reading. Auto-captures the page when visited if it was saved to Read Later.
+
+### Prompts
+Save and organize frequently used text snippets as prompts with color-coded labels for quick access.
 
 ## Build
 
@@ -139,17 +132,17 @@ Load the `dist/` folder as an unpacked extension in `chrome://extensions` with D
 | `tabs` | Tab URL/title for snippet context |
 | `sidePanel` | Chrome Side Panel API |
 | `contextMenus` | "Save to Sonto" and "Read Later" right-click menus |
-| `history` | Browser history sync for semantic search |
-| `alarms` | Periodic history sync and weekly digest |
+| `clipboardRead` | Monitor clipboard for new content |
 
-Host permissions: `*://*/*` (content script injection), `api.openai.com`, `generativelanguage.googleapis.com`.
+Host permissions: `*://*/*` (content script injection)
 
-## Supported AI Models
+## Keyboard Shortcuts
 
-| Provider | Chat models | Embedding model |
-|---|---|---|
-| OpenAI | gpt-4o-mini, gpt-4.1-mini, gpt-4.1 | text-embedding-3-small |
-| Gemini | gemini-2.5-flash, gemini-2.5-pro | text-embedding-004 |
+| Shortcut | Action |
+|---|---|
+| Alt+Shift+S | Open Sonto sidebar |
+| Alt+Shift+C | Save selected text to clipboard history |
+| Alt+Shift+F | Quick search your snippets |
 
 ## Conventions
 
@@ -164,4 +157,4 @@ Host permissions: `*://*/*` (content script injection), `api.openai.com`, `gener
 
 ## Privacy Model
 
-BYOK (Bring Your Own Key). No accounts, no backend, no analytics, no telemetry. API keys are stored in `chrome.storage.local` and used only for direct calls to the selected provider. Feed content comes from public third-party APIs.
+No accounts, no backend, no analytics, no telemetry. All data stays in browser storage. Feed content comes from public third-party APIs.
