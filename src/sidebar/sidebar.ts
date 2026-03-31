@@ -59,14 +59,18 @@ class SontoSidebar {
     });
 
     this.navBrowse.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('.tab-pin')) {
+      const target = e.target as HTMLElement;
+      if (target.id === 'pin-browse' || target.closest('#pin-browse')) {
+        e.stopPropagation();
         void this.pinTab('browse');
       } else {
         this.switchTab('browse');
       }
     });
     this.navPrompts.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('.tab-pin')) {
+      const target = e.target as HTMLElement;
+      if (target.id === 'pin-prompts' || target.closest('#pin-prompts')) {
+        e.stopPropagation();
         void this.pinTab('prompts');
       } else {
         this.switchTab('prompts');
