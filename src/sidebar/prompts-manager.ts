@@ -3,7 +3,8 @@
 
 import { createIcons, icons } from 'lucide';
 import { getAllPrompts, deletePrompt, updatePrompt, type PromptItem, type PromptColor } from '../shared/storage';
-import { escapeHtml } from '../shared/utils';
+import { escapeHtml, formatDate } from '../shared/utils';
+import { insertTextToActiveTab } from '../shared/tab-operations';
 import { MSG } from '../shared/messages';
 
 const COPY_FEEDBACK_MS = 1500;
@@ -281,7 +282,7 @@ export class PromptsManager {
             ${prompt.label ? escapeHtml(prompt.label) : 'Prompt'}
           </span>
         </div>
-        <span class="clip-time">${this.formatDate(prompt.createdAt)}</span>
+        <span class="clip-time">${formatDate(prompt.createdAt)}</span>
       </div>
       <div class="clip-body${needsExpand ? ' clip-body-expandable' : ''}" ${needsExpand ? 'title="Click to view full text"' : ''}>
         <p class="clip-text-preview">${preview}${prompt.text.length > 280 ? '…' : ''}</p>
@@ -365,66 +366,10 @@ export class PromptsManager {
   }
 
   private async insertText(text: string): Promise<void> {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    let targetTab = tabs[0];
-
-    if (!targetTab || targetTab.url?.startsWith('chrome://') || targetTab.url?.startsWith('chrome-extension://')) {
-      const windows = await chrome.windows.getAll({ populate: true });
-      for (const win of windows) {
-        if (win.type !== 'normal' || !win.tabs) continue;
-
-        for (const tab of win.tabs) {
-          if (tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('about:')) {
-            targetTab = tab;
-            break;
-          }
-        }
-        if (targetTab) break;
-      }
+    const result = await insertTextToActiveTab(text);
+    if (result.error) {
+      showToast(result.error, true);
     }
-
-    if (!targetTab?.id) {
-      showToast('No active tab found.', true);
-      return;
-    }
-
-    try {
-      const response = await chrome.tabs.sendMessage(targetTab.id, { type: MSG.INSERT_TEXT, text });
-      if (response?.error) {
-        showToast(response.error, true);
-      }
-    } catch {
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId: targetTab.id },
-          files: ['content/content.js'],
-        });
-        await new Promise(resolve => setTimeout(resolve, 100));
-        const response = await chrome.tabs.sendMessage(targetTab.id, { type: MSG.INSERT_TEXT, text });
-        if (response?.error) {
-          showToast(response.error, true);
-        }
-      } catch {
-        showToast('Could not insert text on this page.', true);
-      }
-    }
-  }
-
-  private formatDate(ts: number): string {
-    const d = new Date(ts);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   private setLoading(loading: boolean): void {

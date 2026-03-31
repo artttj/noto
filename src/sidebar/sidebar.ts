@@ -266,6 +266,7 @@ class SontoSidebar {
     const { saveDefaultClipboardTab } = await import('../shared/storage');
     await saveDefaultClipboardTab(tab);
     this.updatePinState(tab);
+    console.log('[Sonto] Pinned tab:', tab);
   }
 
   private updatePinState(pinnedTab: 'browse' | 'prompts'): void {
