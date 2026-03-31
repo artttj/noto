@@ -32,8 +32,8 @@ class SontoSidebar {
   private readonly settingsBtn = qs<HTMLButtonElement>('#btn-settings');
   private readonly navBrowse = qs<HTMLButtonElement>('#nav-browse');
   private readonly navPrompts = qs<HTMLButtonElement>('#nav-prompts');
-  private readonly pinBrowse = qs<HTMLButtonElement>('#pin-browse');
-  private readonly pinPrompts = qs<HTMLButtonElement>('#pin-prompts');
+  private readonly pinBrowse = qs<HTMLSpanElement>('#pin-browse');
+  private readonly pinPrompts = qs<HTMLSpanElement>('#pin-prompts');
   private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
   private readonly browseContent = qs<HTMLElement>('#browse-content');
