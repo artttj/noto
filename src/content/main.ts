@@ -430,9 +430,21 @@ function formatTime(ts: number): string {
 document.addEventListener('copy', (e) => {
   if (!monitoringEnabled) return;
 
-  const selected = window.getSelection()?.toString().trim() ?? '';
-  if (selected) {
-    sendClip(selected, 'clipboard');
+  // Get selected text or clipboard data
+  let text = '';
+  try {
+    text = window.getSelection()?.toString().trim() ?? '';
+  } catch {
+    // Selection API might fail in some contexts
+  }
+
+  // Also try to get from clipboard event if available
+  if (!text && e.clipboardData) {
+    text = e.clipboardData.getData('text').trim();
+  }
+
+  if (text && text.length > 0) {
+    sendClip(text, 'clipboard');
   }
 });
 

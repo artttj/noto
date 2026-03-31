@@ -119,9 +119,9 @@ describe('Storage Operations', () => {
   });
 
   describe('Zen Feed', () => {
-    it('should default drip interval to 15000ms', async () => {
+    it('should default drip interval to 30000ms', async () => {
       const interval = await getDripInterval();
-      expect(interval).toBe(15000);
+      expect(interval).toBe(30000);
     });
 
     it('should save and retrieve drip interval', async () => {

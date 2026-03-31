@@ -1,0 +1,110 @@
+/* Copyright (c) Artem Iagovdik. All rights reserved. */
+/* Licensed under the MIT License. */
+
+
+
+[data-theme="light"] {
+  --c-bg:       #f5f5f5;
+  --c-surface:  rgba(0,0,0,0.04);
+  --c-elevated: rgba(0,0,0,0.07);
+  --c-border:   rgba(0,0,0,0.10);
+  --c-border-hi:rgba(0,0,0,0.22);
+
+  --c-btn-bg:   #111;
+  --c-btn-text: #f5f5f5;
+
+  --c-text:   rgba(10,10,10,0.92);
+  --c-text-2: rgba(30,30,30,0.72);
+  --c-text-3: #595959;
+
+  --c-accent:   #d4a72c;
+  --c-success: #1a9e60;
+  --c-error:   #c0392b;
+  --c-error-bg:rgba(192,57,43,0.08);
+  --c-error-bd:rgba(192,57,43,0.22);
+
+  --c-manual: rgba(20,150,80,0.10);
+  --c-manual-text: #1a8a50;
+  --c-manual-bd: rgba(20,150,80,0.22);
+
+  --glass-gloss:   inset 0 1px 0 rgba(255,255,255,0.6);
+
+  --c-header-bg:   rgba(0,0,0,0.03);
+  --c-input-bg:    rgba(0,0,0,0.05);
+  --c-overlay:     rgba(0,0,0,0.35);
+  --c-toggle-bg:   rgba(0,0,0,0.06);
+  --c-active-bg:   rgba(0,0,0,0.08);
+  --c-tag-bg:      rgba(0,0,0,0.06);
+  --c-spinner-bd:  rgba(0,0,0,0.08);
+  --c-spinner-top: rgba(0,0,0,0.3);
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.10), var(--glass-gloss);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.12), var(--glass-gloss);
+}
+
+
+[data-theme="light"] .zen-view {
+  background:
+    radial-gradient(ellipse at calc(20% + sin(var(--ambient-angle)) * 8%) calc(10% + cos(var(--ambient-angle)) * 6%), rgba(200,160,30,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at calc(80% - sin(var(--ambient-angle)) * 8%) calc(80% - cos(var(--ambient-angle)) * 6%), rgba(80,60,200,0.04) 0%, transparent 55%),
+    var(--c-bg);
+}
+
+[data-theme="light"] .zen-bubble {
+  color: rgba(0,0,0,0.22);
+}
+[data-theme="light"] .zen-bubble:first-child {
+  color: rgba(0,0,0,0.92);
+}
+[data-theme="light"] .zen-bubble:nth-child(2) {
+  color: rgba(0,0,0,0.68);
+}
+[data-theme="light"] .zen-bubble:nth-child(3) {
+  color: rgba(0,0,0,0.42);
+}
+[data-theme="light"] .zen-bubble:nth-child(4) {
+  color: rgba(0,0,0,0.28);
+}
+[data-theme="light"] .zen-bubble:nth-child(n+5) {
+  color: rgba(0,0,0,0.16);
+}
+[data-theme="light"] .zen-bubble.spotlight {
+  color: rgba(0,0,0,0.90);
+}
+[data-theme="light"] .zen-bubble:has(.zen-oblique) {
+  background: transparent;
+}
+[data-theme="light"] .zen-oblique {
+  color: currentColor;
+}
+
+[data-theme="light"] .cosmos-view {
+  background: #f0ede8;
+}
+[data-theme="light"] .cosmos-message {
+  background: radial-gradient(ellipse 90% 60% at 50% 50%, rgba(255,255,255,0.55) 0%, transparent 100%);
+}
+[data-theme="light"] .cosmos-icon svg {
+  color: rgba(0,0,0,0.5);
+}
+[data-theme="light"] .cosmos-text {
+  color: #000;
+  text-shadow: 0 1px 8px rgba(240,237,232,0.9);
+}
+[data-theme="light"] .cosmos-art-title {
+  color: #000;
+}
+[data-theme="light"] .cosmos-art-caption {
+  color: rgba(0,0,0,0.7);
+}
+[data-theme="light"] .cosmos-link {
+  color: rgba(0,0,0,0.6);
+  border-bottom-color: rgba(0,0,0,0.2);
+}
+[data-theme="light"] .cosmos-link:hover {
+  color: rgba(0,0,0,0.85);
+}
+[data-theme="light"] .cosmos-source {
+  color: rgba(0,0,0,0.42);
+}
+

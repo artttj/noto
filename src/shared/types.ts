@@ -107,3 +107,12 @@ export interface Collection {
   createdAt: number;
   color?: string;
 }
+
+export type SeenItemEntry = {
+  id: string;
+  seenAt: number;
+  source: string;
+  dismissed?: boolean;
+  dismissedCount?: number;
+  type?: string;
+};

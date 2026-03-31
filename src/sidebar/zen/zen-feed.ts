@@ -2,8 +2,14 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../../shared/messages';
-import { bumpZenSourceSignal, getDripInterval, getDisabledSources, getZenSourceSignals } from '../../shared/storage';
-import type { SontoItem } from '../../shared/types';
+import { bumpZenSourceSignal, getDripInterval, getDisabledSources, getZenSourceSignals, getSeenItems, markItemDismissed } from '../../shared/storage';
+import type { SontoItem, SeenItemEntry } from '../../shared/types';
+import {
+  createScoreContext,
+  scoreCandidate,
+  selectWithSurprise,
+  type ScoreContext,
+} from './zen-scoring';
 import {
   AI_PATTERNS,
   SVG_BULB,
@@ -13,7 +19,7 @@ import {
   ZEN_MAX_BUBBLES,
   escapeHtml,
 } from './zen-content';
-import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcherWithSignals } from './zen-fetchers';
+import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult } from './zen-fetchers';
 import { translateText } from './translator';
 
 const SVG_COPY = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
@@ -22,6 +28,31 @@ const SVG_ZENIFIED = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none
 
 // 30% of zen feed bubbles come from user's zenified collection (spaced repetition)
 const ZENIFIED_ITEM_PROBABILITY = 0.3;
+
+// Pre-computed fetcher content types for anti-clustering
+const FETCHER_CONTENT_TYPES: Record<string, string> = {
+  wikimediaPaintings: 'art',
+  albumOfDay: 'art',
+  metArtwork: 'art',
+  clevelandArtwork: 'art',
+  gettyArtwork: 'art',
+  rijksmuseumArtwork: 'art',
+  marsRover: 'space',
+  hnStory: 'news',
+  reddit: 'news',
+  smithsonianNews: 'news',
+  atlasObscura: 'news',
+  philosophyEssay: 'philosophy',
+  kotowaza: 'proverb',
+  haiku: 'haiku',
+  obliqueStrategies: 'strategy',
+  customRss: 'news',
+  customJson: 'text',
+};
+
+function inferFetcherContentType(fetcherId: string): string {
+  return FETCHER_CONTENT_TYPES[fetcherId] ?? 'text';
+}
 
 export class ZenFeed {
   private pastFacts: string[] = [];
@@ -33,6 +64,9 @@ export class ZenFeed {
   private disabledSources = new Set<string>();
   private dripCount = 0;
   private sourceSignals: Record<string, number> = {};
+  private scoreContext: ScoreContext | null = null;
+  private lastContentType: string | undefined;
+  private seenItemsCache: Record<string, SeenItemEntry> = {};
 
   constructor(
     private readonly feedEl: HTMLElement,
@@ -61,12 +95,23 @@ export class ZenFeed {
     this.stop();
 
     try {
-      const [disabled, intervalMs, sourceSignals] = await Promise.all([
-        getDisabledSources(), getDripInterval(), getZenSourceSignals(),
+      const [disabled, intervalMs, sourceSignals, seenItems] = await Promise.all([
+        getDisabledSources(),
+        getDripInterval(),
+        getZenSourceSignals(),
+        getSeenItems(),
       ]);
       this.disabledSources = new Set(disabled);
       this.dripIntervalMs = intervalMs;
       this.sourceSignals = sourceSignals;
+      this.seenItemsCache = seenItems;
+      this.scoreContext = createScoreContext(
+        seenItems,
+        this.getDismissedItems(),
+        sourceSignals,
+        undefined,
+        [],
+      );
     } catch {}
 
     try {
@@ -134,6 +179,16 @@ export class ZenFeed {
     void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
   }
 
+  private getDismissedItems(): Record<string, SeenItemEntry> {
+    const dismissed: Record<string, SeenItemEntry> = {};
+    for (const [id, entry] of Object.entries(this.seenItemsCache)) {
+      if (entry.dismissed) {
+        dismissed[id] = entry;
+      }
+    }
+    return dismissed;
+  }
+
   private isValidFact(text: string): boolean {
     return text.length >= 50 && !text.includes('[NULL]') && !AI_PATTERNS.some((p) => p.test(text));
   }
@@ -141,16 +196,27 @@ export class ZenFeed {
   private async addBubble(): Promise<number> {
     this.dripCount++;
 
+    // Update score context with current state
+    if (this.scoreContext) {
+      this.scoreContext.lastType = this.lastContentType;
+    }
+
+    // Try zenified items with keyword matching
     if (Math.random() < ZENIFIED_ITEM_PROBABILITY) {
-      const zenifiedItem = await this.getZenifiedItem();
+      const zenifiedItem = await this.getZenifiedItemWithScoring();
       if (zenifiedItem) {
         this.hideLoader();
         this.appendZenifiedBubble(zenifiedItem);
+        this.lastContentType = 'zenified';
         return 1.2;
       }
     }
 
-    const fetcher = pickFetcherWithSignals(ZEN_FETCHERS, this.sourceSignals, this.disabledSources);
+    // Score and select fetcher with surprise injection
+    const fetcherSelection = this.selectFetcherWithScoring();
+    if (!fetcherSelection) return 1;
+
+    const { fetcher, isSurprise } = fetcherSelection;
 
     const ctx = {
       language: this.language,
@@ -164,8 +230,9 @@ export class ZenFeed {
       if (!this.isDuplicate(result.caption)) {
         const caption = await translateText(result.caption, this.language);
         this.hideLoader();
-        this.appendArtBubble(result.imageUrl, caption, result.link, fetcher.id, fetcher.label);
+        this.appendArtBubble(result.imageUrl, caption, result.link, fetcher.id, fetcher.label, isSurprise);
         this.trackFact(result.caption);
+        this.lastContentType = 'art';
         return this.durationMultiplier(result);
       }
     }
@@ -176,8 +243,9 @@ export class ZenFeed {
         const translated = await translateText(text, this.language);
         const useHtml = translated === text ? html : undefined;
         this.hideLoader();
-        this.appendBubbleElement(translated, link, icon, useHtml, fetcher.id, result.hideLabel ? undefined : fetcher.label);
+        this.appendBubbleElement(translated, link, icon, useHtml, fetcher.id, result.hideLabel ? undefined : fetcher.label, isSurprise);
         this.trackFact(text);
+        this.lastContentType = this.inferContentType(html, text);
         return this.durationMultiplier(result);
       }
     }
@@ -185,32 +253,93 @@ export class ZenFeed {
     return 1;
   }
 
-  private async getZenifiedItem(): Promise<SontoItem | null> {
+  private selectFetcherWithScoring(): { fetcher: typeof ZEN_FETCHERS[number]; isSurprise: boolean } | null {
+    const availableFetchers = ZEN_FETCHERS.filter((f) => !this.disabledSources.has(f.id));
+    if (availableFetchers.length === 0) return null;
+
+    // Score each fetcher using pre-computed content types
+    const scored = availableFetchers.map((fetcher) => {
+      const candidate = {
+        id: fetcher.id,
+        source: fetcher.id,
+        contentType: inferFetcherContentType(fetcher.id),
+        sourceWeight: fetcher.weight,
+      };
+      return {
+        fetcher,
+        scoreInfo: scoreCandidate(candidate, this.scoreContext!),
+      };
+    });
+
+    // Select with surprise injection
+    const selection = selectWithSurprise(
+      scored,
+      (s) => s.scoreInfo,
+      0.15,
+    );
+
+    if (!selection) return null;
+
+    return {
+      fetcher: selection.selected.fetcher,
+      isSurprise: selection.isSurprise,
+    };
+  }
+
+  private inferContentType(html: string | undefined, text: string): string {
+    if (html?.includes('zen-oblique')) return 'strategy';
+    if (html?.includes('zen-haiku')) return 'haiku';
+    if (html?.includes('zen-kotowaza')) return 'proverb';
+    if (/[\u201C\u201D"]/.test(text) || / [\u2014-] /.test(text)) return 'quote';
+    return 'text';
+  }
+
+  private async getZenifiedItemWithScoring(): Promise<SontoItem | null> {
     try {
       const response = await chrome.runtime.sendMessage({
         type: MSG.GET_ZENIFIED_ITEMS,
-        limit: 10,
-        excludeRecentMs: 24 * 60 * 60 * 1000,
+        limit: 20,
+        excludeRecentMs: 4 * 60 * 60 * 1000, // 4 hours instead of 24
       });
+
       if (!response?.ok || response.items.length === 0) return null;
 
-      // Pick random from top candidates (spaced repetition)
       const candidates = response.items as SontoItem[];
-      const pickIndex = Math.floor(Math.random() * Math.min(candidates.length, 3));
-      const item = candidates[pickIndex];
+
+      // Score each candidate
+      const scored = candidates.map((item) => ({
+        item,
+        scoreInfo: scoreCandidate(
+          {
+            id: item.id,
+            source: item.origin ?? item.source,
+            contentType: item.contentType,
+            seenAt: item.lastSeenAt,
+          },
+          this.scoreContext!,
+        ),
+      }));
+
+      // Sort by score and pick from top 3
+      scored.sort((a, b) => b.scoreInfo.score - a.scoreInfo.score);
+      const topPool = scored.slice(0, Math.min(3, scored.length));
+      const pick = topPool[Math.floor(Math.random() * topPool.length)];
+
+      if (!pick) return null;
 
       // Mark as seen
-      void chrome.runtime.sendMessage({ type: MSG.MARK_ITEM_SEEN_IN_ZEN, id: item.id });
+      void chrome.runtime.sendMessage({ type: MSG.MARK_ITEM_SEEN_IN_ZEN, id: pick.item.id });
 
-      return item;
+      return pick.item;
     } catch {
       return null;
     }
   }
 
-  private appendZenifiedBubble(item: SontoItem): HTMLElement {
+  private appendZenifiedBubble(item: SontoItem, isSurprise = false): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble zen-bubble--user';
+    if (isSurprise) bubble.classList.add('zen-bubble--surprise');
 
     const content = item.content;
     const needsExpand = content.length > 280;
@@ -221,18 +350,20 @@ export class ZenFeed {
       : '';
 
     const typeLabel = item.type === 'prompt' ? 'Prompt' : 'Saved';
+    const surpriseIndicator = isSurprise ? '<span class="zen-surprise-badge" title="Surprise!">✦</span> ' : '';
 
     bubble.innerHTML = `
       ${SVG_ZENIFIED}
       <div class="zen-bubble-body">
         <div class="zen-bubble-text">${preview}</div>
-        <span class="zen-source">${typeLabel} · from your collection</span>
+        <span class="zen-source">${surpriseIndicator}${typeLabel} · from your collection</span>
         ${tagsHtml}
       </div>
     `;
 
     this.attachCopyButton(bubble, content);
     this.attachSaveButton(bubble, content, item.url);
+    this.attachDismissButton(bubble, content, item.id);
 
     const first = this.feedEl.firstChild;
     if (first) {
@@ -333,19 +464,61 @@ export class ZenFeed {
     bubble.appendChild(btn);
   }
 
-  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, sourceId?: string, source?: string): HTMLElement {
+  private attachDismissButton(bubble: HTMLElement, _text: string, sourceId?: string): void {
+    const btn = document.createElement('button');
+    btn.className = 'zen-dismiss';
+    btn.title = 'Dismiss (see less like this)';
+    btn.setAttribute('aria-label', 'Dismiss this content');
+    btn.innerHTML = '×';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (sourceId) {
+        void this.dismissItem(sourceId, bubble);
+      }
+    });
+    bubble.appendChild(btn);
+  }
+
+  private async dismissItem(sourceId: string, bubble: HTMLElement): Promise<void> {
+    await markItemDismissed(sourceId, 'zen-feed');
+
+    // Update local cache
+    const existing = this.seenItemsCache[sourceId];
+    if (existing) {
+      existing.dismissed = true;
+      existing.dismissedCount = (existing.dismissedCount ?? 0) + 1;
+    } else {
+      this.seenItemsCache[sourceId] = {
+        id: sourceId,
+        source: 'zen-feed',
+        seenAt: Date.now(),
+        dismissed: true,
+        dismissedCount: 1,
+      };
+    }
+
+    // Animate removal
+    bubble.style.opacity = '0';
+    bubble.style.transform = 'translateX(20px)';
+    setTimeout(() => bubble.remove(), 300);
+  }
+
+  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, sourceId?: string, source?: string, isSurprise = false): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     if (html?.includes('zen-oblique')) bubble.classList.add('zen-bubble--oblique');
     if (!html && !link && !source && / [\u2014-] /.test(text)) bubble.classList.add('zen-bubble--quote');
+    if (isSurprise) bubble.classList.add('zen-bubble--surprise');
     const linkHtml = link
       ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>`
       : '';
     const innerContent = html ?? escapeHtml(text);
-    const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
+    const surpriseIndicator = isSurprise ? '<span class="zen-surprise-badge" title="Surprise!">✦</span>' : '';
+    const sourceHtml = source ? `<span class="zen-source">${surpriseIndicator}${escapeHtml(source)}</span>` : '';
     bubble.innerHTML = `${icon ?? SVG_BULB}<div class="zen-bubble-body"><div class="zen-bubble-text">${innerContent}${linkHtml}</div>${sourceHtml}</div>`;
     this.attachCopyButton(bubble, text, sourceId);
     this.attachSaveButton(bubble, text, link);
+    this.attachDismissButton(bubble, text, sourceId);
     this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {
@@ -356,9 +529,10 @@ export class ZenFeed {
     return bubble;
   }
 
-  private appendArtBubble(imageUrl: string, caption: string, link?: string, sourceId?: string, source?: string): HTMLElement {
+  private appendArtBubble(imageUrl: string, caption: string, link?: string, sourceId?: string, source?: string, isSurprise = false): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
+    if (isSurprise) bubble.classList.add('zen-bubble--surprise');
     const sep = caption.includes(' · ') ? ' · ' : ' — ';
     const sepIdx = caption.indexOf(sep);
     const title = sepIdx !== -1 ? caption.slice(0, sepIdx) : caption;
@@ -368,7 +542,8 @@ export class ZenFeed {
     const imgHtml = link
       ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="zen-art-img-link"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></a>`
       : `<img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />`;
-    const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
+    const surpriseIndicator = isSurprise ? '<span class="zen-surprise-badge" title="Surprise!">✦</span>' : '';
+    const sourceHtml = source ? `<span class="zen-source">${surpriseIndicator}${escapeHtml(source)}</span>` : '';
     bubble.innerHTML = `<div class="zen-art">${imgHtml}<span class="zen-art-title">${escapeHtml(title)}${linkHtml}</span>${subHtml}${sourceHtml}</div>`;
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
@@ -377,6 +552,7 @@ export class ZenFeed {
     }
     this.attachCopyButton(bubble, caption, sourceId);
     this.attachSaveButton(bubble, caption, link);
+    this.attachDismissButton(bubble, caption, sourceId);
     this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {

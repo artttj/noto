@@ -77,9 +77,23 @@ const mockIndexedDB = {
                 const result = store.get(key);
                 return { set onsuccess(cb: () => void) { cb(); }, result };
               },
-              getAll: () => {
-                const result = Array.from(store.values());
+              getAll: (query?: IDBKeyRange | IDBValidKey) => {
+                let result = Array.from(store.values());
+                // Simple filter for key range if provided (for pinned/zenified filters)
+                if (query !== undefined) {
+                  result = result.filter((item) => {
+                    const record = item as Record<string, unknown>;
+                    // Handle numeric filters (0 or 1 for booleans)
+                    if (typeof query === 'number') {
+                      return record.pinned === (query === 1) || record.zenified === (query === 1);
+                    }
+                    return true;
+                  });
+                }
                 return { set onsuccess(cb: () => void) { cb(); }, result };
+              },
+              count: () => {
+                return { set onsuccess(cb: () => void) { cb(); }, result: store.size };
               },
               delete: (key: string) => {
                 store.delete(key);
@@ -89,23 +103,52 @@ const mockIndexedDB = {
                 store.clear();
                 return { set onsuccess(cb: () => void) { cb(); } };
               },
-              index: () => {
-                const tagsSet: Set<string> = new Set();
-                for (const [, value] of store.entries()) {
-                  const item = value as { tags?: string[] };
-                  if (item.tags && Array.isArray(item.tags)) {
-                    for (const tag of item.tags) {
-                      tagsSet.add(tag);
+              index: (indexName: string) => {
+                // Collect unique values from the specified index
+                const getIndexValues = (): Map<IDBValidKey, unknown[]> => {
+                  const values = new Map<IDBValidKey, unknown[]>();
+                  for (const [, item] of store.entries()) {
+                    const record = item as Record<string, unknown>;
+                    if (indexName === 'tags' && record.tags) {
+                      for (const tag of record.tags as string[]) {
+                        if (!values.has(tag)) values.set(tag, []);
+                        values.get(tag)!.push(item);
+                      }
+                    } else if (record[indexName] !== undefined) {
+                      const key = record[indexName] as IDBValidKey;
+                      if (!values.has(key)) values.set(key, []);
+                      values.get(key)!.push(item);
                     }
                   }
-                }
+                  return values;
+                };
+
+                const values = getIndexValues();
 
                 return {
+                  getAll: (query?: IDBKeyRange | IDBValidKey) => {
+                    let result: unknown[] = [];
+                    if (query !== undefined) {
+                      // Filter by query value
+                      result = Array.from(values.get(query) || []);
+                    } else {
+                      // Return all items
+                      for (const [, items] of values) {
+                        result.push(...items);
+                      }
+                    }
+                    return {
+                      set onsuccess(cb: () => void) {
+                        setTimeout(cb, 0);
+                      },
+                      result,
+                    };
+                  },
                   openCursor: () => {
-                    const tags = Array.from(tagsSet);
+                    const keys = Array.from(values.keys());
                     let currentIdx = -1;
                     const cursor = {
-                      key: '',
+                      key: '' as IDBValidKey,
                       value: null,
                       continue: () => void 0,
                     };
@@ -117,8 +160,8 @@ const mockIndexedDB = {
 
                     const advance = (): void => {
                       currentIdx++;
-                      if (currentIdx < tags.length) {
-                        cursor.key = tags[currentIdx];
+                      if (currentIdx < keys.length) {
+                        cursor.key = keys[currentIdx];
                         req.result = cursor;
                       } else {
                         req.result = null;
@@ -134,9 +177,7 @@ const mockIndexedDB = {
                     };
 
                     cursor.continue = advance;
-
                     setTimeout(advance, 0);
-
                     return req;
                   },
                 };

@@ -2343,6 +2343,7 @@ html, body {
 
 .clip-card.clip-zenified {
   border-left: 2px solid var(--c-accent);
+  padding-left: 14px;
 }
 
 .clip-btn-tags {
@@ -2485,6 +2486,7 @@ html, body {
 .zen-bubble--user {
   border-left: 2px solid var(--c-accent);
   background: linear-gradient(to right, rgba(232,185,49,0.05), transparent);
+  padding-left: 10px;
 }
 
 .zen-bubble--user .zen-source {

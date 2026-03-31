@@ -1,0 +1,60 @@
+/* Copyright (c) Artem Iagovdik. All rights reserved. */
+/* Licensed under the MIT License. */
+
+
+
+.bottom-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--c-border);
+  flex-shrink: 0;
+  background: var(--c-header-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+}
+
+.bnav-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--r-md);
+  color: var(--c-text-3);
+  cursor: pointer;
+  transition: color var(--t) var(--ease), background var(--t) var(--ease);
+}
+
+.bnav-btn svg { width: 15px; height: 15px; }
+
+.bnav-btn:hover { color: var(--c-text-2); }
+.bnav-btn:active { transform: scale(0.92); }
+
+.bnav-btn.active {
+  color: var(--c-text);
+  background: var(--c-active-bg);
+}
+
+.zen-bubble {
+  padding: 12px 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.18);
+  transition: font-size 0.35s cubic-bezier(0.4,0,0.2,1),
+              font-weight 0.35s cubic-bezier(0.4,0,0.2,1),
+              color 0.35s cubic-bezier(0.4,0,0.2,1);
+  animation: lyricIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  cursor: default;
+  user-select: text;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  position: relative;
+}
+

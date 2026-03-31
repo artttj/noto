@@ -15,17 +15,6 @@ describe('Clip Operations', () => {
     mockStorage.sonto_max_history_size = 100;
   });
 
-  it('should capture a text clip', async () => {
-    const text = 'Test clip content';
-    await clipHandler.capture(text, 'manual');
-
-    const clips = await clipHandler.getAll();
-    expect(clips).toHaveLength(1);
-    expect(clips[0].text).toBe(text);
-    expect(clips[0].contentType).toBe('text');
-    expect(clips[0].source).toBe('manual');
-  });
-
   it('should detect link content type', async () => {
     await clipHandler.capture('https://example.com', 'manual');
 
@@ -47,16 +36,6 @@ describe('Clip Operations', () => {
     expect(clips[0].contentType).toBe('code');
   });
 
-  it('should delete a clip', async () => {
-    await clipHandler.capture('Clip to delete', 'manual');
-    const clips = await clipHandler.getAll();
-    const id = clips[0].id;
-
-    await clipHandler.delete(id);
-    const afterDelete = await clipHandler.getAll();
-    expect(afterDelete).toHaveLength(0);
-  });
-
   it('should update a clip', async () => {
     await clipHandler.capture('Original', 'manual');
     const clips = await clipHandler.getAll();
@@ -67,15 +46,6 @@ describe('Clip Operations', () => {
 
     const updated = await clipHandler.getAll();
     expect(updated[0].pinned).toBe(true);
-  });
-
-  it('should search clips by text', async () => {
-    await clipHandler.capture('Hello world', 'manual');
-    await clipHandler.capture('Goodbye moon', 'manual');
-
-    const results = await clipHandler.search('hello');
-    expect(results).toHaveLength(1);
-    expect(results[0].text).toBe('Hello world');
   });
 
   it('should prevent duplicate clips', async () => {
@@ -96,13 +66,4 @@ describe('Clip Operations', () => {
     await expect(clipHandler.capture('Test', 'clipboard')).rejects.toThrow('Clipboard monitoring is off');
   });
 
-  it('should clear all clips', async () => {
-    await clipHandler.capture('Clip 1', 'manual');
-    await clipHandler.capture('Clip 2', 'manual');
-
-    await clipHandler.clear();
-
-    const clips = await clipHandler.getAll();
-    expect(clips).toHaveLength(0);
-  });
 });

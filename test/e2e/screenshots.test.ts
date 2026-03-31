@@ -136,7 +136,6 @@ async function addSampleClips(page: Page): Promise<void> {
       },
     ];
 
-    // Open new unified IndexedDB
     const request = indexedDB.open('sonto_db_v2', 2);
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -206,7 +205,6 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    // Add sample clips
     await addSampleClips(sidebar);
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '#clip-list');
@@ -223,7 +221,6 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    // Add sample clips
     await addSampleClips(sidebar);
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '#clip-list');
@@ -241,7 +238,6 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    // Click feed button to enter zen mode
     await waitForElement(sidebar, '#btn-feed');
     await delay(100);
     await sidebar.evaluate(() => {
@@ -302,7 +298,6 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    // Click feed button to enter zen mode
     await waitForElement(sidebar, '#btn-feed');
     await delay(100);
     await sidebar.evaluate(() => {
@@ -423,17 +418,21 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '#nav-prompts');
 
-    // Switch to prompts tab first
     await sidebar.evaluate(() => {
       const promptsTab = document.querySelector('#nav-prompts') as HTMLElement;
       if (promptsTab) promptsTab.click();
     });
     await delay(500);
 
-    // Click add prompt button
-    await sidebar.click('#btn-add-prompt');
+    await waitForElement(sidebar, '#prompts-content:not(.hidden)');
+    await waitForElement(sidebar, '#btn-add-prompt');
+    await delay(300);
 
-    // Wait for modal to be visible
+    await sidebar.evaluate(() => {
+      const btn = document.querySelector('#btn-add-prompt') as HTMLElement;
+      if (btn) btn.click();
+    });
+
     await sidebar.waitForSelector('#prompt-modal:not(.hidden)', { timeout: 5000 });
     await delay(500);
 

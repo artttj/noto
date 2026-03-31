@@ -1,0 +1,155 @@
+/* Copyright (c) Artem Iagovdik. All rights reserved. */
+/* Licensed under the MIT License. */
+
+
+
+/* Copyright (c) Artem Iagovdik. All rights reserved. */
+/* Licensed under the MIT License. */
+
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+  background: var(--c-header-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  gap: 4px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--c-text);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  color: var(--c-text-3);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color var(--t) var(--ease), border-color var(--t) var(--ease), background var(--t) var(--ease);
+}
+
+.icon-btn svg { width: 16px; height: 16px; }
+.icon-btn:hover {
+  color: var(--c-text);
+  border-color: var(--c-border);
+  background: var(--c-toggle-bg);
+}
+.icon-btn:active { transform: scale(0.92); }
+
+.icon-btn.ghost {
+  opacity: 0.7;
+}
+.icon-btn.ghost:hover {
+  opacity: 1;
+}
+
+.btn-outline {
+  height: 28px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  color: var(--c-text-2);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color var(--t) var(--ease), border-color var(--t) var(--ease), background var(--t) var(--ease);
+}
+
+.btn-outline:hover {
+  color: var(--c-text);
+  border-color: var(--c-border-hi);
+  background: var(--c-toggle-bg);
+}
+
+.btn-outline:active { transform: scale(0.96); }
+
+.btn-ghost {
+  height: 28px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  color: var(--c-text-2);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color var(--t) var(--ease), background var(--t) var(--ease);
+}
+
+.btn-ghost svg { width: 14px; height: 14px; }
+
+.btn-ghost:hover {
+  color: var(--c-text);
+  background: var(--c-toggle-bg);
+}
+
+.btn-ghost:active { transform: scale(0.96); }
+
+.icon-btn-small {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--c-text-3);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color var(--t) var(--ease), border-color var(--t) var(--ease), background var(--t) var(--ease);
+  flex-shrink: 0;
+}
+
+.icon-btn-small svg { width: 14px; height: 14px; }
+.icon-btn-small:hover {
+  color: var(--c-text);
+  border-color: var(--c-border);
+  background: var(--c-toggle-bg);
+}
+.icon-btn-small:active { transform: scale(0.94); }

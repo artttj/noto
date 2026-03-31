@@ -13,6 +13,7 @@ import {
 } from '../shared/embeddings/vector-store';
 import { getMaxHistorySize, getClipboardMonitoring } from '../shared/storage';
 import { buildTags } from '../shared/utils';
+import { ContentTypeDetector } from '../shared/content-detector';
 import type { ClipItem, ClipContentType, ClipSource } from '../shared/types';
 import { sontoItemHandler } from './sonto-item-handler';
 
@@ -27,6 +28,7 @@ export class ClipHandler {
     title?: string,
     explicitContentType?: ClipContentType,
   ): Promise<void> {
+    if (typeof text !== 'string') throw new Error('Invalid text: expected string.');
     const trimmed = text.slice(0, MAX_CAPTURE_CHARS);
     if (!trimmed.trim()) throw new Error('Nothing to save.');
 
@@ -35,7 +37,7 @@ export class ClipHandler {
 
     if (await this.isRepeatOfRecentClip(trimmed)) throw new Error('Already in clipboard history.');
 
-    const contentType = explicitContentType ?? this.detectContentType(trimmed);
+    const contentType = explicitContentType ?? ContentTypeDetector.detectClipContentType(trimmed);
     const tags = buildTags(url);
 
     const clip: ClipItem = {
@@ -87,15 +89,8 @@ export class ClipHandler {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
-  private detectContentType(text: string): ClipContentType {
-    const trimmed = text.trim();
-    if (/^https?:\/\/\S+$/.test(trimmed)) return 'link';
-    if (/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(trimmed)) return 'email';
-    if (/^```[\s\S]*```$/.test(trimmed) || /^\s{4}/.test(trimmed) || /[{}()[\];]/.test(trimmed.slice(0, 80))) return 'code';
-    return 'text';
-  }
-
   private normalizeText(text: string): string {
+    if (typeof text !== 'string') return '';
     return text.replace(/\s+/g, ' ').trim().toLowerCase();
   }
 

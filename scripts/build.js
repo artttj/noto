@@ -34,6 +34,34 @@ async function minifyCss(srcPath, destPath) {
   fs.writeFileSync(destPath, result.code);
 }
 
+async function buildCssFromDir(srcDir, destPath) {
+  if (!fs.existsSync(srcDir)) {
+    const singleFile = srcDir.replace('/styles', '.css');
+    if (fs.existsSync(singleFile)) {
+      return minifyCss(singleFile, destPath);
+    }
+    throw new Error(`Neither styles directory nor single CSS file found: ${srcDir}`);
+  }
+
+  const files = fs.readdirSync(srcDir)
+    .filter(f => f.endsWith('.css'))
+    .sort();
+
+  let combined = `/* Copyright (c) Artem Iagovdik. All rights reserved. */\n`;
+  combined += `/* Generated from ${path.basename(srcDir)} */\n\n`;
+
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(srcDir, file), 'utf8');
+    combined += `/* === ${file} === */\n`;
+    combined += content;
+    combined += '\n\n';
+  }
+
+  const result = await esbuild.transform(combined, { loader: 'css', minify: true });
+  mkdirp(path.dirname(destPath));
+  fs.writeFileSync(destPath, result.code);
+}
+
 
 async function build() {
   if (fs.existsSync(dist)) fs.rmSync(dist, { recursive: true });
@@ -56,7 +84,14 @@ async function build() {
 
   copyHtml(path.join(src, 'sidebar', 'sidebar.html'), path.join(dist, 'sidebar', 'sidebar.html'));
   copyHtml(path.join(src, 'settings', 'settings.html'), path.join(dist, 'settings', 'settings.html'));
-  await minifyCss(path.join(src, 'sidebar', 'sidebar.css'), path.join(dist, 'sidebar', 'sidebar.css'));
+
+  const sidebarStylesDir = path.join(src, 'sidebar', 'styles');
+  if (fs.existsSync(sidebarStylesDir)) {
+    await buildCssFromDir(sidebarStylesDir, path.join(dist, 'sidebar', 'sidebar.css'));
+  } else {
+    await minifyCss(path.join(src, 'sidebar', 'sidebar.css'), path.join(dist, 'sidebar', 'sidebar.css'));
+  }
+
   await minifyCss(path.join(src, 'settings', 'settings.css'), path.join(dist, 'settings', 'settings.css'));
 
   const common = { bundle: true, minify: true, target: 'es2020' };

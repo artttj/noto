@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { MAX_CAPTURE_CHARS } from '../shared/constants';
+import { ContentTypeDetector } from '../shared/content-detector';
 import { MSG } from '../shared/messages';
 import type {
   SaveSontoItemMessage,
@@ -47,12 +48,13 @@ export class SontoItemHandler {
       metadata?: Record<string, unknown>;
     } = {},
   ): Promise<SontoItem> {
+    if (typeof content !== 'string') throw new Error('Invalid content: expected string.');
     const now = Date.now();
     const item: SontoItem = {
       id: `${now}-${crypto.randomUUID()}`,
       type,
       content: content.slice(0, MAX_CAPTURE_CHARS),
-      contentType: options.contentType ?? this.detectContentType(content),
+      contentType: options.contentType ?? ContentTypeDetector.detectSontoContentType(content),
       source,
       origin: options.origin ?? source,
       url: options.url,
@@ -109,15 +111,6 @@ export class SontoItemHandler {
     return Array.from(tags).sort();
   }
 
-  private detectContentType(text: string): SontoContentType {
-    const trimmed = text.trim();
-    if (/^https?:\/\/\S+$/.test(trimmed)) return 'link';
-    if (/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(trimmed)) return 'email';
-    if (/^```[\s\S]*```$/.test(trimmed) || /^\s{4}/.test(trimmed) || /[{}()[\];]/.test(trimmed.slice(0, 80))) {
-      return 'code';
-    }
-    return 'text';
-  }
 }
 
 export const sontoItemHandler = new SontoItemHandler();

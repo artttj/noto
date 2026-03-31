@@ -196,10 +196,13 @@ export async function saveCollections(collections: import('./types').Collection[
 const SEEN_ITEMS_KEY = 'sonto_seen_items';
 const DAY_MS = 86_400_000;
 
-type SeenItemEntry = {
+export type SeenItemEntry = {
   id: string;
   seenAt: number;
   source: string;
+  dismissed?: boolean;
+  dismissedCount?: number;
+  type?: string;
 };
 
 export async function getSeenItems(): Promise<Record<string, SeenItemEntry>> {
@@ -257,6 +260,56 @@ export async function getRecentlySeenBySource(source: string, withinMs: number):
   }
 
   return result;
+}
+
+export async function markItemDismissed(id: string, source: string): Promise<void> {
+  const entries = await getSeenItemsList();
+  const entry = entries.find((e) => e.id === id && e.source === source);
+
+  if (entry) {
+    entry.dismissed = true;
+    entry.dismissedCount = (entry.dismissedCount ?? 0) + 1;
+  } else {
+    entries.push({
+      id,
+      source,
+      seenAt: Date.now(),
+      dismissed: true,
+      dismissedCount: 1,
+    });
+  }
+
+  const now = Date.now();
+  const filtered = entries.filter((e) => now - e.seenAt < 30 * DAY_MS);
+  await chrome.storage.local.set({ [SEEN_ITEMS_KEY]: filtered });
+}
+
+export async function getDismissedItems(): Promise<Record<string, SeenItemEntry>> {
+  const entries = await getSeenItemsList();
+  const now = Date.now();
+  const map: Record<string, SeenItemEntry> = {};
+
+  for (const entry of entries) {
+    if (entry.dismissed && now - entry.seenAt < 30 * DAY_MS) {
+      map[entry.id] = entry;
+    }
+  }
+
+  return map;
+}
+
+export async function getDismissalCountBySource(source: string): Promise<number> {
+  const entries = await getSeenItemsList();
+  const now = Date.now();
+  let count = 0;
+
+  for (const entry of entries) {
+    if (entry.source === source && entry.dismissed && now - entry.seenAt < 30 * DAY_MS) {
+      count += (entry.dismissedCount ?? 1);
+    }
+  }
+
+  return count;
 }
 
 const PROMPTS_KEY = 'sonto_prompts';

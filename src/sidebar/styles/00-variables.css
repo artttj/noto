@@ -1,0 +1,118 @@
+/* Copyright (c) Artem Iagovdik. All rights reserved. */
+/* Licensed under the MIT License. */
+
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../fonts/dm-sans-regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/dm-sans-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/space-mono-regular.woff2') format('woff2');
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+[data-theme="light"] * {
+  scrollbar-color: rgba(0,0,0,0.12) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid #5b9fd6;
+  outline-offset: 2px;
+}
+[data-theme="light"] :focus-visible {
+  outline-color: #2563eb;
+}
+
+@property --ambient-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+:root {
+  --c-bg:       #0d0d0d;
+  --c-surface:  rgba(255,255,255,0.055);
+  --c-elevated: rgba(255,255,255,0.085);
+  --c-border:   rgba(255,255,255,0.10);
+  --c-border-hi:rgba(255,255,255,0.22);
+
+  --c-btn-bg:   rgba(255,255,255,0.94);
+  --c-btn-text: #0d0d0d;
+
+  --c-text:   rgba(238,238,238,0.96);
+  --c-text-2: rgba(196,196,196,0.84);
+  --c-text-3: #949494;
+
+  --c-accent:   #e8b931;
+  --c-success: #5dd69c;
+  --c-error:   #ff7070;
+  --c-error-bg:rgba(255,96,96,0.10);
+  --c-error-bd:rgba(255,110,110,0.28);
+
+  --c-manual: rgba(93,214,156,0.12);
+  --c-manual-text: #5dd69c;
+  --c-manual-bd: rgba(93,214,156,0.28);
+
+  --glass-blur:    blur(12px) saturate(140%);
+  --glass-blur-sm: blur(8px) saturate(120%);
+  --glass-gloss:   inset 0 1px 0 rgba(255,255,255,0.10);
+
+  --c-header-bg:   rgba(255,255,255,0.03);
+  --c-input-bg:    rgba(255,255,255,0.07);
+  --c-overlay:     rgba(0,0,0,0.55);
+  --c-toggle-bg:   rgba(255,255,255,0.06);
+  --c-active-bg:   rgba(255,255,255,0.10);
+  --c-tag-bg:      rgba(255,255,255,0.08);
+  --c-spinner-bd:  rgba(255,255,255,0.08);
+  --c-spinner-top: rgba(255,255,255,0.3);
+
+  --ease: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --t:    160ms;
+
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 20px;
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.48), var(--glass-gloss);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.56), var(--glass-gloss);
+
+  --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+}
+
+html, body {
+  height: 100%;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}

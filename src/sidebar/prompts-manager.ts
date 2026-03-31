@@ -369,6 +369,17 @@ export class PromptsManager {
       void this.deletePrompt(prompt.id, card);
     });
 
+    if (needsExpand) {
+      const bodyEl = card.querySelector('.clip-body');
+      const expandBtn = card.querySelector('.clip-btn-expand');
+      const clickHandler = () => this.showFullText(prompt.content);
+      bodyEl?.addEventListener('click', clickHandler);
+      expandBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        clickHandler();
+      });
+    }
+
     const tagElements = card.querySelectorAll('.clip-tag');
     tagElements.forEach((tagEl) => {
       tagEl.addEventListener('click', (e) => {
@@ -381,6 +392,38 @@ export class PromptsManager {
     });
 
     return card;
+  }
+
+  private showFullText(text: string): void {
+    const modal = document.createElement('div');
+    modal.className = 'fulltext-modal open';
+    modal.innerHTML = `
+      <div class="fulltext-header">
+        <span class="fulltext-title">Full Text</span>
+        <button class="fulltext-close" aria-label="Close">✕</button>
+      </div>
+      <div class="fulltext-content"><pre><code>${escapeHtml(text)}</code></pre></div>
+      <div class="fulltext-actions">
+        <button class="fulltext-insert">Insert</button>
+        <button class="fulltext-copy">Copy</button>
+      </div>
+    `;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fulltext-overlay';
+    const close = () => { modal.remove(); overlay.remove(); };
+
+    overlay.addEventListener('click', close);
+    modal.querySelector('.fulltext-close')?.addEventListener('click', close);
+    modal.querySelector('.fulltext-copy')?.addEventListener('click', () => {
+      void navigator.clipboard.writeText(text).then(() => close());
+    });
+    modal.querySelector('.fulltext-insert')?.addEventListener('click', () => {
+      void this.insertText(text);
+    });
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
   }
 
   private async deletePrompt(id: string, card: HTMLElement): Promise<void> {
@@ -443,5 +486,19 @@ export class PromptsManager {
 
   private setLoading(loading: boolean): void {
     this.isLoading = loading;
+  }
+
+  private renderLoading(): void {
+    const loading = document.createElement('div');
+    loading.className = 'clips-loading';
+    loading.innerHTML = '<div class="spinner"></div>';
+    this.listEl.appendChild(loading);
+  }
+
+  private async insertText(text: string): Promise<void> {
+    const result = await insertTextToActiveTab(text);
+    if (result.error) {
+      showToast(result.error, true);
+    }
   }
 }

@@ -43,6 +43,7 @@ function initFullTextModal(): void {
     </div>
     <div class="fulltext-content"></div>
     <div class="fulltext-actions">
+      <button class="fulltext-insert">Insert</button>
       <button class="fulltext-copy">Copy</button>
     </div>
   `;
@@ -70,6 +71,19 @@ function showFullText(text: string, contentType: SontoContentType): void {
     void navigator.clipboard.writeText(text).then(() => {
       copyBtn.textContent = 'Copied!';
       setTimeout(() => { copyBtn.textContent = 'Copy'; }, COPY_FEEDBACK_MS);
+    });
+  };
+
+  const insertBtn = fullTextModal.querySelector('.fulltext-insert')! as HTMLButtonElement;
+  insertBtn.textContent = 'Insert';
+  insertBtn.onclick = () => {
+    void insertTextToActiveTab(text).then((result) => {
+      if (result.error) {
+        showToast(result.error, true);
+      } else {
+        insertBtn.textContent = 'Inserted!';
+        setTimeout(() => { insertBtn.textContent = 'Insert'; }, COPY_FEEDBACK_MS);
+      }
     });
   };
 
