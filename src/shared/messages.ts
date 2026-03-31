@@ -26,6 +26,7 @@ export const MSG = {
   GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
   QUICK_SEARCH: 'SONTO_QUICK_SEARCH',
   GET_RELATED_CLIPS: 'GET_RELATED_CLIPS',
+  INSERT_TEXT: 'INSERT_TEXT',
 } as const;
 
 export interface CaptureClipMessage {
@@ -98,6 +99,11 @@ export interface DeletePromptMessage {
   id: string;
 }
 
+export interface InsertTextMessage {
+  type: typeof MSG.INSERT_TEXT;
+  text: string;
+}
+
 export type RuntimeMessage =
   | CaptureClipMessage
   | DeleteClipMessage
@@ -112,7 +118,8 @@ export type RuntimeMessage =
   | GetRelatedClipsMessage
   | SavePromptMessage
   | GetAllPromptsMessage
-  | DeletePromptMessage;
+  | DeletePromptMessage
+  | InsertTextMessage;
 
 export interface CaptureSuccessResult {
   ok: true;

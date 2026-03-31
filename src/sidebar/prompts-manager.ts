@@ -4,17 +4,31 @@
 import { createIcons, icons } from 'lucide';
 import { getAllPrompts, deletePrompt, updatePrompt, type PromptItem, type PromptColor } from '../shared/storage';
 import { escapeHtml } from '../shared/utils';
+import { MSG } from '../shared/messages';
 
 const COPY_FEEDBACK_MS = 1500;
 
+function showToast(message: string, isError = false): void {
+  const existing = document.getElementById('sonto-sidebar-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'sonto-sidebar-toast';
+  toast.className = 'sidebar-toast' + (isError ? ' sidebar-toast-error' : '');
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 2500);
+}
+
 const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
-  red:    { bg: 'rgba(255,90,90,0.12)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
-  orange: { bg: 'rgba(255,160,60,0.12)', border: 'rgba(255,160,60,0.9)', hex: '#ffa03c' },
-  yellow: { bg: 'rgba(255,210,60,0.12)', border: 'rgba(255,210,60,0.9)', hex: '#ffd23c' },
-  green:  { bg: 'rgba(60,200,100,0.12)', border: 'rgba(60,200,100,0.9)', hex: '#3cc864' },
-  blue:   { bg: 'rgba(60,140,255,0.12)', border: 'rgba(60,140,255,0.9)', hex: '#3c8cff' },
-  purple: { bg: 'rgba(160,100,255,0.12)', border: 'rgba(160,100,255,0.9)', hex: '#a064ff' },
-  gray:   { bg: 'rgba(140,140,140,0.12)', border: 'rgba(140,140,140,0.9)', hex: '#8c8c8c' },
+  red:    { bg: 'rgba(255,90,90,0.18)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
+  orange: { bg: 'rgba(255,160,60,0.18)', border: 'rgba(255,160,60,0.9)', hex: '#ffa03c' },
+  yellow: { bg: 'rgba(200,160,20,0.25)', border: 'rgba(200,160,20,0.9)', hex: '#c8a014' },
+  green:  { bg: 'rgba(60,200,100,0.18)', border: 'rgba(60,200,100,0.9)', hex: '#3cc864' },
+  blue:   { bg: 'rgba(60,140,255,0.18)', border: 'rgba(60,140,255,0.9)', hex: '#3c8cff' },
+  purple: { bg: 'rgba(140,90,220,0.18)', border: 'rgba(140,90,220,0.9)', hex: '#8c5adc' },
+  gray:   { bg: 'rgba(140,140,140,0.18)', border: 'rgba(140,140,140,0.9)', hex: '#8c8c8c' },
 };
 
 const COLOR_ORDER: PromptColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
@@ -220,24 +234,43 @@ export class PromptsManager {
       return;
     }
 
-    for (const prompt of filtered) {
+    const pinned = filtered.filter(p => p.pinned);
+    const regular = filtered.filter(p => !p.pinned);
+
+    if (pinned.length > 0) {
+      this.addSeparator('Pinned', 'pinned-separator');
+      for (const prompt of pinned) {
+        this.listEl.appendChild(this.buildCard(prompt));
+      }
+    }
+
+    for (const prompt of regular) {
       this.listEl.appendChild(this.buildCard(prompt));
     }
 
     createIcons({ icons, attrs: { strokeWidth: 1.5 } });
   }
 
+  private addSeparator(label: string, extraClass?: string): void {
+    const separator = document.createElement('div');
+    separator.className = 'day-separator' + (extraClass ? ' ' + extraClass : '');
+    separator.textContent = label;
+    this.listEl.appendChild(separator);
+  }
+
   private buildCard(prompt: PromptItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = 'clip-card clip-type-prompt';
+    card.className = 'clip-card clip-type-prompt' + (prompt.pinned ? ' clip-pinned' : '');
     card.dataset.id = prompt.id;
 
     const preview = escapeHtml(prompt.text.slice(0, 280));
     const needsExpand = prompt.text.length > 280;
     const colorStyles = prompt.color ? PROMPT_COLORS[prompt.color] : null;
     const colorDot = colorStyles
-      ? `<span class="prompt-color-tag" style="background: ${colorStyles.bg}; border-color: ${colorStyles.border};"></span>`
+      ? `<span class="prompt-color-tag" style="background: ${colorStyles.hex};"></span>`
       : '';
+
+    const pinLabel = prompt.pinned ? 'Unpin' : 'Pin';
 
     card.innerHTML = `
       <div class="clip-header">
@@ -254,7 +287,9 @@ export class PromptsManager {
         <p class="clip-text-preview">${preview}${prompt.text.length > 280 ? '…' : ''}</p>
       </div>
       <div class="clip-card-actions">
-        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i><span class="clip-btn-label">Copy</span></button>
+        <button class="clip-btn clip-btn-pin${prompt.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this prompt"><i data-lucide="star"></i></button>
+        <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
+        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
         <button class="clip-btn clip-btn-edit" title="Edit" aria-label="Edit this prompt"><i data-lucide="pencil"></i></button>
         <button class="clip-btn clip-btn-delete" title="Delete" aria-label="Delete this prompt"><i data-lucide="trash-2"></i></button>
@@ -264,16 +299,22 @@ export class PromptsManager {
     const copyPrompt = () => {
       void navigator.clipboard.writeText(prompt.text).then(() => {
         const btn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
-        const label = btn?.querySelector('.clip-btn-label');
-        if (label) {
-          label.textContent = 'Copied!';
-          setTimeout(() => { label.textContent = 'Copy'; }, COPY_FEEDBACK_MS);
-        }
+        btn?.classList.add('copied');
+        setTimeout(() => btn?.classList.remove('copied'), COPY_FEEDBACK_MS);
       }).catch(() => {});
     };
 
     card.querySelector<HTMLButtonElement>('.clip-btn-copy')?.addEventListener('click', copyPrompt);
     card.addEventListener('dblclick', copyPrompt);
+
+    card.querySelector<HTMLButtonElement>('.clip-btn-insert')?.addEventListener('click', () => {
+      void this.insertText(prompt.text);
+    });
+
+    card.querySelector<HTMLButtonElement>('.clip-btn-pin')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void this.togglePin(prompt.id, card);
+    });
 
     card.querySelector<HTMLButtonElement>('.clip-btn-edit')?.addEventListener('click', () => {
       showEditModal(prompt, async (updates) => {
@@ -301,6 +342,73 @@ export class PromptsManager {
       this.renderFilters();
       if (this.prompts.length === 0) this.render();
     }, 200);
+  }
+
+  private async togglePin(id: string, card: HTMLElement): Promise<void> {
+    const prompt = this.prompts.find(p => p.id === id);
+    if (!prompt) return;
+
+    const newPinned = !prompt.pinned;
+    await updatePrompt(id, { pinned: newPinned });
+
+    prompt.pinned = newPinned;
+    card.classList.toggle('clip-pinned', newPinned);
+
+    const pinBtn = card.querySelector<HTMLButtonElement>('.clip-btn-pin');
+    if (pinBtn) {
+      pinBtn.classList.toggle('pinned', newPinned);
+      pinBtn.title = newPinned ? 'Unpin' : 'Pin';
+      pinBtn.setAttribute('aria-label', `${newPinned ? 'Unpin' : 'Pin'} this prompt`);
+    }
+
+    this.render();
+  }
+
+  private async insertText(text: string): Promise<void> {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    let targetTab = tabs[0];
+
+    if (!targetTab || targetTab.url?.startsWith('chrome://') || targetTab.url?.startsWith('chrome-extension://')) {
+      const windows = await chrome.windows.getAll({ populate: true });
+      for (const win of windows) {
+        if (win.type !== 'normal' || !win.tabs) continue;
+
+        for (const tab of win.tabs) {
+          if (tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('about:')) {
+            targetTab = tab;
+            break;
+          }
+        }
+        if (targetTab) break;
+      }
+    }
+
+    if (!targetTab?.id) {
+      showToast('No active tab found.', true);
+      return;
+    }
+
+    try {
+      const response = await chrome.tabs.sendMessage(targetTab.id, { type: MSG.INSERT_TEXT, text });
+      if (response?.error) {
+        showToast(response.error, true);
+      }
+    } catch {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: targetTab.id },
+          files: ['content/content.js'],
+        });
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const response = await chrome.tabs.sendMessage(targetTab.id, { type: MSG.INSERT_TEXT, text });
+        if (response?.error) {
+          showToast(response.error, true);
+        }
+      } catch {
+        showToast('Could not insert text on this page.', true);
+      }
+    }
   }
 
   private formatDate(ts: number): string {

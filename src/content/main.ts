@@ -52,6 +52,7 @@ function showToast(message: string, isError = false): void {
 let monitoringEnabled = true;
 let lastKnownClipboard = '';
 let pendingPollTimer: ReturnType<typeof setTimeout> | null = null;
+let lastFocusedInput: HTMLInputElement | HTMLTextAreaElement | HTMLElement | null = null;
 
 void chrome.storage.local.get('sonto_clipboard_monitoring').then((result) => {
   monitoringEnabled = (result['sonto_clipboard_monitoring'] as boolean | undefined) ?? true;
@@ -117,7 +118,7 @@ function schedulePoll(): void {
   }, 150);
 }
 
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message && message.type === 'SONTO_CAPTURE_SHORTCUT') {
     triggerCapture();
   }
@@ -127,6 +128,15 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message && message.type === 'SONTO_QUICK_SEARCH') {
     toggleQuickSearch();
   }
+  if (message && message.type === MSG.INSERT_TEXT) {
+    const result = insertTextToInput(message.text);
+    if (result.error) {
+      sendResponse({ error: result.error });
+    } else {
+      sendResponse({ ok: true });
+    }
+  }
+  return false;
 });
 
 let quickSearchOverlay: HTMLElement | null = null;
@@ -423,6 +433,135 @@ document.addEventListener('keyup', (e) => {
   const selected = window.getSelection()?.toString().trim() ?? '';
   if (selected) schedulePoll();
 });
+
+function isEditableElement(el: EventTarget | null): el is HTMLInputElement | HTMLTextAreaElement | HTMLElement {
+  if (!el || !(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  if (tag === 'INPUT') {
+    const type = (el as HTMLInputElement).type;
+    return ['text', 'search', 'email', 'url', 'tel', 'password', ''].includes(type);
+  }
+  if (tag === 'TEXTAREA') return true;
+  if (el.isContentEditable) return true;
+  return false;
+}
+
+document.addEventListener('focusin', (e) => {
+  if (isEditableElement(e.target)) {
+    lastFocusedInput = e.target;
+  }
+}, true);
+
+function findBestInput(): HTMLInputElement | HTMLTextAreaElement | HTMLElement | null {
+  const active = document.activeElement;
+  if (active && isEditableElement(active)) {
+    return active as HTMLInputElement | HTMLTextAreaElement | HTMLElement;
+  }
+
+  if (lastFocusedInput && document.body.contains(lastFocusedInput)) {
+    return lastFocusedInput;
+  }
+
+  const inputs = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+    'input:not([type]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="image"]), input[type="text"], input[type="search"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], textarea'
+  );
+
+  let best: HTMLInputElement | HTMLTextAreaElement | HTMLElement | null = null;
+  let bestScore = 0;
+
+  for (const input of inputs) {
+    const rect = input.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
+
+    const style = getComputedStyle(input);
+    if (style.visibility === 'hidden' || style.display === 'none') continue;
+
+    const area = rect.width * rect.height;
+    const centerDist = Math.abs(rect.left + rect.width / 2 - window.innerWidth / 2);
+    const score = area - centerDist * 10;
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = input;
+    }
+  }
+
+  const editables = document.querySelectorAll<HTMLElement>('[contenteditable], [contenteditable="true"], [contenteditable=""]');
+  for (const el of editables) {
+    if (!el.isContentEditable) continue;
+
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
+
+    const style = getComputedStyle(el);
+    if (style.visibility === 'hidden' || style.display === 'none') continue;
+
+    const area = rect.width * rect.height;
+    const centerDist = Math.abs(rect.left + rect.width / 2 - window.innerWidth / 2);
+    const score = area - centerDist * 10;
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = el;
+    }
+  }
+
+  return best;
+}
+
+function insertTextToInput(text: string): { ok?: boolean; error?: string } {
+  const target = findBestInput();
+
+  if (!target) {
+    return { error: 'No input field found on page.' };
+  }
+
+  const tag = target.tagName;
+
+  if (tag === 'INPUT' || tag === 'TEXTAREA') {
+    const el = target as HTMLInputElement | HTMLTextAreaElement;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+
+    const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    el.value = before + text + after;
+
+    const newPos = start + text.length;
+    el.selectionStart = newPos;
+    el.selectionEnd = newPos;
+
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const inputEvent = new InputEvent('input', {
+      bubbles: true,
+      cancelable: true,
+      inputType: 'insertText',
+      data: text,
+    });
+    el.dispatchEvent(inputEvent);
+
+    el.focus();
+  } else if (target.isContentEditable) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(text));
+      range.collapse(false);
+    } else {
+      target.textContent = (target.textContent ?? '') + text;
+    }
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    target.focus();
+  }
+
+  showToast('Inserted into input field.');
+  return { ok: true };
+}
 
 async function initReadingCompanion(): Promise<void> {
   try {

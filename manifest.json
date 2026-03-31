@@ -15,7 +15,8 @@
     "tabs",
     "sidePanel",
     "contextMenus",
-    "clipboardRead"
+    "clipboardRead",
+    "scripting"
   ],
   "host_permissions": [
     "*://*/*"

@@ -340,10 +340,28 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '#btn-add-prompt');
 
-    await sidebar.click('#btn-add-prompt');
+    await sidebar.evaluate(() => {
+      const btn = document.querySelector('#btn-add-prompt') as HTMLElement;
+      if (btn) btn.click();
+    });
     await delay(300);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_prompt_modal');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures promo screenshot 1280x800', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 1280, 800, 2);
+    await setTheme(sidebar, 'dark');
+    await setZenDisplay(sidebar, 'feed');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '.header');
+
+    await sidebar.click('#btn-feed');
+    await delay(3000);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'webstore_promo_1280x800');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 });

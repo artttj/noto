@@ -14,6 +14,19 @@ const COPY_FEEDBACK_MS = 1500;
 let fullTextModal: HTMLElement | null = null;
 let fullTextOverlay: HTMLElement | null = null;
 
+function showToast(message: string, isError = false): void {
+  const existing = document.getElementById('sonto-sidebar-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'sonto-sidebar-toast';
+  toast.className = 'sidebar-toast' + (isError ? ' sidebar-toast-error' : '');
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 2500);
+}
+
 function initFullTextModal(): void {
   if (fullTextModal) return;
 
@@ -321,7 +334,8 @@ export class ClipboardManager {
       </div>
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-pin${clip.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this clip"><i data-lucide="${pinIcon}"></i></button>
-        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i><span class="clip-btn-label">Copy</span></button>
+        <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
+        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
         <button class="clip-btn clip-btn-delete" title="Delete" aria-label="Delete this clip"><i data-lucide="trash-2"></i></button>
       </div>
@@ -341,16 +355,17 @@ export class ClipboardManager {
     const copyClip = () => {
       void navigator.clipboard.writeText(clip.text).then(() => {
         const btn = qs<HTMLButtonElement>('.clip-btn-copy', card);
-        const label = btn.querySelector('.clip-btn-label');
-        if (label) {
-          label.textContent = 'Copied!';
-          setTimeout(() => { label.textContent = 'Copy'; }, COPY_FEEDBACK_MS);
-        }
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), COPY_FEEDBACK_MS);
       }).catch(() => {});
     };
 
     qs<HTMLButtonElement>('.clip-btn-copy', card).addEventListener('click', copyClip);
     card.addEventListener('dblclick', copyClip);
+
+    qs<HTMLButtonElement>('.clip-btn-insert', card).addEventListener('click', () => {
+      void this.insertText(clip.text);
+    });
 
     qs<HTMLButtonElement>('.clip-btn-pin', card).addEventListener('click', (e) => {
       e.stopPropagation();
@@ -437,5 +452,52 @@ export class ClipboardManager {
     }
 
     this.render();
+  }
+
+  private async insertText(text: string): Promise<void> {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    let targetTab = tabs[0];
+
+    if (!targetTab || targetTab.url?.startsWith('chrome://') || targetTab.url?.startsWith('chrome-extension://')) {
+      const windows = await chrome.windows.getAll({ populate: true });
+      for (const win of windows) {
+        if (win.type !== 'normal' || !win.tabs) continue;
+
+        for (const tab of win.tabs) {
+          if (tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('about:')) {
+            targetTab = tab;
+            break;
+          }
+        }
+        if (targetTab) break;
+      }
+    }
+
+    if (!targetTab?.id) {
+      showToast('No active tab found.', true);
+      return;
+    }
+
+    try {
+      const response = await chrome.tabs.sendMessage(targetTab.id, { type: MSG.INSERT_TEXT, text });
+      if (response?.error) {
+        showToast(response.error, true);
+      }
+    } catch {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: targetTab.id },
+          files: ['content/content.js'],
+        });
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const response = await chrome.tabs.sendMessage(targetTab.id, { type: MSG.INSERT_TEXT, text });
+        if (response?.error) {
+          showToast(response.error, true);
+        }
+      } catch {
+        showToast('Could not insert text on this page.', true);
+      }
+    }
   }
 }
