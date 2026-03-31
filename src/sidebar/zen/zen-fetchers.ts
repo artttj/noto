@@ -18,6 +18,15 @@ import albumOfDayAlbums from './album-of-a-day.json';
 
 const DAY_MS = 86_400_000;
 
+function isValidHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string; hideLabel?: boolean };
 export type ZenArtResult = { imageUrl: string; caption: string; link?: string };
 export type ZenFetchResult = ZenTextResult | ZenArtResult | null;
@@ -652,7 +661,8 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           const recentlySeen = await getRecentlySeenBySource('smithsonianNews', 7 * DAY_MS);
           for (const it of items) {
             if (recentlySeen.has(it.link)) continue;
-            smithsonianCache.push({ title: it.title, link: it.link, imageUrl: it.imageUrl, id: it.link });
+            const validImage = it.imageUrl && isValidHttpUrl(it.imageUrl) ? it.imageUrl : undefined;
+            smithsonianCache.push({ title: it.title, link: it.link, imageUrl: validImage, id: it.link });
           }
           smithsonianCache.sort(() => Math.random() - 0.5);
         }
@@ -684,7 +694,10 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
             let imageUrl: string | undefined;
             if (it.description) {
               const doc = new DOMParser().parseFromString(it.description, 'text/html');
-              imageUrl = doc.querySelector('img')?.src;
+              const extracted = doc.querySelector('img')?.src;
+              if (extracted && isValidHttpUrl(extracted)) {
+                imageUrl = extracted;
+              }
             }
             atlasCache.push({ title: it.title, link: it.link, imageUrl, id: it.link });
           }
@@ -809,10 +822,12 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
-        if (pick.imageUrl) {
-          return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
+        if (pick.imageUrl && isValidHttpUrl(pick.imageUrl)) {
+          const safeLink = pick.link && isValidHttpUrl(pick.link) ? pick.link : undefined;
+          return { imageUrl: pick.imageUrl, caption: pick.title, link: safeLink };
         }
-        return { text: pick.title, link: pick.link };
+        const safeLink = pick.link && isValidHttpUrl(pick.link) ? pick.link : undefined;
+        return { text: pick.title, link: safeLink };
       } catch {
         return null;
       }
@@ -842,15 +857,16 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         };
         if (!pick || typeof pick !== 'object') return null;
         const text = typeof pick.text === 'string' ? pick.text.trim() : '';
-        const image = typeof pick.image === 'string' ? pick.image.trim() : '';
-        const link = typeof pick.link === 'string' ? pick.link.trim() : undefined;
+        const image = typeof pick.image === 'string' && isValidHttpUrl(pick.image) ? pick.image.trim() : '';
+        const link = typeof pick.link === 'string' && isValidHttpUrl(pick.link) ? pick.link.trim() : undefined;
         const attribution = typeof pick.attribution === 'string' ? pick.attribution.trim() : '';
         if (image && (text || attribution)) {
           return { imageUrl: image, caption: attribution || text, link };
         }
         if (text && ctx.isValidFact(text)) {
           const displayText = attribution ? `${text} — ${attribution}` : text;
-          return { text: displayText, link };
+          const safeLink = link && isValidHttpUrl(link) ? link : undefined;
+          return { text: displayText, link: safeLink };
         }
         return null;
       } catch {
