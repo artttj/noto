@@ -355,8 +355,15 @@ Manages CSS custom properties for theming. Persists to `chrome.storage.local`.
 +2  // User copied content
 +1  // User clicked content
 × weight  // Source preference (adjusted by dismissals)
++0.4  // Time-based boost (content type matches time of day)
 15%  // Random injection (diversity)
 30%  // Spaced repetition (zenified items)
+
+// Time-based preferences:
+// Morning (6-12):  Oblique strategies, haiku, philosophy, proverbs
+// Afternoon (12-18): HN, Reddit, Smithsonian, The Verge, philosophy
+// Evening (18-22):  Museum art, Mars photos, Atlas Obscura, albums
+// Night (22-6):     Proverbs, philosophy, haiku, albums
 ```
 
 ---

@@ -1,29 +1,39 @@
 # <img src="icons/icon128.png" width="36" alt="" valign="middle" /> SONTO
 
-A calm Chrome sidebar that works as a clipboard manager with an optional zen feed. No API keys needed. Save text snippets, organize prompts, and browse your copy history. Take a break with art, quotes, and interesting content.
+**A quiet layer for your browser.** Capture what matters. Reuse it later. Take a breath in between.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Google Chrome](https://img.shields.io/badge/Google%20Chrome-4285F4?style=for-the-badge&logo=GoogleChrome&logoColor=white)
+
+## What it does
+
+Sonto lives in Chrome's side panel. Three things happen there:
+
+**Browse** — Your clipboard history. Everything you copy flows in automatically. Pin what you need, tag it, search it. Related clips surface when you visit a page.
+
+**Zen** — A slow feed for when you need a moment. Paintings from museums, philosophy essays, Mars photos, haiku. Content that respects your attention. Time-based: art in the evening, news midday, contemplative pieces at night.
+
+**Reuse** — Saved prompts with color labels. Quick keyboard shortcuts. One-click export to Notion or Obsidian.
+
+No accounts. No sync. No tracking. Everything stays on your machine.
 
 ## Screenshots
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/e2e_clipboard_dark.png" alt="Clipboard history with pins, tags, and actions" width="400" /></td>
-    <td><img src="docs/screenshots/e2e_clipboard_light.png" alt="Clipboard light theme" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_clipboard_dark.png" alt="Clipboard history" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_zen_feed.png" alt="Zen feed" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/e2e_zen_feed.png" alt="Zen feed with art, quotes, and news" width="400" /></td>
-    <td><img src="docs/screenshots/e2e_zen_cosmos_light.png" alt="Cosmos mode with spirograph animations" width="400" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/e2e_settings_clipboard.png" alt="Settings with backup and customization" width="400" /></td>
-    <td><img src="docs/screenshots/e2e_prompt_modal.png" alt="Add prompt modal with color labels" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_clipboard_light.png" alt="Light theme" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_zen_cosmos_light.png" alt="Cosmos mode" width="400" /></td>
   </tr>
 </table>
 
-## Quick start
+## Install
 
-Clone and build the extension:
+**Chrome Web Store** — *coming soon*
+
+**Manual install:**
 
 ```bash
 git clone https://github.com/artttj/sonto.git
@@ -32,100 +42,103 @@ npm install
 npm run build
 ```
 
-Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, then select the `dist/` folder.
-
-No API keys needed. The extension works entirely in your browser.
+Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, select `dist/`.
 
 ## Features
 
-### Clipboard Manager (Main View)
+### Clipboard
 
-- **Clipboard history**: Automatically saves copied text. Press Alt+Shift+C or right-click to capture manually
-- **Prompt management**: Save and organize your favorite AI prompts with color labels
-- **Pin important items**: Keep frequently used snippets at the top
-- **Tags**: Organize clips and prompts with custom tags
-- **Zenify**: Add items to your zen feed rotation
-- **Search**: Quickly find items in your history with the search bar
-- **Domain filtering**: See related clips when visiting a page
-- **Quick insert**: Insert snippets directly into web page inputs
+- Automatic capture of copied text
+- Manual capture via right-click or `Alt+Shift+C`
+- Pin important items to the top
+- Tag and organize clips
+- Domain filtering shows related clips for the page you're on
+- Search across all items
+- Insert snippets directly into form fields
 
-### Zen Feed (Secondary View)
+### Prompts
 
-- **Zen mode**: A slow feed with art, quotes, and interesting content when you need a break
-- **Two display modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
-- **17 content sources**: Museums, philosophy, news, and more
-- **Customizable**: Toggle sources in Settings > Feed
+- Save prompts with color labels for quick access
+- Organize AI prompts, email templates, code snippets
+- One-click copy to clipboard
 
-### General
+### Zen Feed
 
-- **Themes**: Dark and light themes with WCAG 2.1 AA contrast compliance
-- **Languages**: English and German
-- **Backup & restore**: Export and import all data as JSON
-- **Fully local**: All data stays in your browser. No accounts, no tracking
+- 17 built-in content sources
+- Time-based content: museums in the evening, news midday, philosophy at night
+- Two views: scrolling bubbles or Cosmos (procedural spirograph art)
+- Spaced repetition surfaces saved items you haven't seen lately
+- Dismiss content to see less of that source
 
-## Zen feed sources
+### Export
 
-| Source | Content |
-|---|---|
+- One-click export to Notion (opens new page)
+- Markdown export for Obsidian with YAML frontmatter
+- Full JSON backup of all data
+
+## Content sources
+
+| Source | Type |
+|--------|------|
+| [The Met](https://metmuseum.org) | Art |
+| [Cleveland Museum](https://clevelandart.org) | Art |
+| [Getty Museum](https://getty.edu/museum) | Art |
+| [Rijksmuseum](https://rijksmuseum.nl) | Art |
+| [Wikimedia Commons](https://commons.wikimedia.org) | Art |
+| [NASA Perseverance](https://mars.nasa.gov/mars2020) | Photos from Mars |
+| Album of a Day | Music |
+| [Hacker News](https://news.ycombinator.com) | Tech news |
+| [Reddit](https://reddit.com) | Science, space, philosophy |
+| [Smithsonian](https://smithsonianmag.com/smart-news) | Science news |
+| [The Verge](https://theverge.com) | Tech news |
+| [Atlas Obscura](https://atlasobscura.com) | Places and stories |
 | [1000-Word Philosophy](https://1000wordphilosophy.com) | Philosophy essays |
-| Album of a Day | Picks from Pitchfork and Rolling Stone top albums |
-| [Atlas Obscura](https://atlasobscura.com) | Curious places and stories |
-| [Cleveland Museum of Art](https://clevelandart.org) | Open access artworks |
-| [Getty Museum](https://getty.edu/museum) | Paintings and sculptures |
-| [Hacker News](https://news.ycombinator.com) | Top tech stories |
-| Haiku | Japanese haiku poems |
-| Japanese Proverbs | Kotowaza with English translation |
-| [NASA Perseverance](https://mars.nasa.gov/mars2020) | Mars surface photos |
+| Japanese Proverbs | Kotowaza with translations |
+| Haiku | Japanese poems |
 | Oblique Strategies | Creative prompts by Brian Eno |
-| [Reddit](https://reddit.com) | Science, space, philosophy subreddits |
-| [Rijksmuseum](https://rijksmuseum.nl) | Dutch Golden Age paintings |
-| [Smithsonian Magazine](https://smithsonianmag.com/smart-news) | Science and smart news |
-| [The Verge](https://theverge.com) | Tech news and reviews |
-| [The Met](https://metmuseum.org) | Public domain paintings |
-| [Wikimedia Commons](https://commons.wikimedia.org) | Paintings from curated categories |
+| Custom RSS | Your feeds |
+| Custom JSON API | Your endpoints |
 
-**Custom sources:**
-- **Custom RSS** — Add your own RSS/Atom feeds in Settings
-- **Custom JSON API** — Connect any JSON endpoint returning items with `text`, `image`, `link`, `attribution` fields
-
-Toggle sources in **Settings > Feed > Sources**.
+Time preferences: Philosophy and proverbs appear more often at night. Art in the evening. News during the day.
 
 ## Keyboard shortcuts
 
 | Shortcut | Action |
-|---|---|
-| Alt+Shift+S | Open sidebar |
-| Alt+Shift+C | Capture selected text |
-| Alt+Shift+F | Quick search snippets |
-| / (in clipboard view) | Focus search |
+|----------|--------|
+| `Alt+Shift+S` | Open sidebar |
+| `Alt+Shift+C` | Capture selected text |
+| `Alt+Shift+F` | Quick search |
+| `/` | Focus search (when sidebar open) |
 
 ## Privacy
 
-All data stays in your browser. No backend. No analytics. No tracking.
-
-Feed content comes from public third-party APIs. Sonto does not own or filter it.
+- No accounts, no sign-in
+- No analytics, no telemetry
+- No cloud sync
+- All data in IndexedDB on your machine
+- Feed content from public APIs — Sonto doesn't own or filter it
 
 ## Tech
 
-* TypeScript
-* Chrome Extension Manifest V3
-* Side Panel API
-* IndexedDB
-* esbuild bundling
-
-Zero runtime dependencies.
+- TypeScript, Manifest V3, Side Panel API
+- IndexedDB for storage
+- esbuild for bundling
+- Zero runtime dependencies
 
 ## Development
 
 ```bash
 npm install          # Install dependencies
-npm run build        # Build extension to dist/
+npm run build        # Build to dist/
 npm run typecheck    # Type check
-npm test             # Run unit tests
-npm run test:e2e     # Run e2e tests (requires Chrome)
-npm run screenshots  # Generate screenshots for docs
+npm test             # Unit tests
+npm run test:e2e     # E2E tests (requires Chrome)
 ```
+
+## Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical overview — message passing, IndexedDB schema, zen feed system, build process.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT © Artem Iagovdik
