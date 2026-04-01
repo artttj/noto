@@ -482,12 +482,7 @@
 
 /* Surprise bubble highlight */
 .zen-bubble--surprise {
-  border-left: 2px solid var(--c-accent);
   background: linear-gradient(to right, rgba(232,185,49,0.04) 0%, rgba(232,185,49,0.02) 30%, transparent 60%);
-  padding-left: 10px;
-}
-.zen-bubble--surprise.zen-bubble.spotlight {
-  padding-left: 10px;
 }
 
 /* Cosmos save button */
@@ -1291,9 +1286,7 @@
 }
 
 .zen-bubble--user {
-  border-left: 2px solid var(--c-accent);
   background: linear-gradient(to right, rgba(232,185,49,0.05), transparent);
-  padding-left: 10px;
 }
 
 .zen-bubble--user .zen-source {
