@@ -1196,6 +1196,48 @@ html, body {
   overflow: hidden;
 }
 
+.tag-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.tag-filter-label {
+  font-size: 12px;
+  color: var(--c-text-2);
+  background: var(--c-border-hi);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.tag-filter-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--c-text-3);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tag-filter-clear:hover {
+  background: var(--c-border-hi);
+  color: var(--c-text);
+}
+
+.tag-filter-clear svg {
+  width: 14px;
+  height: 14px;
+}
+
 .clip-list {
   flex: 1;
   overflow-y: auto;

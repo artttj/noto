@@ -149,13 +149,33 @@ export class ClipboardManager {
   private isLoading = false;
   private selectedIndex = -1;
   private activeDomain = '';
+  private activeTagFilter: string | null = null;
   private allTags: string[] = [];
   private inputAvailable = false;
+  private tagFilterEl: HTMLElement;
+  private tagFilterLabelEl: HTMLElement;
+  private tagFilterClearEl: HTMLButtonElement;
 
   constructor(listEl: HTMLElement) {
     this.listEl = listEl;
+    this.tagFilterEl = document.querySelector('#tag-filter')!;
+    this.tagFilterLabelEl = document.querySelector('#tag-filter-label')!;
+    this.tagFilterClearEl = document.querySelector('#tag-filter-clear')!;
     void this.checkInputAvailability();
     this.setupTabChangeListener();
+    this.setupTagFilterClear();
+  }
+
+  private setupTagFilterClear(): void {
+    this.tagFilterClearEl.addEventListener('click', () => {
+      this.clearTagFilter();
+    });
+  }
+
+  private clearTagFilter(): void {
+    this.activeTagFilter = null;
+    this.tagFilterEl.classList.add('hidden');
+    void this.load(this.activeDomain);
   }
 
   private setupTabChangeListener(): void {
@@ -215,6 +235,8 @@ export class ClipboardManager {
       await this.load(this.activeDomain);
       return;
     }
+    this.activeTagFilter = null;
+    this.tagFilterEl.classList.add('hidden');
     this.setLoading(true);
     try {
       const response = await chrome.runtime.sendMessage({
@@ -232,6 +254,9 @@ export class ClipboardManager {
   }
 
   async filterByTag(tag: string): Promise<void> {
+    this.activeTagFilter = tag;
+    this.tagFilterLabelEl.textContent = tag;
+    this.tagFilterEl.classList.remove('hidden');
     await this.load(this.activeDomain, tag);
   }
 
