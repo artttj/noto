@@ -140,7 +140,9 @@ export function registerSontoItemHandlers(
 
   register(MSG.GET_SONTO_ITEMS, async (msg) => {
     const { filter } = msg as GetSontoItemsMessage;
+    console.log('[Sonto Debug BG] GET_SONTO_ITEMS with filter:', filter);
     const items = await sontoItemHandler.getAll(filter);
+    console.log('[Sonto Debug BG] Returning items count:', items.length);
     return { ok: true, items };
   });
 

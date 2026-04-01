@@ -169,7 +169,9 @@ export async function getAllSontoItems(filter?: SontoItemFilter): Promise<SontoI
       request = index.getAll(filter.pinned ? 1 : 0);
     } else if (filter?.tags && filter.tags.length > 0) {
       // Use tags index (multiEntry)
+      console.log('[Sonto Debug DB] Store indexes available:', [...store.indexNames]);
       const index = store.index('tags');
+      console.log('[Sonto Debug DB] Querying tags index with:', filter.tags[0]);
       request = index.getAll(filter.tags[0]);
     } else {
       request = store.getAll();
@@ -177,6 +179,7 @@ export async function getAllSontoItems(filter?: SontoItemFilter): Promise<SontoI
 
     request.onsuccess = () => {
       let results = request.result as SontoItem[];
+      console.log('[Sonto Debug DB] Raw results from DB:', results.length);
 
       // Apply additional filters in memory
       if (filter?.types && filter.types.length > 1) {

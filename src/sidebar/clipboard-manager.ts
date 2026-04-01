@@ -210,6 +210,7 @@ export class ClipboardManager {
   }
 
   async load(domain?: string, tagFilter?: string): Promise<void> {
+    console.log('[Sonto Debug] load() called with tagFilter:', tagFilter);
     this.allTags = await loadAllTags();
     this.activeDomain = domain ?? '';
     this.setLoading(true);
@@ -219,9 +220,12 @@ export class ClipboardManager {
       };
       if (tagFilter) {
         filter.tags = [tagFilter];
+        console.log('[Sonto Debug] Sending filter:', filter);
       }
       const response = await chrome.runtime.sendMessage({ type: MSG.GET_SONTO_ITEMS, filter });
+      console.log('[Sonto Debug] Response from GET_SONTO_ITEMS:', response);
       this.clips = response?.ok ? (response.items as SontoItem[]) : [];
+      console.log('[Sonto Debug] Loaded clips count:', this.clips.length);
     } catch (err) {
       console.error('[Sonto] Failed to load clipboard:', err);
     } finally {
@@ -254,6 +258,7 @@ export class ClipboardManager {
   }
 
   async filterByTag(tag: string): Promise<void> {
+    console.log('[Sonto Debug] filterByTag called with tag:', tag);
     this.activeTagFilter = tag;
     this.tagFilterLabelEl.textContent = tag;
     this.tagFilterEl.classList.remove('hidden');
@@ -473,6 +478,7 @@ export class ClipboardManager {
       tagEl.addEventListener('click', (e) => {
         e.stopPropagation();
         const tag = (e.currentTarget as HTMLElement).dataset.tag;
+        console.log('[Sonto Debug] Tag clicked:', tag, 'from element:', e.currentTarget);
         if (tag) {
           void this.filterByTag(tag);
         }
