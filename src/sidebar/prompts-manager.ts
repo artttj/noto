@@ -306,11 +306,11 @@ export class PromptsManager {
         ${tagsHtml}
       </div>
       <div class="clip-card-actions">
+        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i></button>
+        <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
         <button class="clip-btn clip-btn-pin${prompt.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this prompt"><i data-lucide="star"></i></button>
         <button class="clip-btn clip-btn-zenify${prompt.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this prompt"><i data-lucide="flower-2"></i></button>
         <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
-        <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
-        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
         <button class="clip-btn clip-btn-edit" title="Edit" aria-label="Edit this prompt"><i data-lucide="pencil"></i></button>
         <button class="clip-btn clip-btn-delete" title="Delete" aria-label="Delete this prompt"><i data-lucide="trash-2"></i></button>
