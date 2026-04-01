@@ -2491,7 +2491,7 @@ html, body {
 }
 
 .zen-bubble--user {
-  background: linear-gradient(to right, rgba(232,185,49,0.06) 0%, rgba(232,185,49,0.03) 30%, transparent 60%);
+  /* User clip - no special styling */
 }
 
 .zen-bubble--user .zen-source {

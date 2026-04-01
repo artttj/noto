@@ -160,27 +160,34 @@ async function addSampleClips(page: Page): Promise<void> {
       },
     ];
 
-    const request = indexedDB.open('sonto_db_v2', 2);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains('sonto_items')) {
-        const store = db.createObjectStore('sonto_items', { keyPath: 'id' });
-        store.createIndex('type', 'type', { unique: false });
-        store.createIndex('createdAt', 'createdAt', { unique: false });
-        store.createIndex('pinned', 'pinned', { unique: false });
-      }
-    };
-    request.onsuccess = () => {
-      const db = request.result;
-      const tx = db.transaction('sonto_items', 'readwrite');
-      const store = tx.objectStore('sonto_items');
-      for (const clip of clips) {
-        store.put(clip);
-      }
-      tx.oncomplete = () => db.close();
-    };
+    return new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('sonto_db_v2', 3);
+      request.onerror = () => reject(request.error);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('sonto_items')) {
+          const store = db.createObjectStore('sonto_items', { keyPath: 'id' });
+          store.createIndex('type', 'type', { unique: false });
+          store.createIndex('createdAt', 'createdAt', { unique: false });
+          store.createIndex('pinned', 'pinned', { unique: false });
+        }
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('sonto_items', 'readwrite');
+        const store = tx.objectStore('sonto_items');
+        for (const clip of clips) {
+          store.put(clip);
+        }
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
   });
-  await delay(800);
+  await delay(500);
 }
 
 describe('Screenshot Generation', () => {

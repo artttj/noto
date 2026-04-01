@@ -480,9 +480,9 @@
   vertical-align: middle;
 }
 
-/* Surprise bubble highlight */
+/* Surprise bubble - no special styling */
 .zen-bubble--surprise {
-  background: linear-gradient(to right, rgba(232,185,49,0.04) 0%, rgba(232,185,49,0.02) 30%, transparent 60%);
+  /* Surprise clip - no special styling */
 }
 
 /* Cosmos save button */
@@ -1286,7 +1286,7 @@
 }
 
 .zen-bubble--user {
-  background: linear-gradient(to right, rgba(232,185,49,0.05), transparent);
+  /* User clip - no special styling */
 }
 
 .zen-bubble--user .zen-source {
