@@ -62,6 +62,12 @@
           </svg>
           <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
           <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
+          <div id="tag-filter" class="tag-filter hidden">
+            <span class="tag-filter-text" id="tag-filter-label"></span>
+            <button id="tag-filter-clear" class="tag-filter-clear" type="button" aria-label="Clear tag filter">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
           <button id="btn-clip-page" class="icon-btn-small" type="button" title="Clip current page" aria-label="Clip current page">
             <i data-lucide="scissors"></i>
           </button>
@@ -70,14 +76,6 @@
           </button>
         </div>
 
-        <div id="tag-filter" class="tag-filter hidden">
-          <span class="tag-filter-label" id="tag-filter-label"></span>
-          <button id="tag-filter-clear" class="tag-filter-clear" type="button" aria-label="Clear tag filter">
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 6l8 8M14 6l-8 8"/>
-            </svg>
-          </button>
-        </div>
         <div id="clip-list" class="clip-list"></div>
 
         <div id="add-clip-modal" class="clip-modal hidden">

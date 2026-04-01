@@ -257,6 +257,7 @@ export class ClipboardManager {
     this.activeTagFilter = tag;
     this.tagFilterLabelEl.textContent = tag;
     this.tagFilterEl.classList.remove('hidden');
+    createIcons({ icons, attrs: { strokeWidth: 2 } });
     await this.load(this.activeDomain, tag);
   }
 
