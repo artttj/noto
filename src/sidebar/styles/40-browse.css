@@ -302,6 +302,15 @@
   }
 }
 
+.zen-feed--loading .zen-bubble {
+  opacity: 0;
+  animation: none !important;
+}
+
+.zen-feed--revealed .zen-bubble {
+  animation: lyricIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .zen-loading {
   display: flex;
   align-items: center;

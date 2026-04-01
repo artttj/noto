@@ -125,6 +125,7 @@ export class ZenFeed {
 
       // Load fresh bubbles on each session for consistent content
       this.feedEl.innerHTML = '';
+      this.feedEl.classList.remove('zen-feed--revealed');
       this.showLoader();
       await this.loadInitialBubbles(ZEN_INITIAL_BATCH);
       this.hideLoader();
@@ -382,6 +383,9 @@ export class ZenFeed {
   }
 
   private async loadInitialBubbles(count: number): Promise<void> {
+    // Add loading class for staggered reveal
+    this.feedEl.classList.add('zen-feed--loading');
+
     let loaded = 0;
     let attempts = 0;
     const maxAttempts = count * 3;
@@ -391,6 +395,12 @@ export class ZenFeed {
       loaded++;
       attempts++;
     }
+
+    // Trigger staggered reveal
+    requestAnimationFrame(() => {
+      this.feedEl.classList.remove('zen-feed--loading');
+      this.feedEl.classList.add('zen-feed--revealed');
+    });
   }
 
   private async dripZen(): Promise<void> {
