@@ -101,6 +101,13 @@ export const SVG_OBLIQUE = [
   '</svg>',
 ].join('');
 
+export const SVG_VERGE = [
+  '<svg class="zen-bulb zen-bulb--verge" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">',
+  '<rect width="16" height="16" fill="#e5127d" rx="1.5"/>',
+  '<text x="8" y="12" text-anchor="middle" fill="white" font-family="Georgia,serif" font-size="10" font-weight="bold">V</text>',
+  '</svg>',
+].join('');
+
 export const OBLIQUE_STRATEGIES: string[] = [
   'Abandon normal instruments',
   'Accept advice',

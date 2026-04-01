@@ -8,6 +8,7 @@ import {
   SVG_HAIKU,
   SVG_HN,
   SVG_REDDIT,
+  SVG_VERGE,
   escapeHtml,
 } from './zen-content';
 import { getCustomFeeds, getCustomJsonSources, isItemSeen, markItemSeen, getRecentlySeenBySource } from '../../shared/storage';
@@ -698,7 +699,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const pick = vergeCache[Math.floor(Math.random() * Math.min(vergeCache.length, 15))];
         await markItemSeen(pick.link!, 'theVerge');
         if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
-        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://cdn.sanity.io/images/81nw7bw0/production/463382c99793994629d4912539168be40cc739b2-500x500.png" alt="The Verge" />', hideLabel: true };
+        return { text: pick.title, link: pick.link, icon: SVG_VERGE, hideLabel: true };
       } catch {
         return null;
       }
