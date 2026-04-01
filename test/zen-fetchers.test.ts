@@ -1,8 +1,9 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ZEN_FETCHERS, isArtResult, isTextResult } from '../src/sidebar/zen/zen-fetchers';
+import { calculateTimeBoost } from '../src/sidebar/zen/zen-scoring';
 
 const mockCtx = {
   language: 'en',
@@ -212,6 +213,109 @@ describe('Zen Fetchers', () => {
         expect(result.imageUrl).toMatch(/^https:\/\//);
         expect(result.caption).toContain('Mars');
       }
+    });
+  });
+
+  describe('Time-based content boost', () => {
+    const originalDate = Date;
+
+    afterEach(() => {
+      global.Date = originalDate;
+    });
+
+    it('should boost inspirational content in morning (6-12)', () => {
+      // Mock Date to return hour 8 (morning)
+      const mockDate = vi.fn(() => {
+        const date = new originalDate('2024-01-15T08:00:00');
+        date.getHours = () => 8;
+        return date;
+      }) as unknown as typeof Date;
+      global.Date = mockDate;
+
+      // Morning preferred: obliqueStrategies, haiku, philosophyEssay, kotowaza
+      expect(calculateTimeBoost('obliqueStrategies')).toBe(0.4);
+      expect(calculateTimeBoost('haiku')).toBe(0.4);
+      expect(calculateTimeBoost('philosophyEssay')).toBe(0.4);
+      expect(calculateTimeBoost('kotowaza')).toBe(0.4);
+
+      // Not preferred in morning
+      expect(calculateTimeBoost('hnStory')).toBe(0);
+      expect(calculateTimeBoost('metArtwork')).toBe(0);
+    });
+
+    it('should boost news content in afternoon (12-18)', () => {
+      const mockDate = vi.fn(() => {
+        const date = new originalDate('2024-01-15T14:00:00');
+        date.getHours = () => 14;
+        return date;
+      }) as unknown as typeof Date;
+      global.Date = mockDate;
+
+      // Afternoon preferred: hnStory, reddit, smithsonianNews, theVerge, philosophyEssay
+      expect(calculateTimeBoost('hnStory')).toBe(0.4);
+      expect(calculateTimeBoost('reddit')).toBe(0.4);
+      expect(calculateTimeBoost('smithsonianNews')).toBe(0.4);
+      expect(calculateTimeBoost('theVerge')).toBe(0.4);
+
+      // Not preferred in afternoon
+      expect(calculateTimeBoost('obliqueStrategies')).toBe(0);
+      expect(calculateTimeBoost('marsRover')).toBe(0);
+    });
+
+    it('should boost art content in evening (18-22)', () => {
+      const mockDate = vi.fn(() => {
+        const date = new originalDate('2024-01-15T20:00:00');
+        date.getHours = () => 20;
+        return date;
+      }) as unknown as typeof Date;
+      global.Date = mockDate;
+
+      // Evening preferred: art, mars, atlas, album
+      expect(calculateTimeBoost('metArtwork')).toBe(0.4);
+      expect(calculateTimeBoost('clevelandArtwork')).toBe(0.4);
+      expect(calculateTimeBoost('gettyArtwork')).toBe(0.4);
+      expect(calculateTimeBoost('rijksmuseumArtwork')).toBe(0.4);
+      expect(calculateTimeBoost('wikimediaPaintings')).toBe(0.4);
+      expect(calculateTimeBoost('marsRover')).toBe(0.4);
+      expect(calculateTimeBoost('atlasObscura')).toBe(0.4);
+      expect(calculateTimeBoost('albumOfDay')).toBe(0.4);
+
+      // Not preferred in evening
+      expect(calculateTimeBoost('hnStory')).toBe(0);
+      expect(calculateTimeBoost('reddit')).toBe(0);
+    });
+
+    it('should boost contemplative content at night (22-6)', () => {
+      const mockDate = vi.fn(() => {
+        const date = new originalDate('2024-01-15T23:00:00');
+        date.getHours = () => 23;
+        return date;
+      }) as unknown as typeof Date;
+      global.Date = mockDate;
+
+      // Night preferred: kotowaza, philosophyEssay, obliqueStrategies, haiku, albumOfDay
+      expect(calculateTimeBoost('kotowaza')).toBe(0.4);
+      expect(calculateTimeBoost('philosophyEssay')).toBe(0.4);
+      expect(calculateTimeBoost('obliqueStrategies')).toBe(0.4);
+      expect(calculateTimeBoost('haiku')).toBe(0.4);
+      expect(calculateTimeBoost('albumOfDay')).toBe(0.4);
+
+      // Not preferred at night
+      expect(calculateTimeBoost('hnStory')).toBe(0);
+      expect(calculateTimeBoost('metArtwork')).toBe(0);
+    });
+
+    it('should handle early morning hours (0-6) as night period', () => {
+      const mockDate = vi.fn(() => {
+        const date = new originalDate('2024-01-15T03:00:00');
+        date.getHours = () => 3;
+        return date;
+      }) as unknown as typeof Date;
+      global.Date = mockDate;
+
+      expect(calculateTimeBoost('kotowaza')).toBe(0.4);
+      expect(calculateTimeBoost('philosophyEssay')).toBe(0.4);
+      expect(calculateTimeBoost('hnStory')).toBe(0);
     });
   });
 });

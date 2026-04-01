@@ -6,6 +6,42 @@ import type { SeenItemEntry, SontoItem } from '../../shared/types';
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
+// Time-based content preferences
+// Morning (6-12): Inspirational - oblique, haiku, philosophy
+// Afternoon (12-18): News/learning - hn, reddit, smithsonian, verge
+// Evening (18-22): Art/relaxation - art, mars, atlas
+// Night (22-6): Contemplative - kotowaza, philosophy, oblique, haiku, album
+
+const TIME_PERIOD_FETCHERS: Record<string, Set<string>> = {
+  morning: new Set([
+    'obliqueStrategies', 'haiku', 'philosophyEssay', 'kotowaza',
+  ]),
+  afternoon: new Set([
+    'hnStory', 'reddit', 'smithsonianNews', 'theVerge', 'philosophyEssay',
+  ]),
+  evening: new Set([
+    'metArtwork', 'clevelandArtwork', 'gettyArtwork', 'rijksmuseumArtwork',
+    'wikimediaPaintings', 'marsRover', 'atlasObscura', 'albumOfDay',
+  ]),
+  night: new Set([
+    'kotowaza', 'philosophyEssay', 'obliqueStrategies', 'haiku', 'albumOfDay',
+  ]),
+};
+
+function getTimePeriod(): string {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 22) return 'evening';
+  return 'night';
+}
+
+export function calculateTimeBoost(fetcherId: string): number {
+  const period = getTimePeriod();
+  const preferred = TIME_PERIOD_FETCHERS[period];
+  return preferred.has(fetcherId) ? 0.4 : 0;
+}
+
 const STOPWORDS = new Set([
   'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
   'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does',

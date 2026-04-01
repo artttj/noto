@@ -8,6 +8,7 @@ import {
   createScoreContext,
   scoreCandidate,
   selectWithSurprise,
+  calculateTimeBoost,
   type ScoreContext,
 } from './zen-scoring';
 import {
@@ -268,7 +269,7 @@ export class ZenFeed {
         id: fetcher.id,
         source: fetcher.id,
         contentType: inferFetcherContentType(fetcher.id),
-        sourceWeight: fetcher.weight,
+        sourceWeight: fetcher.weight + calculateTimeBoost(fetcher.id),
       };
       return {
         fetcher,
