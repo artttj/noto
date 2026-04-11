@@ -44,7 +44,6 @@ export interface SontoItem {
   tags: string[];
   createdAt: number;
   lastSeenAt?: number;
-  pinned: boolean;
   zenified: boolean;
   metadata?: Record<string, unknown>;
 }
@@ -54,7 +53,6 @@ export interface SontoItemFilter {
   contentTypes?: SontoContentType[];
   sources?: SontoSource[];
   tags?: string[];
-  pinned?: boolean;
   zenified?: boolean;
   limit?: number;
   offset?: number;
@@ -77,7 +75,6 @@ export interface ClipItem {
   url?: string;
   title?: string;
   timestamp: number;
-  pinned?: boolean;
   tags?: string[];
 }
 
@@ -91,7 +88,6 @@ export interface PromptItem {
   label?: string;
   color?: PromptColor;
   createdAt: number;
-  pinned?: boolean;
 }
 
 

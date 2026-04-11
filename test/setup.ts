@@ -79,13 +79,13 @@ const mockIndexedDB = {
               },
               getAll: (query?: IDBKeyRange | IDBValidKey) => {
                 let result = Array.from(store.values());
-                // Simple filter for key range if provided (for pinned/zenified filters)
+                // Simple filter for key range if provided (for zenified filter)
                 if (query !== undefined) {
                   result = result.filter((item) => {
                     const record = item as Record<string, unknown>;
                     // Handle numeric filters (0 or 1 for booleans)
                     if (typeof query === 'number') {
-                      return record.pinned === (query === 1) || record.zenified === (query === 1);
+                      return record.zenified === (query === 1);
                     }
                     return true;
                   });

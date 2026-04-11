@@ -313,7 +313,6 @@ export interface PromptItem {
   label?: string;
   color?: PromptColor;
   createdAt: number;
-  pinned?: boolean;
 }
 
 export async function getAllPrompts(): Promise<PromptItem[]> {
@@ -336,7 +335,7 @@ export async function savePrompt(text: string, color?: PromptColor, label?: stri
   return newPrompt;
 }
 
-export async function updatePrompt(id: string, updates: Partial<Pick<PromptItem, 'text' | 'label' | 'color' | 'pinned'>>): Promise<void> {
+export async function updatePrompt(id: string, updates: Partial<Pick<PromptItem, 'text' | 'label' | 'color'>>): Promise<void> {
   const prompts = await getAllPrompts();
   const updatedPrompts = prompts.map(p => p.id === id ? { ...p, ...updates } : p);
   await chrome.storage.local.set({ [PROMPTS_KEY]: updatedPrompts });

@@ -35,7 +35,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: ['tag1', 'tag2'],
         createdAt: Date.now(),
-        pinned: false,
         zenified: false,
       };
 
@@ -48,7 +47,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        pinned: true,
         zenified: true,
         metadata: { color: 'blue' },
       };
@@ -80,8 +78,7 @@ describe('Backup Operations', () => {
             origin: 'import-test',
             tags: ['imported'],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
         ],
         tags: ['imported'],
@@ -139,8 +136,7 @@ describe('Backup Operations', () => {
             source: 'clipboard',
             origin: 'test',
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
         ],
       };
@@ -160,8 +156,7 @@ describe('Backup Operations', () => {
             source: 'clipboard',
             origin: 'test',
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
         ],
       };
@@ -181,8 +176,7 @@ describe('Backup Operations', () => {
             source: 'invalid-source',
             origin: 'test',
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
         ],
       };
@@ -199,7 +193,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        pinned: false,
         zenified: false,
       };
       await saveSontoItem(existingItem);
@@ -217,8 +210,7 @@ describe('Backup Operations', () => {
             origin: 'import',
             tags: [],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
         ],
       };
@@ -240,7 +232,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        pinned: false,
         zenified: false,
       };
       await saveSontoItem(existingItem);
@@ -258,8 +249,7 @@ describe('Backup Operations', () => {
             origin: 'import',
             tags: [],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
         ],
       };
@@ -284,8 +274,7 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
           {
             id: 'clip-2',
@@ -296,8 +285,7 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
           {
             id: 'prompt-1',
@@ -308,8 +296,7 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
           {
             id: 'zen-1',
@@ -320,8 +307,7 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: true,
+                zenified: true,
           },
         ],
       };
@@ -348,8 +334,7 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
             url: 'https://example.com',
             title: 'Test Title',
             lastSeenAt: Date.now(),
@@ -380,35 +365,13 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: 'not-an-array',
             createdAt: Date.now(),
-            pinned: false,
-            zenified: false,
+                zenified: false,
           },
         ],
       };
       await expect(importBackup(JSON.stringify(backup), false)).rejects.toThrow('tags');
     });
 
-    it('should reject item with invalid pinned value', async () => {
-      const backup = {
-        version: 3,
-        createdAt: Date.now(),
-        items: [
-          {
-            id: 'test',
-            type: 'clip',
-            content: 'test',
-            contentType: 'text',
-            source: 'clipboard',
-            origin: 'test',
-            tags: [],
-            createdAt: Date.now(),
-            pinned: 'yes',
-            zenified: false,
-          },
-        ],
-      };
-      await expect(importBackup(JSON.stringify(backup), false)).rejects.toThrow('pinned');
-    });
   });
 
   describe('round-trip', () => {
@@ -424,7 +387,6 @@ describe('Backup Operations', () => {
         title: 'Test',
         tags: ['tag1', 'tag2'],
         createdAt: Date.now(),
-        pinned: true,
         zenified: false,
       };
 
@@ -437,7 +399,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        pinned: false,
         zenified: true,
         metadata: { color: 'red' },
       };
@@ -457,7 +418,6 @@ describe('Backup Operations', () => {
       const restoredItem1 = items.find((i) => i.id === 'roundtrip-1');
       expect(restoredItem1).toBeDefined();
       expect(restoredItem1?.content).toBe('Roundtrip content');
-      expect(restoredItem1?.pinned).toBe(true);
       expect(restoredItem1?.tags).toEqual(['tag1', 'tag2']);
 
       const restoredItem2 = items.find((i) => i.id === 'roundtrip-2');

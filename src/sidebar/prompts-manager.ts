@@ -7,7 +7,7 @@ import { escapeHtml, formatDate } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
 import { MSG } from '../shared/messages';
 import type { SontoItem, SontoItemFilter } from '../shared/types';
-import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify, moveCardToTop } from './utils';
+import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify } from './utils';
 
 const COPY_FEEDBACK_MS = 1500;
 
@@ -250,17 +250,7 @@ export class PromptsManager {
       return;
     }
 
-    const pinned = filtered.filter(p => p.pinned);
-    const regular = filtered.filter(p => !p.pinned);
-
-    if (pinned.length > 0) {
-      this.addSeparator('Pinned', 'pinned-separator');
-      for (const prompt of pinned) {
-        this.listEl.appendChild(this.buildCard(prompt));
-      }
-    }
-
-    for (const prompt of regular) {
+    for (const prompt of filtered) {
       this.listEl.appendChild(this.buildCard(prompt));
     }
 
@@ -276,7 +266,7 @@ export class PromptsManager {
 
   private buildCard(prompt: SontoItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = 'clip-card clip-type-prompt' + (prompt.pinned ? ' clip-pinned' : '') + (prompt.zenified ? ' clip-zenified' : '');
+    card.className = 'clip-card clip-type-prompt' + (prompt.zenified ? ' clip-zenified' : '');
     card.dataset.id = prompt.id;
 
     const preview = escapeHtml(prompt.content.slice(0, 280));
@@ -286,7 +276,6 @@ export class PromptsManager {
       ? `<span class="prompt-color-tag" style="background: ${colorStyles.hex};"></span>`
       : '';
 
-    const pinLabel = prompt.pinned ? 'Unpin' : 'Pin';
     const zenifyLabel = prompt.zenified ? 'Un-zenify' : 'Zenify';
     const tagsHtml = renderTags(prompt.tags);
 
@@ -308,7 +297,6 @@ export class PromptsManager {
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i></button>
         <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
-        <button class="clip-btn clip-btn-pin${prompt.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this prompt"><i data-lucide="star"></i></button>
         <button class="clip-btn clip-btn-zenify${prompt.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this prompt"><i data-lucide="flower-2"></i></button>
         <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
@@ -330,11 +318,6 @@ export class PromptsManager {
 
     card.querySelector<HTMLButtonElement>('.clip-btn-insert')?.addEventListener('click', () => {
       void this.insertText(prompt.content);
-    });
-
-    card.querySelector<HTMLButtonElement>('.clip-btn-pin')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      void this.togglePin(prompt.id, card);
     });
 
     card.querySelector<HTMLButtonElement>('.clip-btn-zenify')?.addEventListener('click', (e) => {
@@ -436,32 +419,6 @@ export class PromptsManager {
       this.renderFilters();
       if (this.prompts.length === 0) this.render();
     }, 200);
-  }
-
-  private async togglePin(id: string, card: HTMLElement): Promise<void> {
-    const prompt = this.prompts.find(p => p.id === id);
-    if (!prompt) return;
-
-    const newPinned = !prompt.pinned;
-    await chrome.runtime.sendMessage({
-      type: MSG.UPDATE_SONTO_ITEM,
-      id,
-      updates: { pinned: newPinned },
-    });
-
-    prompt.pinned = newPinned;
-    card.classList.toggle('clip-pinned', newPinned);
-
-    const pinBtn = card.querySelector<HTMLButtonElement>('.clip-btn-pin');
-    if (pinBtn) {
-      pinBtn.classList.toggle('pinned', newPinned);
-      pinBtn.title = newPinned ? 'Unpin' : 'Pin';
-      pinBtn.setAttribute('aria-label', `${newPinned ? 'Unpin' : 'Pin'} this prompt`);
-    }
-
-    if (newPinned) {
-      moveCardToTop(card, this.listEl);
-    }
   }
 
   private async toggleZenify(id: string, card: HTMLElement): Promise<void> {

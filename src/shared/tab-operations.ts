@@ -41,7 +41,7 @@ export async function insertTextToActiveTab(
       text,
     });
 
-    if (results?.success) {
+    if (results?.ok) {
       return { ok: true };
     }
 
@@ -64,7 +64,7 @@ export async function insertTextToActiveTab(
         text,
       });
 
-      if (retryResults?.success) {
+      if (retryResults?.ok) {
         return { ok: true };
       }
       return { error: retryResults?.error || 'Insert failed after reload' };

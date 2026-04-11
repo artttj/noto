@@ -11,7 +11,7 @@ import {
   searchClips,
   clearAllClips,
   getClipCount,
-  getOldestNonPinnedClip,
+  getOldestClip,
   getClipsByDomain,
 } from '../src/shared/embeddings/vector-store';
 import type { ClipItem } from '../src/shared/types';
@@ -47,7 +47,6 @@ describe('Vector Store Operations', () => {
         timestamp: Date.now(),
         url: 'https://example.com',
         title: 'Example Title',
-        pinned: true,
         tags: ['tag1', 'tag2'],
       };
 
@@ -56,7 +55,6 @@ describe('Vector Store Operations', () => {
       const retrieved = await getClipById('test-full');
       expect(retrieved?.url).toBe('https://example.com');
       expect(retrieved?.title).toBe('Example Title');
-      expect(retrieved?.pinned).toBe(true);
       expect(retrieved?.tags).toEqual(['tag1', 'tag2']);
     });
   });
@@ -131,14 +129,12 @@ describe('Vector Store Operations', () => {
       const updated: ClipItem = {
         ...clip,
         text: 'Updated text',
-        pinned: true,
       };
 
       await updateClip(updated);
 
       const retrieved = await getClipById('update-test');
       expect(retrieved?.text).toBe('Updated text');
-      expect(retrieved?.pinned).toBe(true);
     });
   });
 
@@ -283,56 +279,31 @@ describe('Vector Store Operations', () => {
     });
   });
 
-  describe('getOldestNonPinnedClip', () => {
+  describe('getOldestClip', () => {
     it('should return null when no clips', async () => {
-      const oldest = await getOldestNonPinnedClip();
+      const oldest = await getOldestClip();
       expect(oldest).toBeNull();
     });
 
-    it('should return null when all clips are pinned', async () => {
+    it('should return oldest clip', async () => {
       await addClip({
-        id: 'pinned-1',
-        text: 'Pinned clip',
-        contentType: 'text',
-        source: 'manual',
-        timestamp: Date.now(),
-        pinned: true,
-      });
-
-      const oldest = await getOldestNonPinnedClip();
-      expect(oldest).toBeNull();
-    });
-
-    it('should return oldest non-pinned clip', async () => {
-      await addClip({
-        id: 'old-unpinned',
-        text: 'Old unpinned',
+        id: 'old-clip',
+        text: 'Old clip',
         contentType: 'text',
         source: 'manual',
         timestamp: 1000,
-        pinned: false,
       });
 
       await addClip({
-        id: 'new-unpinned',
-        text: 'New unpinned',
+        id: 'new-clip',
+        text: 'New clip',
         contentType: 'text',
         source: 'manual',
         timestamp: 2000,
-        pinned: false,
       });
 
-      await addClip({
-        id: 'old-pinned',
-        text: 'Old pinned',
-        contentType: 'text',
-        source: 'manual',
-        timestamp: 500,
-        pinned: true,
-      });
-
-      const oldest = await getOldestNonPinnedClip();
-      expect(oldest?.id).toBe('old-unpinned');
+      const oldest = await getOldestClip();
+      expect(oldest?.id).toBe('old-clip');
     });
   });
 

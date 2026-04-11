@@ -260,7 +260,6 @@ class SontoSidebar {
           source: 'manual',
           contentType: 'text',
           tags: [],
-          pinned: false,
           zenified: false,
           metadata: selectedClipColor ? { color: selectedClipColor } : undefined,
         },

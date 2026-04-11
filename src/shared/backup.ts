@@ -11,6 +11,8 @@ import { getSettings, saveSettings, getTheme, saveTheme } from './storage';
 import type { SontoItem, SontoItemType, SontoContentType, SontoSource } from './types';
 
 const CURRENT_BACKUP_VERSION = 3;
+const MAX_BACKUP_ITEMS = 10000;
+const MAX_BACKUP_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
 const VALID_ITEM_TYPES: SontoItemType[] = ['clip', 'prompt', 'zen'];
 const VALID_CONTENT_TYPES: SontoContentType[] = [
@@ -86,10 +88,6 @@ function validateSontoItem(item: unknown): ValidationResult {
 
   if (!isValidNumber(i.createdAt)) {
     return { valid: false, error: `Item ${i.id} must have valid createdAt` };
-  }
-
-  if (!isValidBoolean(i.pinned)) {
-    return { valid: false, error: `Item ${i.id} must have valid pinned boolean` };
   }
 
   if (!isValidBoolean(i.zenified)) {
@@ -192,6 +190,11 @@ export async function importBackup(
   json: string,
   merge: boolean,
 ): Promise<{ items: number; clips: number; prompts: number; zen: number }> {
+  // Check size limit before parsing
+  if (json.length > MAX_BACKUP_SIZE_BYTES) {
+    throw new Error(`Backup file too large (max ${MAX_BACKUP_SIZE_BYTES / 1024 / 1024}MB)`);
+  }
+
   let data: unknown;
 
   try {
@@ -206,6 +209,11 @@ export async function importBackup(
   }
 
   const payload = data as BackupPayload;
+
+  // Check item count limit
+  if (payload.items.length > MAX_BACKUP_ITEMS) {
+    throw new Error(`Backup contains too many items (max ${MAX_BACKUP_ITEMS})`);
+  }
 
   if (!merge) {
     await clearAllSontoItems();

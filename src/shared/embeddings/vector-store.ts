@@ -17,7 +17,6 @@ function openDb(): Promise<IDBDatabase> {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
         store.createIndex('timestamp', 'timestamp', { unique: false });
         store.createIndex('contentType', 'contentType', { unique: false });
-        store.createIndex('pinned', 'pinned', { unique: false });
       }
     };
 
@@ -103,11 +102,10 @@ export async function getClipCount(): Promise<number> {
   });
 }
 
-export async function getOldestNonPinnedClip(): Promise<ClipItem | null> {
+export async function getOldestClip(): Promise<ClipItem | null> {
   const all = await getAllClips();
-  const nonPinned = all.filter((c) => !c.pinned);
-  if (nonPinned.length === 0) return null;
-  return nonPinned.reduce((oldest, c) => (c.timestamp < oldest.timestamp ? c : oldest));
+  if (all.length === 0) return null;
+  return all.reduce((oldest, c) => (c.timestamp < oldest.timestamp ? c : oldest));
 }
 
 export async function getClipsByDomain(domain: string): Promise<ClipItem[]> {

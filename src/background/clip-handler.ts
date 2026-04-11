@@ -3,18 +3,10 @@
 
 import { MSG } from '../shared/messages';
 import type { CaptureClipMessage, DeleteClipMessage, GetAllClipsMessage, SearchClipsMessage, UpdateClipMessage, ClearClipsMessage } from '../shared/messages';
-import {
-  addClip,
-  deleteClip,
-  getAllClips,
-  updateClip,
-  clearAllClips,
-  searchClips,
-} from '../shared/embeddings/vector-store';
 import { getMaxHistorySize, getClipboardMonitoring } from '../shared/storage';
 import { buildTags } from '../shared/utils';
 import { ContentTypeDetector } from '../shared/content-detector';
-import type { ClipItem, ClipContentType, ClipSource } from '../shared/types';
+import type { ClipContentType, ClipSource } from '../shared/types';
 import { sontoItemHandler } from './sonto-item-handler';
 
 const CHECK_RECENT_COUNT = 5;
@@ -40,20 +32,6 @@ export class ClipHandler {
     const contentType = explicitContentType ?? ContentTypeDetector.detectClipContentType(trimmed);
     const tags = buildTags(url);
 
-    const clip: ClipItem = {
-      id: this.generateId(),
-      text: trimmed,
-      contentType,
-      source,
-      timestamp: Date.now(),
-      ...(url ? { url } : {}),
-      ...(title ? { title } : {}),
-      ...(tags.length ? { tags } : {}),
-    };
-
-    await addClip(clip);
-
-    // Also save to unified storage for sidebar v2
     await sontoItemHandler.create(trimmed, 'clip', source, {
       contentType: contentType === 'prompt' ? 'text' : contentType,
       url,
@@ -66,23 +44,34 @@ export class ClipHandler {
   }
 
   async delete(id: string): Promise<void> {
-    await deleteClip(id);
+    await sontoItemHandler.delete(id);
   }
 
-  async getAll(): Promise<ClipItem[]> {
-    return getAllClips();
+  async getAll(): Promise<unknown[]> {
+    return sontoItemHandler.getAll({ types: ['clip'] });
   }
 
-  async search(query: string): Promise<ClipItem[]> {
-    return searchClips(query);
+  async search(query: string): Promise<unknown[]> {
+    return sontoItemHandler.search(query, { types: ['clip'] });
   }
 
-  async update(clip: ClipItem): Promise<void> {
-    await updateClip(clip);
+  async update(item: unknown): Promise<void> {
+    if (item && typeof item === 'object' && 'id' in item) {
+      const id = String(item.id);
+      const updates: Record<string, unknown> = {};
+      if ('text' in item) updates.content = item.text;
+      if ('timestamp' in item) updates.createdAt = item.timestamp;
+      if ('url' in item) updates.url = item.url;
+      if ('title' in item) updates.title = item.title;
+      if ('tags' in item) updates.tags = item.tags;
+      if ('contentType' in item) updates.contentType = item.contentType;
+      await sontoItemHandler.update(id, updates);
+    }
   }
 
   async clear(): Promise<void> {
-    await clearAllClips();
+    const items = await sontoItemHandler.getAll({ types: ['clip'] });
+    await Promise.all(items.map(item => sontoItemHandler.delete(item.id)));
   }
 
   private generateId(): string {
@@ -96,20 +85,20 @@ export class ClipHandler {
 
   private async isRepeatOfRecentClip(text: string): Promise<boolean> {
     const normalized = this.normalizeText(text);
-    const all = await getAllClips();
-    if (all.length === 0) return false;
+    const unifiedItems = await sontoItemHandler.getAll({ types: ['clip'] });
 
-    const recent = all.slice(0, CHECK_RECENT_COUNT);
-    return recent.some(clip => this.normalizeText(clip.text) === normalized);
+    // Check recent unified items (newest first)
+    const recent = unifiedItems.slice(0, CHECK_RECENT_COUNT);
+    return recent.some(item => this.normalizeText(item.content) === normalized);
   }
 
   private async enforceHistoryLimit(): Promise<void> {
-    const [maxSize, all] = await Promise.all([getMaxHistorySize(), getAllClips()]);
+    const maxSize = await getMaxHistorySize();
+    const all = await sontoItemHandler.getAll({ types: ['clip'] });
     if (all.length <= maxSize) return;
 
-    const nonPinned = all.filter((c) => !c.pinned);
-    const toRemove = nonPinned.slice(-(all.length - maxSize));
-    await Promise.all(toRemove.map((c) => deleteClip(c.id)));
+    const toRemove = all.slice(maxSize);
+    await Promise.all(toRemove.map(item => sontoItemHandler.delete(item.id)));
   }
 }
 

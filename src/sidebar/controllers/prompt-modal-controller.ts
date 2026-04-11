@@ -85,7 +85,6 @@ export class PromptModalController {
           contentType: 'text',
           title: label,
           tags: [],
-          pinned: false,
           zenified: false,
           metadata: { color: this.selectedColor },
         },

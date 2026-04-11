@@ -13,20 +13,14 @@ import {
 } from './zen-content';
 import { getCustomFeeds, getCustomJsonSources, isItemSeen, markItemSeen, getRecentlySeenBySource } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
+import { decodeHtmlEntities, isValidUrl, sanitizeUrl } from '../../shared/utils';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 import haikuData from './haiku-data.json';
 import albumOfDayAlbums from './album-of-a-day.json';
 
 const DAY_MS = 86_400_000;
-
-function isValidHttpUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return ['http:', 'https:'].includes(parsed.protocol);
-  } catch {
-    return false;
-  }
-}
+const MAX_CUSTOM_FEED_CONTENT_LENGTH = 5000;
+const MAX_CUSTOM_JSON_TEXT_LENGTH = 10000;
 
 export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string; hideLabel?: boolean };
 export type ZenArtResult = { imageUrl: string; caption: string; link?: string };
@@ -283,7 +277,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
             attempts++;
             continue;
           }
-          const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
+          const title = decodeHtmlEntities(item.title?.replace(/<[^>]+>/g, '').trim() ?? '');
           if (!isValidHnTitle(title)) {
             attempts++;
             continue;
@@ -331,7 +325,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const pick = availablePosts[Math.floor(Math.random() * Math.min(availablePosts.length, 10))];
         await markItemSeen(pick.permalink, 'reddit');
         return {
-          text: `r/${sub}: ${pick.title}`,
+          text: `r/${sub}: ${decodeHtmlEntities(pick.title)}`,
           link: `https://www.reddit.com${pick.permalink}`,
           icon: SVG_REDDIT,
           hideLabel: true,
@@ -662,7 +656,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           const recentlySeen = await getRecentlySeenBySource('smithsonianNews', 7 * DAY_MS);
           for (const it of items) {
             if (recentlySeen.has(it.link)) continue;
-            const validImage = it.imageUrl && isValidHttpUrl(it.imageUrl) ? it.imageUrl : undefined;
+            const validImage = it.imageUrl && isValidUrl(it.imageUrl) ? it.imageUrl : undefined;
             smithsonianCache.push({ title: it.title, link: it.link, imageUrl: validImage, id: it.link });
           }
           smithsonianCache.sort(() => Math.random() - 0.5);
@@ -692,7 +686,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const recentlySeen = await getRecentlySeenBySource('theVerge', 1 * DAY_MS);
         for (const it of items) {
           if (recentlySeen.has(it.link)) continue;
-          const validImage = it.imageUrl && isValidHttpUrl(it.imageUrl) ? it.imageUrl : undefined;
+          const validImage = it.imageUrl && isValidUrl(it.imageUrl) ? it.imageUrl : undefined;
           vergeCache.push({ title: it.title, link: it.link, imageUrl: validImage, id: it.link });
         }
         if (vergeCache.length === 0) return null;
@@ -724,7 +718,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
             if (it.description) {
               const doc = new DOMParser().parseFromString(it.description, 'text/html');
               const extracted = doc.querySelector('img')?.src;
-              if (extracted && isValidHttpUrl(extracted)) {
+              if (extracted && isValidUrl(extracted)) {
                 imageUrl = extracted;
               }
             }
@@ -851,12 +845,16 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
-        if (pick.imageUrl && isValidHttpUrl(pick.imageUrl)) {
-          const safeLink = pick.link && isValidHttpUrl(pick.link) ? pick.link : undefined;
-          return { imageUrl: pick.imageUrl, caption: pick.title, link: safeLink };
+
+        const title = decodeHtmlEntities(pick.title.trim());
+        if (title.length > MAX_CUSTOM_FEED_CONTENT_LENGTH) return null;
+
+        if (pick.imageUrl && isValidUrl(pick.imageUrl)) {
+          const safeLink = pick.link && isValidUrl(pick.link) ? sanitizeUrl(pick.link) : undefined;
+          return { imageUrl: pick.imageUrl, caption: title, link: safeLink };
         }
-        const safeLink = pick.link && isValidHttpUrl(pick.link) ? pick.link : undefined;
-        return { text: pick.title, link: safeLink };
+        const safeLink = pick.link && isValidUrl(pick.link) ? sanitizeUrl(pick.link) : undefined;
+        return { text: title, link: safeLink };
       } catch {
         return null;
       }
@@ -885,16 +883,18 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           attribution?: string;
         };
         if (!pick || typeof pick !== 'object') return null;
-        const text = typeof pick.text === 'string' ? pick.text.trim() : '';
-        const image = typeof pick.image === 'string' && isValidHttpUrl(pick.image) ? pick.image.trim() : '';
-        const link = typeof pick.link === 'string' && isValidHttpUrl(pick.link) ? pick.link.trim() : undefined;
-        const attribution = typeof pick.attribution === 'string' ? pick.attribution.trim() : '';
+        const rawText = typeof pick.text === 'string' ? pick.text.trim() : '';
+        const text = decodeHtmlEntities(rawText);
+        if (text.length > MAX_CUSTOM_JSON_TEXT_LENGTH) return null;
+        const image = typeof pick.image === 'string' && isValidUrl(pick.image) ? pick.image.trim() : '';
+        const link = typeof pick.link === 'string' && isValidUrl(pick.link) ? sanitizeUrl(pick.link) : undefined;
+        const attribution = decodeHtmlEntities(typeof pick.attribution === 'string' ? pick.attribution.trim() : '');
         if (image && (text || attribution)) {
           return { imageUrl: image, caption: attribution || text, link };
         }
         if (text && ctx.isValidFact(text)) {
           const displayText = attribution ? `${text} — ${attribution}` : text;
-          const safeLink = link && isValidHttpUrl(link) ? link : undefined;
+          const safeLink = link;
           return { text: displayText, link: safeLink };
         }
         return null;

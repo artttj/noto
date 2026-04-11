@@ -52,7 +52,6 @@ function openDb(): Promise<IDBDatabase> {
         store.createIndex('source', 'source', { unique: false });
         store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
         store.createIndex('createdAt', 'createdAt', { unique: false });
-        store.createIndex('pinned', 'pinned', { unique: false });
         store.createIndex('zenified', 'zenified', { unique: false });
         store.createIndex('lastSeenAt', 'lastSeenAt', { unique: false });
         store.createIndex('origin', 'origin', { unique: false });
@@ -68,7 +67,6 @@ function openDb(): Promise<IDBDatabase> {
           { name: 'source', keyPath: 'source', options: { unique: false } },
           { name: 'tags', keyPath: 'tags', options: { unique: false, multiEntry: true } },
           { name: 'createdAt', keyPath: 'createdAt', options: { unique: false } },
-          { name: 'pinned', keyPath: 'pinned', options: { unique: false } },
           { name: 'zenified', keyPath: 'zenified', options: { unique: false } },
           { name: 'lastSeenAt', keyPath: 'lastSeenAt', options: { unique: false } },
           { name: 'origin', keyPath: 'origin', options: { unique: false } },
@@ -164,14 +162,9 @@ export async function getAllSontoItems(filter?: SontoItemFilter): Promise<SontoI
     } else if (filter?.zenified !== undefined) {
       const index = store.index('zenified');
       request = index.getAll(filter.zenified ? 1 : 0);
-    } else if (filter?.pinned !== undefined) {
-      const index = store.index('pinned');
-      request = index.getAll(filter.pinned ? 1 : 0);
     } else if (filter?.tags && filter.tags.length > 0) {
       // Use tags index (multiEntry)
-      console.log('[Sonto Debug DB] Store indexes available:', [...store.indexNames]);
       const index = store.index('tags');
-      console.log('[Sonto Debug DB] Querying tags index with:', filter.tags[0]);
       request = index.getAll(filter.tags[0]);
     } else {
       request = store.getAll();
@@ -179,7 +172,6 @@ export async function getAllSontoItems(filter?: SontoItemFilter): Promise<SontoI
 
     request.onsuccess = () => {
       let results = request.result as SontoItem[];
-      console.log('[Sonto Debug DB] Raw results from DB:', results.length);
 
       // Apply additional filters in memory
       if (filter?.types && filter.types.length > 1) {
@@ -191,8 +183,12 @@ export async function getAllSontoItems(filter?: SontoItemFilter): Promise<SontoI
       if (filter?.sources) {
         results = results.filter(item => filter.sources?.includes(item.source));
       }
-      if (filter?.tags && filter.tags.length > 1) {
-        results = results.filter(item => filter.tags?.every(tag => item.tags.includes(tag)));
+      if (filter?.tags) {
+        if (filter.tags.length === 1) {
+          results = results.filter(item => item.tags.includes(filter.tags[0]));
+        } else {
+          results = results.filter(item => filter.tags?.every(tag => item.tags.includes(tag)));
+        }
       }
 
       // Sort by createdAt descending
@@ -348,7 +344,6 @@ export async function migrateFromLegacy(): Promise<{ clipsMigrated: number; prom
         title: clip.title,
         tags: clip.tags ?? [],
         createdAt: clip.timestamp,
-        pinned: clip.pinned ?? false,
         zenified: false,
       };
       await saveSontoItem(sontoItem);
@@ -372,7 +367,6 @@ export async function migrateFromLegacy(): Promise<{ clipsMigrated: number; prom
         title: prompt.label,
         tags: [],
         createdAt: prompt.createdAt,
-        pinned: prompt.pinned ?? false,
         zenified: false,
         metadata: {
           color: prompt.color,

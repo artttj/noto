@@ -43,7 +43,6 @@ export class SontoItemHandler {
       url?: string;
       title?: string;
       tags?: string[];
-      pinned?: boolean;
       zenified?: boolean;
       metadata?: Record<string, unknown>;
     } = {},
@@ -61,7 +60,6 @@ export class SontoItemHandler {
       title: options.title,
       tags: options.tags ?? [],
       createdAt: now,
-      pinned: options.pinned ?? false,
       zenified: options.zenified ?? false,
       metadata: options.metadata,
     };
@@ -130,7 +128,6 @@ export function registerSontoItemHandlers(
         url: item.url,
         title: item.title,
         tags: item.tags,
-        pinned: item.pinned,
         zenified: item.zenified,
         metadata: item.metadata,
       },
@@ -140,9 +137,7 @@ export function registerSontoItemHandlers(
 
   register(MSG.GET_SONTO_ITEMS, async (msg) => {
     const { filter } = msg as GetSontoItemsMessage;
-    console.log('[Sonto Debug BG] GET_SONTO_ITEMS with filter:', filter);
     const items = await sontoItemHandler.getAll(filter);
-    console.log('[Sonto Debug BG] Returning items count:', items.length);
     return { ok: true, items };
   });
 

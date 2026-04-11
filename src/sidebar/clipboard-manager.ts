@@ -8,7 +8,7 @@ import type { SontoItem, SontoContentType, SontoItemFilter } from '../shared/typ
 import { escapeHtml, formatDate, extractDomain } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
 import { highlightCode } from './syntax-highlight';
-import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify, moveCardToTop } from './utils';
+import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify } from './utils';
 
 export const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
   red:    { bg: 'rgba(255,90,90,0.18)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
@@ -210,7 +210,6 @@ export class ClipboardManager {
   }
 
   async load(domain?: string, tagFilter?: string): Promise<void> {
-    console.log('[Sonto Debug] load() called with tagFilter:', tagFilter);
     this.allTags = await loadAllTags();
     this.activeDomain = domain ?? '';
     this.setLoading(true);
@@ -220,12 +219,9 @@ export class ClipboardManager {
       };
       if (tagFilter) {
         filter.tags = [tagFilter];
-        console.log('[Sonto Debug] Sending filter:', filter);
       }
       const response = await chrome.runtime.sendMessage({ type: MSG.GET_SONTO_ITEMS, filter });
-      console.log('[Sonto Debug] Response from GET_SONTO_ITEMS:', response);
       this.clips = response?.ok ? (response.items as SontoItem[]) : [];
-      console.log('[Sonto Debug] Loaded clips count:', this.clips.length);
     } catch (err) {
       console.error('[Sonto] Failed to load clipboard:', err);
     } finally {
@@ -258,7 +254,6 @@ export class ClipboardManager {
   }
 
   async filterByTag(tag: string): Promise<void> {
-    console.log('[Sonto Debug] filterByTag called with tag:', tag);
     this.activeTagFilter = tag;
     this.tagFilterLabelEl.textContent = tag;
     this.tagFilterEl.classList.remove('hidden');
@@ -326,19 +321,9 @@ export class ClipboardManager {
       return;
     }
 
-    const pinned = this.clips.filter((c) => c.pinned);
-    const regular = this.clips.filter((c) => !c.pinned);
-
-    if (pinned.length > 0) {
-      this.addSeparator('Pinned', 'pinned-separator');
-      for (const clip of pinned) {
-        this.listEl.appendChild(this.buildCard(clip));
-      }
-    }
-
     if (this.activeDomain) {
-      const siteClips = regular.filter((c) => this.matchesDomain(c));
-      const otherClips = regular.filter((c) => !this.matchesDomain(c));
+      const siteClips = this.clips.filter((c) => this.matchesDomain(c));
+      const otherClips = this.clips.filter((c) => !this.matchesDomain(c));
 
       if (siteClips.length > 0) {
         this.addSeparator('From this site', 'site-separator');
@@ -348,7 +333,7 @@ export class ClipboardManager {
       }
       this.renderByDay(otherClips);
     } else {
-      this.renderByDay(regular);
+      this.renderByDay(this.clips);
     }
 
     createIcons({ icons, attrs: { strokeWidth: 1.5 } });
@@ -385,7 +370,7 @@ export class ClipboardManager {
 
   private buildCard(clip: SontoItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = `clip-card clip-type-${clip.contentType}${clip.pinned ? ' clip-pinned' : ''}${clip.zenified ? ' clip-zenified' : ''}`;
+    card.className = `clip-card clip-type-${clip.contentType}${clip.zenified ? ' clip-zenified' : ''}`;
     card.dataset.id = clip.id;
 
     const preview = clip.contentType === 'code'
@@ -396,7 +381,6 @@ export class ClipboardManager {
       ? `<a class="clip-source-url" href="${escapeHtml(clip.url)}" target="_blank" rel="noopener">${escapeHtml(truncateUrl(clip.url))}</a>`
       : '';
 
-    const pinLabel = clip.pinned ? 'Unpin' : 'Pin';
     const zenifyLabel = clip.zenified ? 'Un-zenify' : 'Zenify';
     const needsExpand = clip.content.length > TEXT_PREVIEW_CHARS;
     const tagsHtml = renderTags(clip.tags);
@@ -424,7 +408,6 @@ export class ClipboardManager {
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i></button>
         <button class="clip-btn clip-btn-insert${this.inputAvailable ? ' active' : ''}" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
-        <button class="clip-btn clip-btn-pin${clip.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this clip"><i data-lucide="star"></i></button>
         <button class="clip-btn clip-btn-zenify${clip.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this clip"><i data-lucide="flower-2"></i></button>
         <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
@@ -458,11 +441,6 @@ export class ClipboardManager {
       void this.insertText(clip.content);
     });
 
-    qs<HTMLButtonElement>('.clip-btn-pin', card).addEventListener('click', (e) => {
-      e.stopPropagation();
-      void this.togglePin(clip.id, card);
-    });
-
     qs<HTMLButtonElement>('.clip-btn-zenify', card).addEventListener('click', (e) => {
       e.stopPropagation();
       void this.toggleZenify(clip.id, card);
@@ -478,7 +456,6 @@ export class ClipboardManager {
       tagEl.addEventListener('click', (e) => {
         e.stopPropagation();
         const tag = (e.currentTarget as HTMLElement).dataset.tag;
-        console.log('[Sonto Debug] Tag clicked:', tag, 'from element:', e.currentTarget);
         if (tag) {
           void this.filterByTag(tag);
         }
@@ -534,43 +511,6 @@ export class ClipboardManager {
 
       if (this.clips.length === 0) this.render();
     }, 200);
-  }
-
-  private async togglePin(id: string, card: HTMLElement): Promise<void> {
-    const clip = this.clips.find((c) => c.id === id);
-    if (!clip) return;
-
-    const newPinned = !clip.pinned;
-    await chrome.runtime.sendMessage({
-      type: MSG.UPDATE_SONTO_ITEM,
-      id,
-      updates: { pinned: newPinned },
-    });
-
-    clip.pinned = newPinned;
-    card.classList.toggle('clip-pinned', newPinned);
-
-    const pinBtn = card.querySelector<HTMLButtonElement>('.clip-btn-pin');
-    if (pinBtn) {
-      pinBtn.classList.toggle('pinned', newPinned);
-      pinBtn.title = newPinned ? 'Unpin' : 'Pin';
-      pinBtn.setAttribute('aria-label', `${newPinned ? 'Unpin' : 'Pin'} this clip`);
-      const icon = pinBtn.querySelector('svg');
-      if (icon) {
-        icon.remove();
-        const newIcon = document.createElement('i');
-        newIcon.setAttribute('data-lucide', 'star');
-        pinBtn.prepend(newIcon);
-        createIcons({ icons, attrs: { strokeWidth: 1.5 } });
-      }
-    }
-
-    if (newPinned) {
-      moveCardToTop(card, this.listEl);
-    } else {
-      // Re-render to move unpinned card to correct chronological position
-      this.render();
-    }
   }
 
   private async insertText(text: string): Promise<void> {

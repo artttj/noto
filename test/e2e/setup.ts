@@ -29,8 +29,8 @@ export async function launchBrowser(): Promise<{ browser: Browser; extensionId: 
     ],
   });
 
-  // Wait a moment for extension to load
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Wait for extension to load
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   // Get extension ID by finding the service worker or extension page
   const extensionId = await getExtensionId(browser);
@@ -67,7 +67,21 @@ async function getExtensionId(browser: Browser): Promise<string> {
     }
   }
 
-  // Method 3: Check service worker (if available)
+  // Method 3: Try to list all pages and find extension
+  try {
+    const pages = await browser.pages();
+    for (const page of pages) {
+      const url = page.url();
+      if (url.startsWith('chrome-extension://')) {
+        const match = url.match(/chrome-extension:\/\/([a-p]{32})\//);
+        if (match) return match[1];
+      }
+    }
+  } catch {
+    // Pages method not available
+  }
+
+  // Method 4: Check service worker (if available)
   try {
     const serviceWorkers = browser.serviceWorkers?.();
     if (serviceWorkers) {

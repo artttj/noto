@@ -41,11 +41,11 @@ describe('Clip Operations', () => {
     const clips = await clipHandler.getAll();
     const clip = clips[0];
 
-    clip.pinned = true;
+    clip.contentType = 'code';
     await clipHandler.update(clip);
 
     const updated = await clipHandler.getAll();
-    expect(updated[0].pinned).toBe(true);
+    expect(updated[0].contentType).toBe('code');
   });
 
   it('should prevent duplicate clips', async () => {

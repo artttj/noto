@@ -21,7 +21,7 @@ describe('Clipboard Rendering', () => {
     await closeBrowser();
   });
 
-  async function addClipViaStorage(page: Page, content: string, options?: { pinned?: boolean; url?: string }): Promise<void> {
+  async function addClipViaStorage(page: Page, content: string, options?: { url?: string }): Promise<void> {
     await page.evaluate((data) => {
       const now = Date.now();
       const item = {
@@ -34,19 +34,23 @@ describe('Clipboard Rendering', () => {
         url: data.options?.url,
         tags: [],
         createdAt: now,
-        pinned: data.options?.pinned ?? false,
         zenified: false,
       };
 
       return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open('sonto_db_v2', 2);
+        const request = indexedDB.open('sonto_db_v2', 3);
         request.onupgradeneeded = () => {
           const db = request.result;
           if (!db.objectStoreNames.contains('sonto_items')) {
             const store = db.createObjectStore('sonto_items', { keyPath: 'id' });
             store.createIndex('type', 'type', { unique: false });
-            store.createIndex('pinned', 'pinned', { unique: false });
+            store.createIndex('contentType', 'contentType', { unique: false });
+            store.createIndex('source', 'source', { unique: false });
+            store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
             store.createIndex('createdAt', 'createdAt', { unique: false });
+            store.createIndex('zenified', 'zenified', { unique: false });
+            store.createIndex('lastSeenAt', 'lastSeenAt', { unique: false });
+            store.createIndex('origin', 'origin', { unique: false });
           }
         };
         request.onsuccess = () => {
@@ -79,19 +83,24 @@ describe('Clipboard Rendering', () => {
         title: data.options?.title,
         tags: [],
         createdAt: now,
-        pinned: false,
         zenified: false,
         metadata: data.options?.color ? { color: data.options.color } : undefined,
       };
 
       return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open('sonto_db_v2', 2);
+        const request = indexedDB.open('sonto_db_v2', 3);
         request.onupgradeneeded = () => {
           const db = request.result;
           if (!db.objectStoreNames.contains('sonto_items')) {
             const store = db.createObjectStore('sonto_items', { keyPath: 'id' });
             store.createIndex('type', 'type', { unique: false });
+            store.createIndex('contentType', 'contentType', { unique: false });
+            store.createIndex('source', 'source', { unique: false });
+            store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
             store.createIndex('createdAt', 'createdAt', { unique: false });
+            store.createIndex('zenified', 'zenified', { unique: false });
+            store.createIndex('lastSeenAt', 'lastSeenAt', { unique: false });
+            store.createIndex('origin', 'origin', { unique: false });
           }
         };
         request.onsuccess = () => {
@@ -183,31 +192,6 @@ describe('Clipboard Rendering', () => {
     });
 
     expect(hasLink).toBe(true);
-  }, 20000);
-
-  it('renders pinned clips in pinned section', async () => {
-    const sidebar = await getSidebarPage(browser, extensionId);
-    await sidebar.setViewport({ width: 420, height: 800 });
-
-    await addClipViaStorage(sidebar, 'Pinned test clip', { pinned: true });
-    await reloadSidebar(sidebar);
-
-    await sidebar.waitForFunction(() => {
-      const list = document.querySelector('#clip-list');
-      return list?.querySelectorAll('.clip-card').length > 0;
-    }, { timeout: 5000 });
-
-    const hasPinnedSection = await sidebar.evaluate(() => {
-      return !!document.querySelector('.pinned-separator');
-    });
-
-    expect(hasPinnedSection).toBe(true);
-
-    const hasPinnedCard = await sidebar.evaluate(() => {
-      return !!document.querySelector('.clip-pinned');
-    });
-
-    expect(hasPinnedCard).toBe(true);
   }, 20000);
 
   it('renders prompts with content field', async () => {

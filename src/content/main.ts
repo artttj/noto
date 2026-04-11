@@ -391,12 +391,14 @@ async function pollClipboard(): Promise<void> {
   }
 }
 
+const CLIPBOARD_POLL_DEBOUNCE_MS = 300;
+
 function schedulePoll(): void {
   if (pendingPollTimer !== null) return;
   pendingPollTimer = setTimeout(() => {
     pendingPollTimer = null;
     void pollClipboard();
-  }, 150);
+  }, CLIPBOARD_POLL_DEBOUNCE_MS);
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

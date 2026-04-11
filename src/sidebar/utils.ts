@@ -145,18 +145,3 @@ export async function toggleZenify(
   return null;
 }
 
-export function moveCardToTop(card: HTMLElement, listEl: HTMLElement): void {
-  card.style.transition = 'none';
-  const pinnedSep = listEl.querySelector('.pinned-separator');
-  const firstPinned = listEl.querySelector('.clip-pinned');
-  if (pinnedSep) {
-    listEl.insertBefore(card, pinnedSep.nextSibling);
-  } else if (firstPinned) {
-    listEl.insertBefore(card, firstPinned);
-  } else {
-    listEl.insertBefore(card, listEl.firstChild);
-  }
-  requestAnimationFrame(() => {
-    card.style.transition = '';
-  });
-}

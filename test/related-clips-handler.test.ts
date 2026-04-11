@@ -3,58 +3,86 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { RelatedClipsHandler } from '../src/background/related-clips-handler';
-import { clearAllClips, addClip } from '../src/shared/embeddings/vector-store';
-import type { ClipItem } from '../src/shared/types';
+import { clearAllSontoItems, saveSontoItem } from '../src/shared/storage/items';
+import type { SontoItem } from '../src/shared/types';
+
+interface RelatedClip {
+  id: string;
+  text: string;
+  timestamp: number;
+  url?: string;
+}
 
 describe('RelatedClipsHandler', () => {
   let handler: RelatedClipsHandler;
 
   beforeEach(async () => {
     handler = new RelatedClipsHandler();
-    await clearAllClips();
+    await clearAllSontoItems();
   });
+
+  function toRelatedClip(item: SontoItem): RelatedClip {
+    return {
+      id: item.id,
+      text: item.content,
+      timestamp: item.createdAt,
+      url: item.url,
+    };
+  }
 
   describe('getByDomain', () => {
     it('should return clips from specific domain', async () => {
-      const clip1: ClipItem = {
+      const clip1: SontoItem = {
         id: 'clip-1',
-        text: 'GitHub content',
+        type: 'clip',
+        content: 'GitHub content',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now(),
+        origin: 'manual',
+        createdAt: Date.now(),
+        zenified: false,
+        tags: [],
         url: 'https://github.com/user/repo',
         title: 'GitHub Repo',
       };
 
-      const clip2: ClipItem = {
+      const clip2: SontoItem = {
         id: 'clip-2',
-        text: 'Example content',
+        type: 'clip',
+        content: 'Example content',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now(),
+        origin: 'manual',
+        createdAt: Date.now(),
+        zenified: false,
+        tags: [],
         url: 'https://example.com/page',
         title: 'Example Page',
       };
 
-      await addClip(clip1);
-      await addClip(clip2);
+      await saveSontoItem(clip1);
+      await saveSontoItem(clip2);
 
       const results = await handler.getByDomain('github.com');
       expect(results).toHaveLength(1);
-      expect((results[0] as ClipItem).url).toBe('https://github.com/user/repo');
+      expect(results[0].url).toBe('https://github.com/user/repo');
     });
 
     it('should limit results to 5 clips', async () => {
       for (let i = 0; i < 10; i++) {
-        const clip: ClipItem = {
+        const clip: SontoItem = {
           id: `clip-${i}`,
-          text: `Content ${i}`,
+          type: 'clip',
+          content: `Content ${i}`,
           contentType: 'text',
           source: 'manual',
-          timestamp: Date.now() + i,
+          origin: 'manual',
+          createdAt: Date.now() + i,
+          zenified: false,
+          tags: [],
           url: `https://github.com/repo${i}`,
         };
-        await addClip(clip);
+        await saveSontoItem(clip);
       }
 
       const results = await handler.getByDomain('github.com');
@@ -62,32 +90,40 @@ describe('RelatedClipsHandler', () => {
     });
 
     it('should match subdomains', async () => {
-      const clip: ClipItem = {
+      const clip: SontoItem = {
         id: 'subdomain-clip',
-        text: 'API docs',
+        type: 'clip',
+        content: 'API docs',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now(),
+        origin: 'manual',
+        createdAt: Date.now(),
+        zenified: false,
+        tags: [],
         url: 'https://api.github.com/docs',
       };
 
-      await addClip(clip);
+      await saveSontoItem(clip);
 
       const results = await handler.getByDomain('github.com');
       expect(results).toHaveLength(1);
     });
 
     it('should return empty array when no matches', async () => {
-      const clip: ClipItem = {
+      const clip: SontoItem = {
         id: 'other',
-        text: 'Other content',
+        type: 'clip',
+        content: 'Other content',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now(),
+        origin: 'manual',
+        createdAt: Date.now(),
+        zenified: false,
+        tags: [],
         url: 'https://other.com/page',
       };
 
-      await addClip(clip);
+      await saveSontoItem(clip);
 
       const results = await handler.getByDomain('github.com');
       expect(results).toHaveLength(0);
@@ -99,72 +135,92 @@ describe('RelatedClipsHandler', () => {
     });
 
     it('should exclude clips without URLs', async () => {
-      const withUrl: ClipItem = {
+      const withUrl: SontoItem = {
         id: 'with-url',
-        text: 'With URL',
+        type: 'clip',
+        content: 'With URL',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now(),
+        origin: 'manual',
+        createdAt: Date.now(),
+        zenified: false,
+        tags: [],
         url: 'https://github.com/page',
       };
 
-      const withoutUrl: ClipItem = {
+      const withoutUrl: SontoItem = {
         id: 'without-url',
-        text: 'Without URL',
+        type: 'clip',
+        content: 'Without URL',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now(),
+        origin: 'manual',
+        createdAt: Date.now(),
+        zenified: false,
+        tags: [],
       };
 
-      await addClip(withUrl);
-      await addClip(withoutUrl);
+      await saveSontoItem(withUrl);
+      await saveSontoItem(withoutUrl);
 
       const results = await handler.getByDomain('github.com');
       expect(results).toHaveLength(1);
-      expect((results[0] as ClipItem).id).toBe('with-url');
+      expect(results[0].id).toBe('with-url');
     });
 
     it('should handle domain without www prefix', async () => {
-      const clip: ClipItem = {
+      const clip: SontoItem = {
         id: 'www-clip',
-        text: 'With www',
+        type: 'clip',
+        content: 'With www',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now(),
+        origin: 'manual',
+        createdAt: Date.now(),
+        zenified: false,
+        tags: [],
         url: 'https://www.github.com/page',
       };
 
-      await addClip(clip);
+      await saveSontoItem(clip);
 
       const results = await handler.getByDomain('github.com');
       expect(results).toHaveLength(1);
     });
 
-    it('should preserve order from vector store', async () => {
-      const clip1: ClipItem = {
+    it('should preserve order from newest to oldest', async () => {
+      const clip1: SontoItem = {
         id: 'older',
-        text: 'Older',
+        type: 'clip',
+        content: 'Older',
         contentType: 'text',
         source: 'manual',
-        timestamp: 1000,
+        origin: 'manual',
+        createdAt: 1000,
+        zenified: false,
+        tags: [],
         url: 'https://github.com/older',
       };
 
-      const clip2: ClipItem = {
+      const clip2: SontoItem = {
         id: 'newer',
-        text: 'Newer',
+        type: 'clip',
+        content: 'Newer',
         contentType: 'text',
         source: 'manual',
-        timestamp: 2000,
+        origin: 'manual',
+        createdAt: 2000,
+        zenified: false,
+        tags: [],
         url: 'https://github.com/newer',
       };
 
-      await addClip(clip1);
-      await addClip(clip2);
+      await saveSontoItem(clip1);
+      await saveSontoItem(clip2);
 
       const results = await handler.getByDomain('github.com');
-      expect((results[0] as ClipItem).id).toBe('newer');
-      expect((results[1] as ClipItem).id).toBe('older');
+      expect(results[0].id).toBe('newer');
+      expect(results[1].id).toBe('older');
     });
   });
 });

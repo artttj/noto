@@ -45,7 +45,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'manual',
         tags: ['quotes', 'inspiration'],
         createdAt: now - 3600000,
-        pinned: true,
         zenified: false,
       },
       {
@@ -57,7 +56,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'clipboard',
         tags: ['typescript', 'utils'],
         createdAt: now - 7200000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -71,7 +69,6 @@ async function addSampleClips(page: Page): Promise<void> {
         title: 'artttj/sonto - GitHub',
         tags: ['project'],
         createdAt: now - 10800000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -83,7 +80,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'manual',
         tags: ['quotes'],
         createdAt: now - 14400000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -95,7 +91,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'clipboard',
         tags: ['npm', 'dev'],
         createdAt: now - 18000000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -107,7 +102,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'clipboard',
         tags: [],
         createdAt: now - 21600000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -119,7 +113,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'manual',
         tags: ['quotes', 'engineering'],
         createdAt: now - 25200000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -131,7 +124,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'clipboard',
         tags: ['javascript', 'api'],
         createdAt: now - 28800000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -143,7 +135,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'manual',
         tags: ['quotes', 'clean code'],
         createdAt: now - 32400000,
-        pinned: false,
         zenified: false,
       },
       {
@@ -155,7 +146,6 @@ async function addSampleClips(page: Page): Promise<void> {
         origin: 'clipboard',
         tags: ['git', 'workflow'],
         createdAt: now - 36000000,
-        pinned: false,
         zenified: false,
       },
     ];
@@ -169,7 +159,6 @@ async function addSampleClips(page: Page): Promise<void> {
           const store = db.createObjectStore('sonto_items', { keyPath: 'id' });
           store.createIndex('type', 'type', { unique: false });
           store.createIndex('createdAt', 'createdAt', { unique: false });
-          store.createIndex('pinned', 'pinned', { unique: false });
         }
       };
       request.onsuccess = () => {

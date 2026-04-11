@@ -24,7 +24,6 @@ describe('SontoItemHandler', () => {
       expect(item.origin).toBe('manual');
       expect(item.id).toBeDefined();
       expect(item.createdAt).toBeGreaterThan(0);
-      expect(item.pinned).toBe(false);
       expect(item.zenified).toBe(false);
       expect(item.tags).toEqual([]);
     });
@@ -47,7 +46,6 @@ describe('SontoItemHandler', () => {
           url: 'https://example.com',
           title: 'Test Title',
           tags: ['tag1', 'tag2'],
-          pinned: true,
           zenified: true,
           metadata: { color: 'blue' },
         }
@@ -59,7 +57,6 @@ describe('SontoItemHandler', () => {
       expect(item.url).toBe('https://example.com');
       expect(item.title).toBe('Test Title');
       expect(item.tags).toEqual(['tag1', 'tag2']);
-      expect(item.pinned).toBe(true);
       expect(item.zenified).toBe(true);
       expect(item.metadata).toEqual({ color: 'blue' });
     });
@@ -146,11 +143,10 @@ describe('SontoItemHandler', () => {
     it('should update item fields', async () => {
       const created = await handler.create('Original', 'clip', 'manual');
 
-      await handler.update(created.id, { content: 'Updated', pinned: true });
+      await handler.update(created.id, { content: 'Updated' });
 
       const items = await handler.getAll();
       expect(items[0].content).toBe('Updated');
-      expect(items[0].pinned).toBe(true);
     });
 
     it('should throw for non-existent item update', async () => {
