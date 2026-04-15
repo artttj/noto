@@ -8,6 +8,7 @@ import { buildTags } from '../shared/utils';
 import { ContentTypeDetector } from '../shared/content-detector';
 import type { ClipContentType, ClipSource } from '../shared/types';
 import { sontoItemHandler } from './sonto-item-handler';
+import { badgeHandler } from './badge-handler';
 
 const CHECK_RECENT_COUNT = 5;
 const MAX_CAPTURE_CHARS = 10000;
@@ -39,6 +40,7 @@ export class ClipHandler {
       tags: tags.length ? tags : [],
     });
 
+    await badgeHandler.updateCaptureBadge();
     await this.enforceHistoryLimit();
     void chrome.runtime.sendMessage({ type: MSG.CLIP_ADDED }).catch(() => {});
   }
