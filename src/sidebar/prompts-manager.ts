@@ -9,6 +9,11 @@ import { MSG } from '../shared/messages';
 import type { SontoItem, SontoItemFilter } from '../shared/types';
 import { showToast, renderTags, showTagEditor, loadAllTags } from './utils';
 import { PROMPT_COLORS, COLOR_ORDER } from './prompt-colors';
+import {
+  isPromptLocked,
+  setPromptUnlocked,
+  verifyPromptPin,
+} from '../shared/storage';
 
 const COPY_FEEDBACK_MS = 1500;
 
