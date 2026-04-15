@@ -2,7 +2,7 @@
 
 ## Overview
 
-Chrome extension (Manifest V3) providing side-panel based clipboard history and ambient content feed. Stack: TypeScript, esbuild, no UI framework. Fully local — no backend, no analytics, no accounts.
+Chrome extension (Manifest V3) providing side-panel based clipboard history and saved prompts. Stack: TypeScript, esbuild, no UI framework. Fully local — no backend, no analytics, no accounts.
 
 ---
 
@@ -35,8 +35,7 @@ Chrome extension (Manifest V3) providing side-panel based clipboard history and 
 │   ────────────────────          │           ─────────────────────           │
 │   Settings, theme               │           SontoItem objects              │
 │   UI preferences                │           Text search via in-memory       │
-│   Disabled sources              │                                           │
-│   Custom feeds                  │                                           │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -76,14 +75,10 @@ Injected into web pages. Isolated from page JS via CSP but can access DOM.
 
 ### 3. Side Panel (`src/sidebar/sidebar.ts`)
 
-Primary UI surface using Chrome Side Panel API. Two display modes:
+Primary UI surface using Chrome Side Panel API. Two tabs:
 
-- **Zen mode**: Ambient content feed (art, news, quotes) with two sub-views:
-  - **Feed**: Scrolling bubbles with drip-cycle refresh
-  - **Cosmos**: Procedural spirograph animations
-- **Clipboard mode**: Two tabs:
-  - **Browse**: Clipboard history with search, tags, domain filtering
-  - **Prompts**: Saved text snippets with color labels
+- **Browse**: Clipboard history with search, tags, domain filtering
+- **Prompts**: Saved text snippets with color labels
 
 ---
 
@@ -94,7 +89,7 @@ Primary UI surface using Chrome Side Panel API. Two display modes:
 | Alt+Shift+S | Open sidebar |
 | Alt+Shift+C | Capture selected text |
 | Alt+Shift+F | Quick search snippets |
-| / (in clipboard) | Focus search |
+| / (in sidebar) | Focus search |
 
 ---
 
@@ -109,7 +104,7 @@ src/
 │   ├── clip-handler.ts        # Clipboard operations
 │   ├── clip-page-handler.ts   # Full-page capture
 │   ├── sonto-item-handler.ts  # Unified item CRUD
-│   ├── related-clips-handler.ts # Reading Companion (domain-based)
+│   ├── related-clips-handler.ts # Related clips (domain-based)
 │   ├── badge-handler.ts       # Extension badge counter
 │   └── migration.ts           # Legacy data migration
 │
@@ -119,32 +114,23 @@ src/
 ├── sidebar/
 │   ├── sidebar.ts             # Side panel entry
 │   ├── clipboard-manager.ts   # Clipboard UI logic
-│   ├── prompts-manager.ts     # Prompts UI logic (saved text snippets)
-│   ├── cosmos-mode.ts         # Spirograph animation view
+│   ├── prompts-manager.ts     # Prompts UI logic
+│   ├── prompt-colors.ts       # Shared color constants
 │   ├── syntax-highlight.ts    # Code formatting
 │   ├── utils.ts               # Sidebar utilities
 │   ├── controllers/
 │   │   ├── index.ts           # Controller exports
-│   │   ├── view-controller.ts      # Zen/Clipboard view switching
 │   │   ├── theme-controller.ts     # Dark/light mode
 │   │   └── prompt-modal-controller.ts
-│   ├── styles/                # CSS modules (concatenated at build)
-│   │   ├── 00-variables.css   # CSS custom properties
-│   │   ├── 10-base.css        # Reset, typography
-│   │   ├── 15-views.css       # View containers
-│   │   ├── 20-cosmos.css      # Spirograph canvas
-│   │   ├── 30-zen-tabs.css    # Zen feed layout
-│   │   ├── 35-nav.css         # Navigation
-│   │   ├── 40-browse.css      # Clipboard browse tab
-│   │   ├── 60-components.css # Buttons, modals
-│   │   └── 70-theme-light.css # Light theme overrides
-│   └── zen/
-│       ├── zen-feed.ts        # Feed orchestration
-│       ├── zen-fetchers.ts    # 18 content sources
-│       ├── zen-content.ts     # Content scoring/selection
-│       ├── zen-scoring.ts     # User preference tracking
-│       ├── zen-shared.ts      # Shared types/helpers
-│       └── translator.ts      # Browser Translator API wrapper
+│   └── styles/                # CSS modules (concatenated at build)
+│       ├── 00-variables.css   # CSS custom properties
+│       ├── 10-base.css        # Reset, typography
+│       ├── 15-views.css       # View containers
+│       ├── 35-nav.css         # Navigation
+│       ├── 40-browse.css      # Clipboard browse tab
+│       ├── 50-prompts.css     # Prompts tab
+│       ├── 60-components.css  # Buttons, modals
+│       └── 70-theme-light.css # Light theme overrides
 │
 ├── settings/
 │   ├── settings.ts            # Options page
@@ -163,7 +149,6 @@ src/
     ├── tab-operations.ts      # Tab focus helpers
     ├── embeddings/vector-store.ts # Domain-based clip lookup
     ├── utils.ts               # Common utilities
-    ├── rss-parser.ts          # RSS/Atom feed parsing
     └── locales/               # i18n strings (en, de)
 ```
 
@@ -178,7 +163,7 @@ Typed message passing via `src/shared/messages.ts`. Pattern: discriminated union
 export const MSG = {
   CAPTURE_CLIP: 'CAPTURE_CLIP',
   GET_ALL_CLIPS: 'GET_ALL_CLIPS',
-  // ... 40+ message types
+  // ... 30+ message types
 } as const;
 
 // Message interfaces with discriminant
@@ -223,26 +208,22 @@ Handlers organized by domain (`clip-handler.ts`, `sonto-item-handler.ts`, etc.) 
 
 ### Unified Item Schema (`SontoItem`)
 
-Replaced legacy separate Clip/Prompt schemas. Single table design with type discrimination.
+Single table design with type discrimination.
 
 ```typescript
 interface SontoItem {
   id: string;                    // UUID: `${timestamp}-${random}`
-  type: 'clip' | 'prompt' | 'zen';
+  type: 'clip' | 'prompt';
   content: string;               // Primary text content
-  contentType: 'text' | 'code' | 'quote' | 'art' | 'link' | 'idea' |
-               'haiku' | 'proverb' | 'strategy' | 'email' | 'image';
-  source: 'clipboard' | 'manual' | 'shortcut' | 'context-menu' |
-          'zen-fetcher' | 'rss' | 'api';
+  contentType: 'text' | 'code' | 'link' | 'email' | 'image';
+  source: 'clipboard' | 'manual' | 'shortcut' | 'context-menu';
   origin: string;                // Domain or source identifier
   url?: string;                  // Source URL
   title?: string;                // Generated or provided title
   tags: string[];                // Multi-entry indexed
   createdAt: number;             // Timestamp
-  lastSeenAt?: number;           // For spaced repetition in zen
   pinned: boolean;               // Indexed for quick access
-  zenified: boolean;             // Marked for zen feed inclusion
-  metadata?: Record<string, unknown>; // Flexible extension point
+  metadata?: Record<string, unknown>; // Flexible extension point (color, etc.)
 }
 ```
 
@@ -260,9 +241,7 @@ Indexes:
   - tags          (multiEntry)     // For tag-based queries
   - createdAt     (non-unique)     // For sorting
   - pinned        (non-unique)
-  - zenified      (non-unique)
-  - lastSeenAt    (non-unique)
-  - origin        (non-unique)     // For Reading Companion
+  - origin        (non-unique)     // For related clips lookup
 ```
 
 **Query Strategy:**
@@ -275,96 +254,13 @@ Indexes:
 
 ## Controllers
 
-### ViewController (`src/sidebar/controllers/view-controller.ts`)
-
-Manages zen/clipboard view state and cosmos/feed display mode.
-
-**State:**
-```typescript
-private mode: 'zen' | 'clipboard' = 'clipboard';
-private zenDisplay: 'feed' | 'cosmos' = 'feed';
-```
-
-**Pattern:** Dependency injection via constructor
-```typescript
-interface ViewControllerDeps {
-  viewZen: HTMLElement;
-  viewClipboard: HTMLElement;
-  feedBtn: HTMLButtonElement;
-  backBtn: HTMLButtonElement;
-  zenFeedEl: HTMLElement;
-  cosmosViewEl: HTMLElement;
-  clipManager: ClipboardManager;
-  language: string;
-  onViewChange?: (mode: ViewMode) => void;
-  onZenDisplayChange?: (display: ZenDisplay) => void;
-}
-
-constructor(deps: ViewControllerDeps, language: string)
-```
-
-**Lifecycle:**
-- `init()` → Restore saved mode, attach listeners, conditionally init zen
-- `setMode()` → Toggle visibility, start/stop timers, save preference
-- `switchZenDisplay()` → Swap feed/cosmos, manage canvas lifecycle
-
 ### ThemeController
 
 Manages CSS custom properties for theming. Persists to `chrome.storage.local`.
 
----
+### PromptModalController
 
-## Zen Feed Architecture
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│                         ZenFeed                                │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│   ┌──────────────┐      ┌──────────────┐      ┌─────────────┐ │
-│   │  Drip Cycle  │◄────►│ Content Pool │◄────►│   Sources   │ │
-│   │  (30s timer) │      │ (scored)     │      │ (18 fetchers)│ │
-│   └──────┬───────┘      └──────────────┘      └─────────────┘ │
-│          │                                                     │
-│          ▼                                                     │
-│   ┌──────────────┐      ┌──────────────┐                      │
-│   │   Bubbles    │◄────►│ Session Cache│                      │
-│   │   (DOM)      │      │ (last 30 IDs)│                      │
-│   └──────────────┘      └──────────────┘                      │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
-```
-
-**Content Sources (18 total):**
-- **Art APIs:** Met Museum, Cleveland Museum, Getty, Rijksmuseum, Wikimedia Commons
-- **News/Discussion:** Hacker News, Reddit (r/science, r/space, r/philosophy), Smithsonian Smart News, Atlas Obscura, The Verge
-- **Knowledge:** 1000-Word Philosophy, Japanese Proverbs (kotowaza), Haiku, Oblique Strategies
-- **Music:** Album of Day (MusicBrainz API)
-- **Science:** NASA Perseverance Rover Photos
-- **Custom:** User-defined RSS feeds, User-defined JSON API sources
-
-**Drip Cycle:**
-- Interval: Configurable (default 30s)
-- Initial load: 6 items parallel fetch
-- Rotation: Oldest bubble fades out, new enters from bottom
-- Max bubbles: 20 (DOM performance threshold)
-
-**Scoring Algorithm:**
-```typescript
-// Factors
-+2  // User copied content
-+1  // User clicked content
-× weight  // Source preference (adjusted by dismissals)
-+0.4  // Time-based boost (content type matches time of day)
-15%  // Random injection (diversity)
-30%  // Spaced repetition (zenified items)
-
-// Time-based preferences:
-// Morning (6-12):  Oblique strategies, haiku, philosophy, proverbs
-// Afternoon (12-18): HN, Reddit, Smithsonian, The Verge, philosophy
-// Evening (18-22):  Museum art, Mars photos, Atlas Obscura, albums
-// Night (22-6):     Proverbs, philosophy, haiku, albums
-```
+Handles the modal for creating/editing prompts with color selection.
 
 ---
 
@@ -405,9 +301,9 @@ dist/
 - No CSS-in-JS, no utility classes
 
 **Font System:**
-- Playfair Display (serif): zen bubble body, cosmos text, cosmos art titles
-- DM Sans (sans): base UI, news/reddit/HN bubbles, source labels, settings
-- Space Mono (mono): oblique strategies
+- DM Sans (sans): base UI
+- Playfair Display (serif): headers, accents
+- Space Mono (mono): code snippets
 - All fonts bundled as woff2 in `src/fonts/`, copied to `dist/fonts/` by build
 - CSS vars: `--font`, `--font-serif`, `--font-mono`
 
@@ -564,7 +460,7 @@ npm run test:e2e:ui   # E2E tests with browser UI
 ### Backup & Restore
 
 Full data export/import via `src/shared/backup.ts`. JSON payload includes:
-- All SontoItems (clips, prompts, zen items)
+- All SontoItems (clips, prompts)
 - Tags index
 - Settings and theme preference
 - Versioned format (current: v3) for forward compatibility
@@ -579,30 +475,27 @@ Simple string-based i18n via `src/shared/i18n.ts`:
 - `data-i18n` attributes for static text
 - `setLocale()` switches at runtime
 
-Browser Translator API (`src/sidebar/zen/translator.ts`) provides on-device translation for zen content using the built-in `window.Translator` API.
-
 ### Export Integrations
 
-`src/shared/export.ts` provides one-click export:
-- **Notion:** Opens new page with title and content
-- **Obsidian:** Generates Markdown with YAML frontmatter
+`src/shared/export.ts` provides export options:
+- **Obsidian:** Generates Markdown with YAML frontmatter, copies to clipboard
 
-### Reading Companion
+### Related Clips
 
 Domain-based clip suggestions via `src/background/related-clips-handler.ts`:
 - Extracts current page domain
 - Queries IndexedDB for clips from same origin
 - Shows up to 5 related items in sidebar
 
-Toggle in Settings > Clipboard > Reading Companion.
+Toggle in Settings > Clipboard > Related clips popup.
 
 ### Badge Counter
 
-Shows unread clip count on extension icon. Updated by `src/background/badge-handler.ts` when clips are added/deleted.
+Shows daily capture count on extension icon. Updated by `src/background/badge-handler.ts` when clips are added/deleted.
 
 ### Color Labels
 
-Clips and prompts support optional color labels (6 colors). Colors rendered as dots in list view, stored in `metadata.color`.
+Clips and prompts support optional color labels (7 colors). Colors rendered as dots in list view, stored in `metadata.color`.
 
 ---
 
@@ -630,11 +523,8 @@ Clips and prompts support optional color labels (6 colors). Colors rendered as d
 ## Performance Considerations
 
 1. **IDB Connection Pooling:** Single cached connection in `items.ts`, cleared on version change
-2. **Drip Cycle Throttling:** Pauses when tab hidden (visibilitychange) or user idle
-3. **Bubble Limit:** Max 20 DOM nodes, removes oldest before adding new
-4. **Image Loading:** Lazy load with intersection observer (if implemented)
-5. **Search:** In-memory filtering acceptable for <10k items; no full-text index
-6. **Bundle Size:** esbuild tree-shaking, no framework overhead (~50KB total JS)
+2. **Search:** In-memory filtering acceptable for <10k items; no full-text index
+3. **Bundle Size:** esbuild tree-shaking, no framework overhead (~50KB total JS)
 
 ---
 

@@ -2,30 +2,15 @@
 // Licensed under the MIT License.
 
 const en: Record<string, string> = {
-  nav_feed: 'Feed',
   nav_clipboard: 'Clipboard',
   nav_language: 'Language',
   nav_data: 'Data',
   nav_about: 'About',
   brand_sub: 'Settings',
 
-  feed_heading: 'Feed',
   general_language: 'Language',
   general_language_desc: 'Preferred interface language',
   general_saved: 'Saved',
-
-  zen_mode: 'Zen Mode',
-  zen_display: 'Display',
-  zen_display_desc: 'Feed scrolls continuously. Cosmos shows one message with a spirograph between each.',
-  zen_speed: 'Speed',
-  zen_speed_desc: 'Seconds between each new item in the feed',
-  zen_sources: 'Sources',
-  zen_sources_desc: 'Choose which sources appear in your feed. All are enabled by default.',
-  zen_show_toggle: 'Show mode toggle',
-  zen_show_toggle_desc: 'Show Cosmos/Feed toggle in sidebar header',
-
-  rss_feeds: 'Custom RSS Feeds',
-  json_sources: 'Custom JSON API Sources',
 
   clipboard_heading: 'Clipboard',
   clipboard_desc: 'Configure how Sonto captures and stores clipboard history.',
@@ -52,7 +37,7 @@ const en: Record<string, string> = {
   data_confirm_delete: 'Delete all entries?',
 
   about_heading: 'About Sonto',
-  about_desc: 'Zen feed + clipboard manager. No accounts, no backend, no tracking.',
+  about_desc: 'Clipboard manager for Chrome. No accounts, no backend, no tracking.',
   about_version: 'Version',
   about_author: 'Author',
   about_license: 'License',

@@ -11,58 +11,17 @@ import {
   setClipboardMonitoring,
   getMaxHistorySize,
   setMaxHistorySize,
-  getDisabledSources,
-  saveDisabledSources,
-  getDripInterval,
-  saveDripInterval,
-  getZenDisplay,
-  saveZenDisplay,
-  getCustomFeeds,
-  saveCustomFeeds,
-  getCustomJsonSources,
-  saveCustomJsonSources,
   getBadgeCounterEnabled,
   setBadgeCounterEnabled,
   getReadingCompanionEnabled,
   setReadingCompanionEnabled,
 } from '../shared/storage';
-import { parseFeed } from '../shared/rss-parser';
 import {
   getSontoItemCount,
   clearAllSontoItems,
 } from '../shared/storage/items';
 import { exportBackup, importBackup, downloadBackup } from '../shared/backup';
 import { setLocale, applyI18n } from '../shared/i18n';
-
-const ZEN_SOURCES: Array<{ id: string; label: string }> = [
-  { id: 'philosophyEssay', label: '1000-Word Philosophy' },
-  { id: 'clevelandArtwork', label: 'Art from Cleveland Museum' },
-  { id: 'metArtwork', label: 'Art from The Met (New York)' },
-  { id: 'atlasObscura', label: 'Atlas Obscura' },
-  { id: 'gettyArtwork', label: 'Getty Museum Art' },
-  { id: 'hnStory', label: 'Hacker News Headlines' },
-  { id: 'haiku', label: 'Haiku' },
-  { id: 'kotowaza', label: 'Japanese Proverbs' },
-  { id: 'obliqueStrategies', label: 'Oblique Strategies' },
-  { id: 'marsRover', label: 'Perseverance Rover Photos' },
-  { id: 'wikimediaPaintings', label: 'Wikimedia Commons Paintings' },
-  { id: 'albumOfDay', label: 'Album of a Day' },
-  { id: 'reddit', label: 'Reddit (Science, Space, Philosophy)' },
-  { id: 'rijksmuseumArtwork', label: 'Rijksmuseum (Amsterdam)' },
-  { id: 'smithsonianNews', label: 'Smithsonian Smart News' },
-  { id: 'theVerge', label: 'The Verge' },
-  { id: 'customRss', label: 'Custom RSS Feeds' },
-  { id: 'customJson', label: 'Custom JSON API Sources' },
-];
-
-const CUSTOM_SOURCE_IDS = new Set(['customRss', 'customJson']);
-
-const ZEN_SOURCES_SORTED = [...ZEN_SOURCES].sort((a, b) => {
-  const aCustom = CUSTOM_SOURCE_IDS.has(a.id);
-  const bCustom = CUSTOM_SOURCE_IDS.has(b.id);
-  if (aCustom !== bCustom) return aCustom ? 1 : -1;
-  return a.label.localeCompare(b.label);
-});
 
 function qs<T extends HTMLElement>(selector: string): T {
   return document.querySelector<T>(selector)!;
@@ -107,178 +66,6 @@ function initSegmented(
   return (val: string) => {
     buttons.forEach((b) => b.classList.toggle('active', b.dataset.value === val));
   };
-}
-
-async function initFeedTab(): Promise<void> {
-  const storedZenDisplay = await getZenDisplay();
-  const setZenDisplay = initSegmented('zen-display-segmented', (val) => {
-    void saveZenDisplay(val as 'feed' | 'cosmos');
-  });
-  setZenDisplay(storedZenDisplay);
-
-  const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
-  const dripCurrentValue = document.getElementById('drip-current-value')!;
-  const storedInterval = await getDripInterval();
-  dripSlider.value = String(storedInterval / 1000);
-  dripCurrentValue.textContent = `${dripSlider.value}s`;
-  dripSlider.addEventListener('input', () => {
-    dripCurrentValue.textContent = `${dripSlider.value}s`;
-  });
-  dripSlider.addEventListener('change', () => {
-    void saveDripInterval(parseInt(dripSlider.value, 10) * 1000);
-  });
-
-  const disabledSources = new Set(await getDisabledSources());
-  const sourcesList = document.getElementById('zen-sources-list')!;
-
-  for (const source of ZEN_SOURCES_SORTED) {
-    const row = document.createElement('div');
-    row.className = 'zen-source-row';
-
-    const label = document.createElement('span');
-    label.className = 'zen-source-label';
-    label.textContent = source.label;
-
-    const toggleLabel = document.createElement('label');
-    toggleLabel.className = 'toggle-switch';
-
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = !disabledSources.has(source.id);
-    input.addEventListener('change', async () => {
-      if (input.checked) {
-        disabledSources.delete(source.id);
-      } else {
-        disabledSources.add(source.id);
-      }
-      await saveDisabledSources([...disabledSources]);
-    });
-
-    const track = document.createElement('span');
-    track.className = 'toggle-track';
-
-    toggleLabel.appendChild(input);
-    toggleLabel.appendChild(track);
-    row.appendChild(label);
-    row.appendChild(toggleLabel);
-    sourcesList.appendChild(row);
-  }
-
-  await initRssFeeds();
-  await initJsonSources();
-}
-
-async function initRssFeeds(): Promise<void> {
-  const list = document.getElementById('rss-feeds-list')!;
-  const input = document.getElementById('rss-url-input') as HTMLInputElement;
-  const addBtn = document.getElementById('rss-add-btn')!;
-  const errorEl = document.getElementById('rss-feed-error')!;
-
-  const render = async () => {
-    const feeds = await getCustomFeeds();
-    list.innerHTML = '';
-    if (feeds.length === 0) {
-      list.innerHTML = '<p class="setting-hint">No feeds added yet.</p>';
-      return;
-    }
-    feeds.forEach((feed, i) => {
-      const row = document.createElement('div');
-      row.className = 'rss-feed-row';
-      row.innerHTML = `<span class="rss-feed-url">${escapeHtml(feed.label || feed.url)}</span>
-        <button class="rss-remove" data-i="${i}" title="Remove" aria-label="Remove feed">✕</button>`;
-      row.querySelector('.rss-remove')!.addEventListener('click', async () => {
-        const current = await getCustomFeeds();
-        await saveCustomFeeds(current.filter((_, j) => j !== i));
-        await render();
-      });
-      list.appendChild(row);
-    });
-  };
-
-  addBtn.addEventListener('click', async () => {
-    const url = input.value.trim();
-    errorEl.style.display = 'none';
-    if (!url.startsWith('http')) {
-      errorEl.textContent = 'Enter a valid http/https URL';
-      errorEl.style.display = '';
-      return;
-    }
-    const feeds = await getCustomFeeds();
-    if (feeds.some((f) => f.url === url)) {
-      errorEl.textContent = 'Feed already added';
-      errorEl.style.display = '';
-      return;
-    }
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(9000) });
-      if (!res.ok) throw new Error('bad response');
-      const xml = await res.text();
-      const items = parseFeed(xml);
-      if (items.length === 0) throw new Error('no items');
-    } catch {
-      errorEl.textContent = 'Could not load or parse feed. Check the URL.';
-      errorEl.style.display = '';
-      return;
-    }
-    const label = new URL(url).hostname;
-    await saveCustomFeeds([...feeds, { url, label }]);
-    input.value = '';
-    await render();
-  });
-
-  await render();
-}
-
-async function initJsonSources(): Promise<void> {
-  const list = document.getElementById('json-sources-list')!;
-  const urlInput = document.getElementById('json-source-url-input') as HTMLInputElement;
-  const labelInput = document.getElementById('json-source-label-input') as HTMLInputElement;
-  const addBtn = document.getElementById('json-source-add-btn')!;
-  const errorEl = document.getElementById('json-source-error')!;
-
-  const render = async () => {
-    const sources = await getCustomJsonSources();
-    list.innerHTML = '';
-    if (sources.length === 0) {
-      list.innerHTML = '<p class="setting-hint">No sources added yet.</p>';
-      return;
-    }
-    sources.forEach((source, i) => {
-      const row = document.createElement('div');
-      row.className = 'rss-feed-row';
-      row.innerHTML = `<span class="rss-feed-url">${escapeHtml(source.label || source.url)}</span>
-        <button class="rss-remove" data-i="${i}" title="Remove" aria-label="Remove source">✕</button>`;
-      row.querySelector('.rss-remove')!.addEventListener('click', async () => {
-        const current = await getCustomJsonSources();
-        await saveCustomJsonSources(current.filter((_, j) => j !== i));
-        await render();
-      });
-      list.appendChild(row);
-    });
-  };
-
-  addBtn.addEventListener('click', async () => {
-    const url = urlInput.value.trim();
-    errorEl.style.display = 'none';
-    if (!url.startsWith('http')) {
-      errorEl.textContent = 'Enter a valid http/https URL';
-      errorEl.style.display = '';
-      return;
-    }
-    const sources = await getCustomJsonSources();
-    if (sources.some((s) => s.url === url)) {
-      errorEl.textContent = 'Source already added';
-      errorEl.style.display = '';
-      return;
-    }
-    const label = labelInput.value.trim() || new URL(url).hostname;
-    await saveCustomJsonSources([...sources, { url, label }]);
-    urlInput.value = '';
-    labelInput.value = '';
-    await render();
-  });
-
-  await render();
 }
 
 async function initClipboardTab(): Promise<void> {
@@ -365,7 +152,7 @@ async function initDataTab(): Promise<void> {
       countEl.textContent = String(newCount);
       showStatus('status-import');
       alert(
-        `Import successful!\n${result.items} items imported:\n- ${result.clips} clips\n- ${result.prompts} prompts\n- ${result.zen} zen items`,
+        `Import successful!\n${result.items} items imported:\n- ${result.clips} clips\n- ${result.prompts} prompts`,
       );
     } catch (err) {
       alert('Failed to import: invalid file format');
@@ -410,7 +197,7 @@ async function init(): Promise<void> {
 
   initTabs();
 
-  await Promise.all([initLanguageTab(), initFeedTab(), initClipboardTab(), initDataTab()]);
+  await Promise.all([initLanguageTab(), initClipboardTab(), initDataTab()]);
 
   createIcons({ icons, attrs: { strokeWidth: 1.5 } });
 }

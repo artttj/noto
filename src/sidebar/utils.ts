@@ -119,29 +119,3 @@ export async function loadAllTags(): Promise<string[]> {
   }
 }
 
-export async function toggleZenify(
-  id: string,
-  card: HTMLElement,
-  items: { id: string; zenified?: boolean }[],
-): Promise<boolean | null> {
-  try {
-    const response = await chrome.runtime.sendMessage({ type: MSG.TOGGLE_ZENIFIED, id });
-    if (response?.ok) {
-      const item = items.find((c) => c.id === id);
-      if (item) {
-        item.zenified = response.zenified;
-        card.classList.toggle('clip-zenified', response.zenified);
-        const btn = card.querySelector<HTMLElement>('.clip-btn-zenify');
-        if (btn) {
-          btn.classList.toggle('zenified', response.zenified);
-          btn.title = response.zenified ? 'Un-zenify' : 'Zenify';
-        }
-      }
-      return response.zenified;
-    }
-  } catch (err) {
-    console.error('[Sonto] Failed to toggle zenify:', err);
-  }
-  return null;
-}
-

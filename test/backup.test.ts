@@ -35,7 +35,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: ['tag1', 'tag2'],
         createdAt: Date.now(),
-        zenified: false,
       };
 
       const item2: SontoItem = {
@@ -47,7 +46,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        zenified: true,
         metadata: { color: 'blue' },
       };
 
@@ -78,7 +76,6 @@ describe('Backup Operations', () => {
             origin: 'import-test',
             tags: ['imported'],
             createdAt: Date.now(),
-                zenified: false,
           },
         ],
         tags: ['imported'],
@@ -93,7 +90,6 @@ describe('Backup Operations', () => {
       expect(result.items).toBe(1);
       expect(result.clips).toBe(1);
       expect(result.prompts).toBe(0);
-      expect(result.zen).toBe(0);
 
       const items = await getAllSontoItems();
       expect(items).toHaveLength(1);
@@ -136,7 +132,6 @@ describe('Backup Operations', () => {
             source: 'clipboard',
             origin: 'test',
             createdAt: Date.now(),
-                zenified: false,
           },
         ],
       };
@@ -156,7 +151,6 @@ describe('Backup Operations', () => {
             source: 'clipboard',
             origin: 'test',
             createdAt: Date.now(),
-                zenified: false,
           },
         ],
       };
@@ -176,7 +170,6 @@ describe('Backup Operations', () => {
             source: 'invalid-source',
             origin: 'test',
             createdAt: Date.now(),
-                zenified: false,
           },
         ],
       };
@@ -193,7 +186,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        zenified: false,
       };
       await saveSontoItem(existingItem);
 
@@ -210,7 +202,6 @@ describe('Backup Operations', () => {
             origin: 'import',
             tags: [],
             createdAt: Date.now(),
-                zenified: false,
           },
         ],
       };
@@ -232,7 +223,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        zenified: false,
       };
       await saveSontoItem(existingItem);
 
@@ -249,7 +239,6 @@ describe('Backup Operations', () => {
             origin: 'import',
             tags: [],
             createdAt: Date.now(),
-                zenified: false,
           },
         ],
       };
@@ -274,7 +263,6 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-                zenified: false,
           },
           {
             id: 'clip-2',
@@ -285,7 +273,6 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-                zenified: false,
           },
           {
             id: 'prompt-1',
@@ -296,28 +283,15 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-                zenified: false,
-          },
-          {
-            id: 'zen-1',
-            type: 'zen',
-            content: 'Zen 1',
-            contentType: 'quote',
-            source: 'zen-fetcher',
-            origin: 'test',
-            tags: [],
-            createdAt: Date.now(),
-                zenified: true,
           },
         ],
       };
 
       const result = await importBackup(JSON.stringify(backup), false);
 
-      expect(result.items).toBe(4);
+      expect(result.items).toBe(3);
       expect(result.clips).toBe(2);
       expect(result.prompts).toBe(1);
-      expect(result.zen).toBe(1);
     });
 
     it('should handle optional fields correctly', async () => {
@@ -334,7 +308,6 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: [],
             createdAt: Date.now(),
-                zenified: false,
             url: 'https://example.com',
             title: 'Test Title',
             lastSeenAt: Date.now(),
@@ -365,7 +338,6 @@ describe('Backup Operations', () => {
             origin: 'test',
             tags: 'not-an-array',
             createdAt: Date.now(),
-                zenified: false,
           },
         ],
       };
@@ -387,7 +359,6 @@ describe('Backup Operations', () => {
         title: 'Test',
         tags: ['tag1', 'tag2'],
         createdAt: Date.now(),
-        zenified: false,
       };
 
       const item2: SontoItem = {
@@ -399,7 +370,6 @@ describe('Backup Operations', () => {
         origin: 'test',
         tags: [],
         createdAt: Date.now(),
-        zenified: true,
         metadata: { color: 'red' },
       };
 
@@ -423,7 +393,6 @@ describe('Backup Operations', () => {
       const restoredItem2 = items.find((i) => i.id === 'roundtrip-2');
       expect(restoredItem2).toBeDefined();
       expect(restoredItem2?.type).toBe('prompt');
-      expect(restoredItem2?.zenified).toBe(true);
     });
   });
 });

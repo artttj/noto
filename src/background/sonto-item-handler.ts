@@ -10,9 +10,6 @@ import type {
   SearchSontoItemsMessage,
   UpdateSontoItemMessage,
   DeleteSontoItemMessage,
-  ToggleZenifiedMessage,
-  GetZenifiedItemsMessage,
-  MarkItemSeenInZenMessage,
   AddTagMessage,
   RemoveTagMessage,
   GetAllTagsMessage,
@@ -23,9 +20,6 @@ import {
   searchSontoItems,
   updateSontoItem,
   deleteSontoItem,
-  toggleZenified,
-  getZenifiedItems,
-  markItemAsSeenInZen,
   addTagToItem,
   removeTagFromItem,
   getAllTags,
@@ -43,7 +37,6 @@ export class SontoItemHandler {
       url?: string;
       title?: string;
       tags?: string[];
-      zenified?: boolean;
       metadata?: Record<string, unknown>;
     } = {},
   ): Promise<SontoItem> {
@@ -60,7 +53,6 @@ export class SontoItemHandler {
       title: options.title,
       tags: options.tags ?? [],
       createdAt: now,
-      zenified: options.zenified ?? false,
       metadata: options.metadata,
     };
 
@@ -82,18 +74,6 @@ export class SontoItemHandler {
 
   async delete(id: string): Promise<void> {
     await deleteSontoItem(id);
-  }
-
-  async toggleZenified(id: string): Promise<boolean> {
-    return toggleZenified(id);
-  }
-
-  async getZenified(options?: { limit?: number; excludeRecentMs?: number }): Promise<SontoItem[]> {
-    return getZenifiedItems(options);
-  }
-
-  async markSeenInZen(id: string): Promise<void> {
-    await markItemAsSeenInZen(id);
   }
 
   async addTag(id: string, tag: string): Promise<void> {
@@ -128,7 +108,6 @@ export function registerSontoItemHandlers(
         url: item.url,
         title: item.title,
         tags: item.tags,
-        zenified: item.zenified,
         metadata: item.metadata,
       },
     );
@@ -156,24 +135,6 @@ export function registerSontoItemHandlers(
   register(MSG.DELETE_SONTO_ITEM, async (msg) => {
     const { id } = msg as DeleteSontoItemMessage;
     await sontoItemHandler.delete(id);
-    return { ok: true };
-  });
-
-  register(MSG.TOGGLE_ZENIFIED, async (msg) => {
-    const { id } = msg as ToggleZenifiedMessage;
-    const zenified = await sontoItemHandler.toggleZenified(id);
-    return { ok: true, zenified };
-  });
-
-  register(MSG.GET_ZENIFIED_ITEMS, async (msg) => {
-    const { limit, excludeRecentMs } = msg as GetZenifiedItemsMessage;
-    const items = await sontoItemHandler.getZenified({ limit, excludeRecentMs });
-    return { ok: true, items };
-  });
-
-  register(MSG.MARK_ITEM_SEEN_IN_ZEN, async (msg) => {
-    const { id } = msg as MarkItemSeenInZenMessage;
-    await sontoItemHandler.markSeenInZen(id);
     return { ok: true };
   });
 

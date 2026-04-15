@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Sonto",
   "version": "3.0.0",
-  "description": "A calm zen feed paired with a clipboard manager. Copy anything on any page and browse your history in the sidebar.",
+  "description": "A clipboard manager for Chrome. Copy anything on any page and browse your history in the sidebar.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {
     "16": "icons/icon16.png",

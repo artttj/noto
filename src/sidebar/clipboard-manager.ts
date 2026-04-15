@@ -2,23 +2,14 @@
 // Licensed under the MIT License.
 
 import { createIcons, icons } from '../shared/icons';
-import { type PromptColor } from '../shared/storage';
 import { MSG } from '../shared/messages';
 import type { SontoItem, SontoContentType, SontoItemFilter } from '../shared/types';
+import type { PromptColor } from '../shared/storage';
 import { escapeHtml, formatDate, extractDomain } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
 import { highlightCode } from './syntax-highlight';
-import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify } from './utils';
-
-export const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
-  red:    { bg: 'rgba(255,90,90,0.18)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
-  orange: { bg: 'rgba(255,160,60,0.18)', border: 'rgba(255,160,60,0.9)', hex: '#ffa03c' },
-  yellow: { bg: 'rgba(200,160,20,0.25)', border: 'rgba(200,160,20,0.9)', hex: '#c8a014' },
-  green:  { bg: 'rgba(60,200,100,0.18)', border: 'rgba(60,200,100,0.9)', hex: '#3cc864' },
-  blue:   { bg: 'rgba(60,140,255,0.18)', border: 'rgba(60,140,255,0.9)', hex: '#3c8cff' },
-  purple: { bg: 'rgba(140,90,220,0.18)', border: 'rgba(140,90,220,0.9)', hex: '#8c5adc' },
-  gray:   { bg: 'rgba(140,140,140,0.18)', border: 'rgba(140,140,140,0.9)', hex: '#8c8c8c' },
-};
+import { showToast, renderTags, showTagEditor, loadAllTags } from './utils';
+import { PROMPT_COLORS } from './prompt-colors';
 
 const TEXT_PREVIEW_CHARS = 280;
 const CODE_PREVIEW_CHARS = 300;
@@ -108,12 +99,6 @@ function contentTypeLabel(type: SontoContentType): string {
     case 'code': return 'Code';
     case 'email': return 'Email';
     case 'image': return 'Image';
-    case 'quote': return 'Quote';
-    case 'art': return 'Art';
-    case 'idea': return 'Idea';
-    case 'haiku': return 'Haiku';
-    case 'proverb': return 'Proverb';
-    case 'strategy': return 'Strategy';
     default: return 'Text';
   }
 }
@@ -124,12 +109,6 @@ function contentTypeIcon(type: SontoContentType): string {
     case 'code': return '{}';
     case 'email': return '@';
     case 'image': return '▨';
-    case 'quote': return '"';
-    case 'art': return '◈';
-    case 'idea': return '◐';
-    case 'haiku': return '❋';
-    case 'proverb': return '◉';
-    case 'strategy': return '⚇';
     default: return '¶';
   }
 }
@@ -370,7 +349,7 @@ export class ClipboardManager {
 
   private buildCard(clip: SontoItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = `clip-card clip-type-${clip.contentType}${clip.zenified ? ' clip-zenified' : ''}`;
+    card.className = `clip-card clip-type-${clip.contentType}`;
     card.dataset.id = clip.id;
 
     const preview = clip.contentType === 'code'
@@ -381,7 +360,6 @@ export class ClipboardManager {
       ? `<a class="clip-source-url" href="${escapeHtml(clip.url)}" target="_blank" rel="noopener">${escapeHtml(truncateUrl(clip.url))}</a>`
       : '';
 
-    const zenifyLabel = clip.zenified ? 'Un-zenify' : 'Zenify';
     const needsExpand = clip.content.length > TEXT_PREVIEW_CHARS;
     const tagsHtml = renderTags(clip.tags);
     const colorStyles = clip.metadata?.color ? PROMPT_COLORS[clip.metadata.color as PromptColor] : null;
@@ -408,7 +386,6 @@ export class ClipboardManager {
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i></button>
         <button class="clip-btn clip-btn-insert${this.inputAvailable ? ' active' : ''}" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
-        <button class="clip-btn clip-btn-zenify${clip.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this clip"><i data-lucide="flower-2"></i></button>
         <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
         <button class="clip-btn clip-btn-delete" title="Delete" aria-label="Delete this clip"><i data-lucide="trash-2"></i></button>
@@ -439,11 +416,6 @@ export class ClipboardManager {
 
     qs<HTMLButtonElement>('.clip-btn-insert', card).addEventListener('click', () => {
       void this.insertText(clip.content);
-    });
-
-    qs<HTMLButtonElement>('.clip-btn-zenify', card).addEventListener('click', (e) => {
-      e.stopPropagation();
-      void this.toggleZenify(clip.id, card);
     });
 
     qs<HTMLButtonElement>('.clip-btn-tags', card).addEventListener('click', (e) => {
@@ -518,10 +490,6 @@ export class ClipboardManager {
     if (result.error) {
       showToast(result.error, true);
     }
-  }
-
-  private async toggleZenify(id: string, card: HTMLElement): Promise<void> {
-    await toggleZenify(id, card, this.clips);
   }
 
   private showTagEditor(clip: SontoItem): void {

@@ -2,5 +2,4 @@
 // Licensed under the MIT License.
 
 export { ThemeController } from './theme-controller';
-export { ViewController } from './view-controller';
 export { PromptModalController } from './prompt-modal-controller';

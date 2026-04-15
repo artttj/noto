@@ -7,18 +7,12 @@ export interface AppSettings {
   language: AppLanguage;
 }
 
-export type SontoItemType = 'clip' | 'prompt' | 'zen';
+export type SontoItemType = 'clip' | 'prompt';
 
 export type SontoContentType =
   | 'text'
   | 'code'
-  | 'quote'
-  | 'art'
   | 'link'
-  | 'idea'
-  | 'haiku'
-  | 'proverb'
-  | 'strategy'
   | 'email'
   | 'image';
 
@@ -27,9 +21,6 @@ export type SontoSource =
   | 'manual'
   | 'shortcut'
   | 'context-menu'
-  | 'zen-fetcher'
-  | 'rss'
-  | 'api'
   | 'page-clip';
 
 export interface SontoItem {
@@ -44,7 +35,6 @@ export interface SontoItem {
   tags: string[];
   createdAt: number;
   lastSeenAt?: number;
-  zenified: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -53,7 +43,6 @@ export interface SontoItemFilter {
   contentTypes?: SontoContentType[];
   sources?: SontoSource[];
   tags?: string[];
-  zenified?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -98,12 +87,3 @@ export interface Collection {
   createdAt: number;
   color?: string;
 }
-
-export type SeenItemEntry = {
-  id: string;
-  seenAt: number;
-  source: string;
-  dismissed?: boolean;
-  dismissedCount?: number;
-  type?: string;
-};

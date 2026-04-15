@@ -52,7 +52,6 @@ function openDb(): Promise<IDBDatabase> {
         store.createIndex('source', 'source', { unique: false });
         store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
         store.createIndex('createdAt', 'createdAt', { unique: false });
-        store.createIndex('zenified', 'zenified', { unique: false });
         store.createIndex('lastSeenAt', 'lastSeenAt', { unique: false });
         store.createIndex('origin', 'origin', { unique: false });
       } else {
@@ -67,7 +66,6 @@ function openDb(): Promise<IDBDatabase> {
           { name: 'source', keyPath: 'source', options: { unique: false } },
           { name: 'tags', keyPath: 'tags', options: { unique: false, multiEntry: true } },
           { name: 'createdAt', keyPath: 'createdAt', options: { unique: false } },
-          { name: 'zenified', keyPath: 'zenified', options: { unique: false } },
           { name: 'lastSeenAt', keyPath: 'lastSeenAt', options: { unique: false } },
           { name: 'origin', keyPath: 'origin', options: { unique: false } },
         ];
@@ -159,9 +157,6 @@ export async function getAllSontoItems(filter?: SontoItemFilter): Promise<SontoI
         // Multiple types - get all and filter
         request = store.getAll();
       }
-    } else if (filter?.zenified !== undefined) {
-      const index = store.index('zenified');
-      request = index.getAll(filter.zenified ? 1 : 0);
     } else if (filter?.tags && filter.tags.length > 0) {
       // Use tags index (multiEntry)
       const index = store.index('tags');
@@ -232,57 +227,6 @@ export async function searchSontoItems(
 }
 
 // ============================================================================
-// ZENIFIED ITEMS
-// ============================================================================
-
-export async function getZenifiedItems(options?: { limit?: number; excludeRecentMs?: number }): Promise<SontoItem[]> {
-  const db = await getDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const index = tx.objectStore(STORE_NAME).index('zenified');
-    const request = index.getAll(1); // zenified = true
-
-    request.onsuccess = () => {
-      let results = request.result as SontoItem[];
-
-      // Filter out recently seen items
-      if (options?.excludeRecentMs) {
-        const cutoff = Date.now() - options.excludeRecentMs;
-        results = results.filter((item) => !item.lastSeenAt || item.lastSeenAt < cutoff);
-      }
-
-      // Sort by lastSeenAt (nulls first, then oldest)
-      results.sort((a, b) => {
-        if (!a.lastSeenAt && !b.lastSeenAt) return b.createdAt - a.createdAt;
-        if (!a.lastSeenAt) return -1;
-        if (!b.lastSeenAt) return 1;
-        return a.lastSeenAt - b.lastSeenAt;
-      });
-
-      if (options?.limit) {
-        results = results.slice(0, options.limit);
-      }
-
-      resolve(results);
-    };
-
-    request.onerror = () => reject(request.error);
-  });
-}
-
-export async function markItemAsSeenInZen(id: string): Promise<void> {
-  await updateSontoItem(id, { lastSeenAt: Date.now() });
-}
-
-export async function toggleZenified(id: string): Promise<boolean> {
-  const item = await getSontoItemById(id);
-  if (!item) throw new Error(`Item ${id} not found`);
-  const newZenified = !item.zenified;
-  await updateSontoItem(id, { zenified: newZenified });
-  return newZenified;
-}
-
-// ============================================================================
 // TAG MANAGEMENT
 // ============================================================================
 
@@ -344,7 +288,6 @@ export async function migrateFromLegacy(): Promise<{ clipsMigrated: number; prom
         title: clip.title,
         tags: clip.tags ?? [],
         createdAt: clip.timestamp,
-        zenified: false,
       };
       await saveSontoItem(sontoItem);
       clipsMigrated++;
@@ -367,7 +310,6 @@ export async function migrateFromLegacy(): Promise<{ clipsMigrated: number; prom
         title: prompt.label,
         tags: [],
         createdAt: prompt.createdAt,
-        zenified: false,
         metadata: {
           color: prompt.color,
         },

@@ -14,12 +14,12 @@ const CURRENT_BACKUP_VERSION = 3;
 const MAX_BACKUP_ITEMS = 10000;
 const MAX_BACKUP_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
-const VALID_ITEM_TYPES: SontoItemType[] = ['clip', 'prompt', 'zen'];
+const VALID_ITEM_TYPES: SontoItemType[] = ['clip', 'prompt'];
 const VALID_CONTENT_TYPES: SontoContentType[] = [
-  'text', 'code', 'quote', 'art', 'link', 'idea', 'haiku', 'proverb', 'strategy', 'email', 'image'
+  'text', 'code', 'link', 'email', 'image'
 ];
 const VALID_SOURCES: SontoSource[] = [
-  'clipboard', 'manual', 'shortcut', 'context-menu', 'zen-fetcher', 'rss', 'api'
+  'clipboard', 'manual', 'shortcut', 'context-menu', 'page-clip'
 ];
 
 interface BackupPayload {
@@ -88,10 +88,6 @@ function validateSontoItem(item: unknown): ValidationResult {
 
   if (!isValidNumber(i.createdAt)) {
     return { valid: false, error: `Item ${i.id} must have valid createdAt` };
-  }
-
-  if (!isValidBoolean(i.zenified)) {
-    return { valid: false, error: `Item ${i.id} must have valid zenified boolean` };
   }
 
   // Optional fields validation
@@ -189,7 +185,7 @@ export async function exportBackup(): Promise<string> {
 export async function importBackup(
   json: string,
   merge: boolean,
-): Promise<{ items: number; clips: number; prompts: number; zen: number }> {
+): Promise<{ items: number; clips: number; prompts: number }> {
   // Check size limit before parsing
   if (json.length > MAX_BACKUP_SIZE_BYTES) {
     throw new Error(`Backup file too large (max ${MAX_BACKUP_SIZE_BYTES / 1024 / 1024}MB)`);
@@ -222,9 +218,11 @@ export async function importBackup(
   let itemsImported = 0;
   let clipsImported = 0;
   let promptsImported = 0;
-  let zenImported = 0;
 
   for (const item of payload.items) {
+    // Skip legacy zen items that may be in old backups
+    if ((item.type as string) === 'zen') continue;
+
     await saveSontoItem(item);
     itemsImported++;
 
@@ -234,9 +232,6 @@ export async function importBackup(
         break;
       case 'prompt':
         promptsImported++;
-        break;
-      case 'zen':
-        zenImported++;
         break;
     }
   }
@@ -252,7 +247,6 @@ export async function importBackup(
     items: itemsImported,
     clips: clipsImported,
     prompts: promptsImported,
-    zen: zenImported,
   };
 }
 

@@ -7,21 +7,10 @@ import { escapeHtml, formatDate } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
 import { MSG } from '../shared/messages';
 import type { SontoItem, SontoItemFilter } from '../shared/types';
-import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify } from './utils';
+import { showToast, renderTags, showTagEditor, loadAllTags } from './utils';
+import { PROMPT_COLORS, COLOR_ORDER } from './prompt-colors';
 
 const COPY_FEEDBACK_MS = 1500;
-
-const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
-  red:    { bg: 'rgba(255,90,90,0.18)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
-  orange: { bg: 'rgba(255,160,60,0.18)', border: 'rgba(255,160,60,0.9)', hex: '#ffa03c' },
-  yellow: { bg: 'rgba(200,160,20,0.25)', border: 'rgba(200,160,20,0.9)', hex: '#c8a014' },
-  green:  { bg: 'rgba(60,200,100,0.18)', border: 'rgba(60,200,100,0.9)', hex: '#3cc864' },
-  blue:   { bg: 'rgba(60,140,255,0.18)', border: 'rgba(60,140,255,0.9)', hex: '#3c8cff' },
-  purple: { bg: 'rgba(140,90,220,0.18)', border: 'rgba(140,90,220,0.9)', hex: '#8c5adc' },
-  gray:   { bg: 'rgba(140,140,140,0.18)', border: 'rgba(140,140,140,0.9)', hex: '#8c8c8c' },
-};
-
-const COLOR_ORDER: PromptColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
 
 let editModal: HTMLElement | null = null;
 
@@ -266,7 +255,7 @@ export class PromptsManager {
 
   private buildCard(prompt: SontoItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = 'clip-card clip-type-prompt' + (prompt.zenified ? ' clip-zenified' : '');
+    card.className = 'clip-card clip-type-prompt';
     card.dataset.id = prompt.id;
 
     const preview = escapeHtml(prompt.content.slice(0, 280));
@@ -276,7 +265,6 @@ export class PromptsManager {
       ? `<span class="prompt-color-tag" style="background: ${colorStyles.hex};"></span>`
       : '';
 
-    const zenifyLabel = prompt.zenified ? 'Un-zenify' : 'Zenify';
     const tagsHtml = renderTags(prompt.tags);
 
     card.innerHTML = `
@@ -297,7 +285,6 @@ export class PromptsManager {
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i></button>
         <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
-        <button class="clip-btn clip-btn-zenify${prompt.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this prompt"><i data-lucide="flower-2"></i></button>
         <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
         <button class="clip-btn clip-btn-edit" title="Edit" aria-label="Edit this prompt"><i data-lucide="pencil"></i></button>
@@ -318,11 +305,6 @@ export class PromptsManager {
 
     card.querySelector<HTMLButtonElement>('.clip-btn-insert')?.addEventListener('click', () => {
       void this.insertText(prompt.content);
-    });
-
-    card.querySelector<HTMLButtonElement>('.clip-btn-zenify')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      void this.toggleZenify(prompt.id, card);
     });
 
     card.querySelector<HTMLButtonElement>('.clip-btn-tags')?.addEventListener('click', (e) => {
@@ -419,10 +401,6 @@ export class PromptsManager {
       this.renderFilters();
       if (this.prompts.length === 0) this.render();
     }, 200);
-  }
-
-  private async toggleZenify(id: string, card: HTMLElement): Promise<void> {
-    await toggleZenify(id, card, this.prompts);
   }
 
   private showTagEditor(prompt: SontoItem): void {

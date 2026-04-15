@@ -24,7 +24,6 @@ describe('SontoItemHandler', () => {
       expect(item.origin).toBe('manual');
       expect(item.id).toBeDefined();
       expect(item.createdAt).toBeGreaterThan(0);
-      expect(item.zenified).toBe(false);
       expect(item.tags).toEqual([]);
     });
 
@@ -46,7 +45,6 @@ describe('SontoItemHandler', () => {
           url: 'https://example.com',
           title: 'Test Title',
           tags: ['tag1', 'tag2'],
-          zenified: true,
           metadata: { color: 'blue' },
         }
       );
@@ -57,7 +55,6 @@ describe('SontoItemHandler', () => {
       expect(item.url).toBe('https://example.com');
       expect(item.title).toBe('Test Title');
       expect(item.tags).toEqual(['tag1', 'tag2']);
-      expect(item.zenified).toBe(true);
       expect(item.metadata).toEqual({ color: 'blue' });
     });
 
@@ -166,18 +163,6 @@ describe('SontoItemHandler', () => {
     it('should silently succeed for non-existent item delete', async () => {
       // Current implementation doesn't throw for non-existent items
       await expect(handler.delete('non-existent')).resolves.not.toThrow();
-    });
-  });
-
-  describe('toggleZenified', () => {
-    it('should toggle zenified status', async () => {
-      const created = await handler.create('Zen test', 'clip', 'manual', { zenified: false });
-
-      const result1 = await handler.toggleZenified(created.id);
-      expect(result1).toBe(true);
-
-      const result2 = await handler.toggleZenified(created.id);
-      expect(result2).toBe(false);
     });
   });
 

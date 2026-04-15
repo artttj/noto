@@ -13,12 +13,6 @@ import {
   setMaxHistorySize,
   getBadgeCounterEnabled,
   setBadgeCounterEnabled,
-  getDripInterval,
-  saveDripInterval,
-  getDisabledSources,
-  saveDisabledSources,
-  getZenSourceSignals,
-  bumpZenSourceSignal,
 } from '../src/shared/storage';
 import { mockStorage } from './setup';
 import { DEFAULT_SETTINGS } from '../src/shared/constants';
@@ -96,60 +90,6 @@ describe('Storage Operations', () => {
 
       const enabled = await getBadgeCounterEnabled();
       expect(enabled).toBe(false);
-    });
-  });
-
-  describe('Zen Feed', () => {
-    it('should default drip interval to 30000ms', async () => {
-      const interval = await getDripInterval();
-      expect(interval).toBe(30000);
-    });
-
-    it('should save and retrieve drip interval', async () => {
-      await saveDripInterval(30000);
-
-      const interval = await getDripInterval();
-      expect(interval).toBe(30000);
-    });
-
-    it('should return empty array for disabled sources', async () => {
-      const sources = await getDisabledSources();
-      expect(sources).toEqual([]);
-    });
-
-    it('should save and retrieve disabled sources', async () => {
-      await saveDisabledSources(['hnStory', 'reddit']);
-
-      const sources = await getDisabledSources();
-      expect(sources).toContain('hnStory');
-      expect(sources).toContain('reddit');
-    });
-
-    it('should return empty object for source signals', async () => {
-      const signals = await getZenSourceSignals();
-      expect(signals).toEqual({});
-    });
-
-    it('should bump source signal', async () => {
-      await bumpZenSourceSignal('hnStory', 2);
-      await bumpZenSourceSignal('hnStory', 3);
-
-      const signals = await getZenSourceSignals();
-      expect(signals['hnStory']).toBe(5);
-    });
-
-    it('should cap source signal at 50', async () => {
-      await bumpZenSourceSignal('test', 60);
-
-      const signals = await getZenSourceSignals();
-      expect(signals['test']).toBe(50);
-    });
-
-    it('should not allow negative signals', async () => {
-      await bumpZenSourceSignal('test', -10);
-
-      const signals = await getZenSourceSignals();
-      expect(signals['test']).toBe(0);
     });
   });
 });

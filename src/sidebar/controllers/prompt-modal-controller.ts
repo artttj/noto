@@ -3,8 +3,7 @@
 
 import { MSG } from '../../shared/messages';
 import type { PromptColor } from '../../shared/types';
-
-const COLOR_ORDER: PromptColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
+import { COLOR_ORDER } from '../prompt-colors';
 
 interface PromptModalDeps {
   modal: HTMLElement;
@@ -85,7 +84,6 @@ export class PromptModalController {
           contentType: 'text',
           title: label,
           tags: [],
-          zenified: false,
           metadata: { color: this.selectedColor },
         },
       });

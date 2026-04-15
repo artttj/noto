@@ -20,8 +20,6 @@ export const MSG = {
   OPEN_SETTINGS: 'OPEN_SETTINGS',
   CAPTURE_SNIPPET: 'CAPTURE_SNIPPET',
   EXTRACT_CATEGORIES: 'EXTRACT_CATEGORIES',
-  GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
-  GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
   QUICK_SEARCH: 'SONTO_QUICK_SEARCH',
   GET_RELATED_CLIPS: 'GET_RELATED_CLIPS',
   INSERT_TEXT: 'INSERT_TEXT',
@@ -31,9 +29,6 @@ export const MSG = {
   SEARCH_SONTO_ITEMS: 'SEARCH_SONTO_ITEMS',
   UPDATE_SONTO_ITEM: 'UPDATE_SONTO_ITEM',
   DELETE_SONTO_ITEM: 'DELETE_SONTO_ITEM',
-  TOGGLE_ZENIFIED: 'TOGGLE_ZENIFIED',
-  GET_ZENIFIED_ITEMS: 'GET_ZENIFIED_ITEMS',
-  MARK_ITEM_SEEN_IN_ZEN: 'MARK_ITEM_SEEN_IN_ZEN',
   ADD_TAG: 'ADD_TAG',
   REMOVE_TAG: 'REMOVE_TAG',
   GET_ALL_TAGS: 'GET_ALL_TAGS',
@@ -131,22 +126,6 @@ export interface DeleteSontoItemMessage {
   id: string;
 }
 
-export interface ToggleZenifiedMessage {
-  type: typeof MSG.TOGGLE_ZENIFIED;
-  id: string;
-}
-
-export interface GetZenifiedItemsMessage {
-  type: typeof MSG.GET_ZENIFIED_ITEMS;
-  limit?: number;
-  excludeRecentMs?: number;
-}
-
-export interface MarkItemSeenInZenMessage {
-  type: typeof MSG.MARK_ITEM_SEEN_IN_ZEN;
-  id: string;
-}
-
 export interface AddTagMessage {
   type: typeof MSG.ADD_TAG;
   id: string;
@@ -186,9 +165,6 @@ export type RuntimeMessage =
   | SearchSontoItemsMessage
   | UpdateSontoItemMessage
   | DeleteSontoItemMessage
-  | ToggleZenifiedMessage
-  | GetZenifiedItemsMessage
-  | MarkItemSeenInZenMessage
   | AddTagMessage
   | RemoveTagMessage
   | GetAllTagsMessage
@@ -223,11 +199,6 @@ export interface SontoItemsResult {
 export interface SontoItemResult {
   ok: true;
   item: SontoItem;
-}
-
-export interface ToggleZenifiedResult {
-  ok: true;
-  zenified: boolean;
 }
 
 export interface TagsResult {

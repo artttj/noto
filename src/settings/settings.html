@@ -28,11 +28,6 @@
           <span data-i18n="nav_language">Language</span>
         </button>
 
-        <button class="nav-item" data-tab="feed" type="button">
-          <i data-lucide="rss"></i>
-          <span data-i18n="nav_feed">Feed</span>
-        </button>
-
         <button class="nav-item" data-tab="data" type="button">
           <i data-lucide="database"></i>
           <span data-i18n="nav_data">Data</span>
@@ -62,77 +57,6 @@
               <button class="seg-btn" data-value="en" type="button">English</button>
               <button class="seg-btn" data-value="de" type="button">Deutsch</button>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- FEED -->
-      <section id="tab-feed" class="tab-panel hidden">
-        <div class="panel-header">
-          <h1 data-i18n="feed_heading">Feed</h1>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header" data-i18n="zen_mode">Zen Mode</div>
-
-          <div class="setting-row">
-            <div class="setting-label">
-              <div class="setting-title" data-i18n="zen_display">Display</div>
-              <div class="setting-desc" data-i18n="zen_display_desc">Feed scrolls continuously. Cosmos shows one message with a spirograph between each.</div>
-            </div>
-            <div class="segmented" id="zen-display-segmented">
-              <button class="seg-btn active" data-value="cosmos" type="button">Cosmos</button>
-              <button class="seg-btn" data-value="feed" type="button">Feed</button>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label">
-              <div class="setting-title" data-i18n="zen_speed">Speed</div>
-              <div class="setting-desc" data-i18n="zen_speed_desc">Seconds between each new item in the feed</div>
-            </div>
-            <div class="drip-interval-control">
-              <input type="range" id="drip-interval-slider" min="5" max="300" step="5" value="30" />
-              <div class="drip-labels">
-                <span>5s</span>
-                <span id="drip-current-value">30s</span>
-                <span>300s</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header" data-i18n="zen_sources">Sources</div>
-          <div class="zen-sources-body">
-            <p class="zen-sources-desc" data-i18n="zen_sources_desc">Choose which sources appear in your feed. All are enabled by default.</p>
-            <div id="zen-sources-list"></div>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header" data-i18n="rss_feeds">Custom RSS Feeds</div>
-          <div class="setting-body">
-            <div id="rss-feeds-list"></div>
-            <div class="rss-add-row">
-              <input id="rss-url-input" type="url" placeholder="https://example.com/feed.xml" class="rss-url-input" />
-              <button id="rss-add-btn" class="btn btn-primary btn-sm" type="button">Add Feed</button>
-            </div>
-            <p class="setting-hint rss-feed-error" id="rss-feed-error" style="display:none;color:var(--c-error)"></p>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header" data-i18n="json_sources">Custom JSON API Sources</div>
-          <div class="setting-body">
-            <p class="setting-hint">Add any JSON API endpoint that returns items. The endpoint must return an array or <code>{"items": [...]}</code> where each item has: <code>text</code>, optional <code>image</code>, optional <code>link</code>, optional <code>attribution</code>.</p>
-            <div id="json-sources-list"></div>
-            <div class="rss-add-row">
-              <input id="json-source-url-input" type="url" placeholder="https://api.example.com/items" class="rss-url-input" />
-              <input id="json-source-label-input" type="text" placeholder="Label (optional)" class="rss-url-input" style="max-width:140px" />
-              <button id="json-source-add-btn" class="btn btn-primary btn-sm" type="button">Add Source</button>
-            </div>
-            <p class="setting-hint" id="json-source-error" style="display:none;color:var(--c-error)"></p>
           </div>
         </div>
       </section>
@@ -273,7 +197,7 @@
       <section id="tab-about" class="tab-panel hidden">
         <div class="panel-header">
           <h1 data-i18n="about_heading">About Sonto</h1>
-          <p>Zen feed + clipboard manager. No accounts, no backend, no tracking.</p>
+          <p>Clipboard manager for Chrome. No accounts, no backend, no tracking.</p>
         </div>
 
         <div class="about-block">
@@ -295,10 +219,6 @@
           <div class="privacy-section">
             <div class="privacy-section-heading">Privacy</div>
             <p>All clipboard entries are stored locally in your browser using IndexedDB. Nothing is sent to any server. No accounts, no telemetry, no analytics.</p>
-          </div>
-          <div class="privacy-section">
-            <div class="privacy-section-heading">Third-Party Content</div>
-            <p>The Zen feed displays content from public APIs (museums, news aggregators, quote services, and others). Sonto does not own or curate this content.</p>
           </div>
         </div>
 

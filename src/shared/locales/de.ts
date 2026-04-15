@@ -2,30 +2,15 @@
 // Licensed under the MIT License.
 
 const de: Record<string, string> = {
-  nav_feed: 'Feed',
   nav_clipboard: 'Zwischenablage',
   nav_language: 'Sprache',
   nav_data: 'Daten',
   nav_about: 'Über',
   brand_sub: 'Einstellungen',
 
-  feed_heading: 'Feed',
   general_language: 'Sprache',
   general_language_desc: 'Bevorzugte Oberflächensprache',
   general_saved: 'Gespeichert',
-
-  zen_mode: 'Zen-Modus',
-  zen_display: 'Anzeige',
-  zen_display_desc: 'Feed scrollt kontinuierlich. Kosmos zeigt eine Nachricht mit einem Spirographen dazwischen.',
-  zen_speed: 'Geschwindigkeit',
-  zen_speed_desc: 'Sekunden zwischen jedem neuen Element im Feed',
-  zen_sources: 'Quellen',
-  zen_sources_desc: 'Wähle, welche Quellen in deinem Feed erscheinen. Alle sind standardmäßig aktiviert.',
-  zen_show_toggle: 'Modus-Umschalter anzeigen',
-  zen_show_toggle_desc: 'Kosmos/Feed-Umschalter in der Seitenleiste anzeigen',
-
-  rss_feeds: 'Eigene RSS-Feeds',
-  json_sources: 'Eigene JSON-API-Quellen',
 
   clipboard_heading: 'Zwischenablage',
   clipboard_desc: 'Konfiguriere, wie Sonto die Zwischenablage erfasst und speichert.',
@@ -52,7 +37,7 @@ const de: Record<string, string> = {
   data_confirm_delete: 'Alle Einträge löschen?',
 
   about_heading: 'Über Sonto',
-  about_desc: 'Zen-Feed + Zwischenablageverwaltung. Keine Konten, kein Backend, kein Tracking.',
+  about_desc: 'Zwischenablageverwaltung für Chrome. Keine Konten, kein Backend, kein Tracking.',
   about_version: 'Version',
   about_author: 'Autor',
   about_license: 'Lizenz',

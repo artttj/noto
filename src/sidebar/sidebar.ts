@@ -9,14 +9,13 @@ import {
   setOnboardingDone,
   getDefaultClipboardTab,
   saveDefaultClipboardTab,
-  getDefaultView,
 } from '../shared/storage';
-import { ClipboardManager, PROMPT_COLORS } from './clipboard-manager';
+import { ClipboardManager } from './clipboard-manager';
+import { PROMPT_COLORS } from './prompt-colors';
 import type { PromptColor } from '../shared/storage';
 import { PromptsManager } from './prompts-manager';
 import {
   ThemeController,
-  ViewController,
   PromptModalController,
 } from './controllers';
 
@@ -27,19 +26,14 @@ function qs<T extends HTMLElement>(sel: string): T {
 class SontoSidebar {
   private language = 'en';
 
-  private readonly feedBtn = qs<HTMLButtonElement>('#btn-feed');
-  private readonly backBtn = qs<HTMLButtonElement>('#btn-back');
   private readonly themeBtn = qs<HTMLButtonElement>('#btn-theme');
   private readonly settingsBtn = qs<HTMLButtonElement>('#btn-settings');
   private readonly navBrowse = qs<HTMLButtonElement>('#nav-browse');
   private readonly navPrompts = qs<HTMLButtonElement>('#nav-prompts');
   private readonly clipPageBtn = qs<HTMLButtonElement>('#btn-clip-page');
-  private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
   private readonly browseContent = qs<HTMLElement>('#browse-content');
   private readonly promptsContent = qs<HTMLElement>('#prompts-content');
-  private readonly zenFeedEl = qs<HTMLElement>('#zen-feed');
-  private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly clipListEl = qs<HTMLElement>('#clip-list');
   private readonly promptsListEl = qs<HTMLElement>('#prompts-list');
   private readonly promptsFiltersEl = qs<HTMLElement>('#prompts-filters');
@@ -49,7 +43,6 @@ class SontoSidebar {
   private readonly clipManager = new ClipboardManager(this.clipListEl);
   private readonly promptsManager = new PromptsManager(this.promptsListEl, this.promptsSearchEl, this.promptsFiltersEl);
   private readonly themeController = new ThemeController(this.themeBtn);
-  private viewController!: ViewController;
   private promptModalController!: PromptModalController;
 
   private currentDomain = '';
@@ -76,38 +69,32 @@ class SontoSidebar {
 
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
-        const mode = this.viewController?.getMode();
-        if (mode === 'clipboard') {
-          void (async () => {
-            await this.refreshDomain();
-            if (this.currentTab === 'browse') {
-              await this.clipManager.load(this.currentDomain);
-            } else {
-              await this.promptsManager.load();
-            }
-          })();
-        }
+        void (async () => {
+          await this.refreshDomain();
+          if (this.currentTab === 'browse') {
+            await this.clipManager.load(this.currentDomain);
+          } else {
+            await this.promptsManager.load();
+          }
+        })();
       }
     });
 
     document.addEventListener('keydown', (e) => {
-      const mode = this.viewController?.getMode();
-      if (mode === 'clipboard') {
-        if (e.key === '/' && document.activeElement !== this.searchInputEl && document.activeElement !== this.promptsSearchEl) {
-          e.preventDefault();
-          if (this.currentTab === 'browse') {
-            this.searchInputEl.focus();
-          } else {
-            this.promptsSearchEl.focus();
-          }
-          return;
+      if (e.key === '/' && document.activeElement !== this.searchInputEl && document.activeElement !== this.promptsSearchEl) {
+        e.preventDefault();
+        if (this.currentTab === 'browse') {
+          this.searchInputEl.focus();
+        } else {
+          this.promptsSearchEl.focus();
         }
-        if (this.currentTab === 'browse' && document.activeElement === this.searchInputEl) return;
-        if (this.currentTab === 'prompts' && document.activeElement === this.promptsSearchEl) return;
-        if (this.currentTab === 'browse' && this.clipManager.handleKey(e)) {
-          e.preventDefault();
-          return;
-        }
+        return;
+      }
+      if (this.currentTab === 'browse' && document.activeElement === this.searchInputEl) return;
+      if (this.currentTab === 'prompts' && document.activeElement === this.promptsSearchEl) return;
+      if (this.currentTab === 'browse' && this.clipManager.handleKey(e)) {
+        e.preventDefault();
+        return;
       }
     });
 
@@ -165,14 +152,9 @@ class SontoSidebar {
     await this.initControllers(defaultTab);
 
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local' && changes.sonto_drip_interval_ms) {
-        const ms = changes.sonto_drip_interval_ms.newValue as number;
-        this.viewController?.updateDripInterval(ms);
-      }
       if (area === 'local' && changes.sonto_theme) {
         const newTheme = changes.sonto_theme.newValue as 'dark' | 'light';
         this.themeController.setTheme(newTheme);
-        this.viewController?.setZenTheme(newTheme);
       }
       if (area === 'local' && changes.sonto_prompts) {
         if (this.currentTab === 'prompts') {
@@ -184,8 +166,6 @@ class SontoSidebar {
 
   private async initControllers(defaultTab: 'browse' | 'prompts'): Promise<void> {
     await this.themeController.init();
-
-    const theme = this.themeController.getTheme();
 
     await this.refreshDomain();
 
@@ -260,7 +240,6 @@ class SontoSidebar {
           source: 'manual',
           contentType: 'text',
           tags: [],
-          zenified: false,
           metadata: selectedClipColor ? { color: selectedClipColor } : undefined,
         },
       }).then((response) => {
@@ -270,21 +249,6 @@ class SontoSidebar {
       });
       hideAddClipModal();
     });
-
-    const defaultView = await getDefaultView();
-
-    this.viewController = new ViewController({
-      viewZen: this.viewZen,
-      viewClipboard: this.viewClipboard,
-      feedBtn: this.feedBtn,
-      backBtn: this.backBtn,
-      zenFeedEl: this.zenFeedEl,
-      cosmosViewEl: this.cosmosViewEl,
-      clipManager: this.clipManager,
-      language: this.language,
-    }, this.language);
-
-    await this.viewController.init(defaultView, theme);
 
     if (defaultTab === 'prompts') {
       await this.promptsManager.load();
