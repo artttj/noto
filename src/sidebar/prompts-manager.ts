@@ -467,6 +467,94 @@ export class PromptsManager {
     });
   }
 
+  private renderPinPad(): void {
+    this.isPinPadVisible = true;
+    this.pinDigits = [];
+    this.listEl.innerHTML = PIN_PAD_TEMPLATE;
+
+    const pinKeys = this.listEl.querySelectorAll<HTMLElement>('.pin-key');
+    pinKeys.forEach(key => {
+      key.addEventListener('click', (e) => {
+        e.preventDefault();
+        const digit = (key as HTMLElement).dataset.digit;
+        const action = (key as HTMLElement).dataset.action;
+
+        if (digit !== undefined) {
+          this.handlePinEntry(digit);
+        } else if (action === 'backspace') {
+          this.handlePinBackspace();
+        } else if (action === 'submit') {
+          void this.submitPin();
+        }
+      });
+    });
+
+    createIcons({ icons, attrs: { strokeWidth: 1.5 } });
+    this.updatePinDisplay();
+  }
+
+  private handlePinEntry(digit: string): void {
+    if (this.pinDigits.length < 4) {
+      this.pinDigits.push(digit);
+      this.updatePinDisplay();
+
+      if (this.pinDigits.length === 4) {
+        void this.submitPin();
+      }
+    }
+  }
+
+  private handlePinBackspace(): void {
+    if (this.pinDigits.length > 0) {
+      this.pinDigits.pop();
+      this.updatePinDisplay();
+    }
+  }
+
+  private updatePinDisplay(): void {
+    const dots = this.listEl.querySelectorAll<HTMLElement>('.pin-dot');
+    dots.forEach((dot, index) => {
+      dot.classList.toggle('filled', index < this.pinDigits.length);
+    });
+  }
+
+  private async submitPin(): Promise<void> {
+    const pin = this.pinDigits.join('');
+    const isValid = await verifyPromptPin(pin);
+
+    if (isValid) {
+      await setPromptUnlocked();
+      this.isPinPadVisible = false;
+      void this.load();
+    } else {
+      this.showPinError();
+    }
+  }
+
+  private showPinError(): void {
+    const errorEl = this.listEl.querySelector<HTMLElement>('.pin-error-message');
+    const container = this.listEl.querySelector<HTMLElement>('.pin-pad-container');
+
+    if (errorEl) {
+      errorEl.textContent = 'Invalid PIN - try again';
+      errorEl.classList.remove('hidden');
+
+      setTimeout(() => {
+        errorEl.classList.add('hidden');
+      }, 2000);
+    }
+
+    if (container) {
+      container.classList.add('shake');
+      setTimeout(() => {
+        container.classList.remove('shake');
+      }, 500);
+    }
+
+    this.pinDigits = [];
+    this.updatePinDisplay();
+  }
+
   private setLoading(loading: boolean): void {
     this.isLoading = loading;
   }
