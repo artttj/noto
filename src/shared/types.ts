@@ -3,6 +3,14 @@
 
 export type AppLanguage = 'en' | 'de';
 
+export type LockDuration = 'sidebar' | '5min' | '15min' | 'browser';
+
+export interface PromptLockSettings {
+  enabled: boolean;
+  pinHash: string | null;
+  duration: LockDuration;
+}
+
 export interface AppSettings {
   language: AppLanguage;
 }
