@@ -134,6 +134,9 @@ export class PromptsManager {
   private activeColor: PromptColor | null = null;
   private allTags: string[] = [];
 
+  private pinDigits: string[] = [];
+  private isPinPadVisible = false;
+
   constructor(listEl: HTMLElement, searchEl: HTMLInputElement, filtersEl: HTMLElement) {
     this.listEl = listEl;
     this.searchEl = searchEl;
