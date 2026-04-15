@@ -33,6 +33,11 @@
           <span data-i18n="nav_data">Data</span>
         </button>
 
+        <button class="nav-item" data-tab="security" type="button">
+          <i data-lucide="shield"></i>
+          <span data-i18n="nav_security">Security</span>
+        </button>
+
         <button class="nav-item" data-tab="about" type="button">
           <i data-lucide="info"></i>
           <span data-i18n="nav_about">About</span>
@@ -193,6 +198,56 @@
         </div>
       </section>
 
+      <!-- SECURITY -->
+      <section id="tab-security" class="tab-panel hidden">
+        <div class="panel-header">
+          <h1 data-i18n="security_heading">Security</h1>
+          <p data-i18n="security_desc">Protect your prompts with a PIN code.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header" data-i18n="prompt_lock_heading">Prompt Lock</div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="prompt_lock_enabled">Lock Prompts with PIN</div>
+              <div class="setting-desc" data-i18n="prompt_lock_enabled_desc">Require a PIN to access your prompts</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="prompt-lock-toggle" />
+              <span class="toggle-track"></span>
+            </label>
+            <span id="status-pin-saved" class="saved-msg hidden" data-i18n="status_saved">Saved</span>
+          </div>
+
+          <div class="setting-row" id="lock-duration-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="prompt_lock_duration">Lock duration</div>
+            </div>
+            <select id="lock-duration-select" class="setting-select">
+              <option value="sidebar" data-i18n="prompt_lock_duration_sidebar">Until sidebar closes</option>
+              <option value="5min" data-i18n="prompt_lock_duration_5min">5 minutes of inactivity</option>
+              <option value="15min" data-i18n="prompt_lock_duration_15min">15 minutes of inactivity</option>
+              <option value="browser" data-i18n="prompt_lock_duration_browser">Until browser restart</option>
+            </select>
+          </div>
+
+          <div class="setting-row" id="change-pin-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="prompt_lock_change_pin">Change PIN</div>
+            </div>
+            <button id="btn-change-pin" class="btn btn-secondary" type="button">Change PIN</button>
+          </div>
+
+          <div class="setting-row" id="forgot-pin-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="prompt_lock_forgot">Forgot PIN</div>
+            </div>
+            <button id="btn-forgot-pin" class="btn btn-danger btn-sm" type="button">Clear Lock</button>
+          </div>
+        </div>
+      </section>
+
       <!-- ABOUT -->
       <section id="tab-about" class="tab-panel hidden">
         <div class="panel-header">
@@ -230,6 +285,35 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- PIN Modal -->
+  <div id="pin-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="pin-modal-title" class="modal-title">Set PIN</h3>
+        <p id="pin-modal-desc" class="modal-desc">Enter a 4-digit PIN to protect your prompts</p>
+      </div>
+      <div class="modal-body">
+        <div id="pin-current-field" class="pin-field hidden">
+          <label class="pin-label" data-i18n="prompt_lock_current_pin">Current PIN</label>
+          <input type="password" id="pin-current-input" class="pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" />
+        </div>
+        <div id="pin-new-field" class="pin-field">
+          <label class="pin-label" data-i18n="prompt_lock_new_pin">New PIN</label>
+          <input type="password" id="pin-new-input" class="pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" />
+        </div>
+        <div id="pin-confirm-field" class="pin-field">
+          <label class="pin-label" data-i18n="prompt_lock_confirm_pin">Confirm PIN</label>
+          <input type="password" id="pin-confirm-input" class="pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" />
+        </div>
+        <div id="pin-error" class="pin-error hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="pin-modal-cancel" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="pin-modal-save" class="btn btn-primary" type="button">Save</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="settings.js"></script>

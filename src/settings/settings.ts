@@ -15,13 +15,20 @@ import {
   setBadgeCounterEnabled,
   getReadingCompanionEnabled,
   setReadingCompanionEnabled,
+  getPromptLockSettings,
+  setPromptLockEnabled,
+  setPromptLockDuration,
+  setPromptLockPin,
+  verifyPromptPin,
+  clearPromptLock,
+  type LockDuration,
 } from '../shared/storage';
 import {
   getSontoItemCount,
   clearAllSontoItems,
 } from '../shared/storage/items';
 import { exportBackup, importBackup, downloadBackup } from '../shared/backup';
-import { setLocale, applyI18n } from '../shared/i18n';
+import { setLocale, applyI18n, t } from '../shared/i18n';
 
 function qs<T extends HTMLElement>(selector: string): T {
   return document.querySelector<T>(selector)!;
@@ -181,6 +188,157 @@ async function initLanguageTab(): Promise<void> {
   setLanguage(settings.language);
 }
 
+/* ═══ PIN MODAL ═════════════════════════════════════════════════════════════ */
+type PinMode = 'set' | 'change';
+
+let pinMode: PinMode = 'set';
+
+async function initSecurityTab(): Promise<void> {
+  const lockToggle = qs<HTMLInputElement>('#prompt-lock-toggle');
+  const durationSelect = qs<HTMLSelectElement>('#lock-duration-select');
+  const changePinBtn = qs<HTMLButtonElement>('#btn-change-pin');
+  const forgotPinBtn = qs<HTMLButtonElement>('#btn-forgot-pin');
+  const lockDurationRow = qs<HTMLElement>('#lock-duration-row');
+  const changePinRow = qs<HTMLElement>('#change-pin-row');
+  const forgotPinRow = qs<HTMLElement>('#forgot-pin-row');
+
+  const settings = await getPromptLockSettings();
+
+  lockToggle.checked = settings.enabled;
+  durationSelect.value = settings.duration;
+
+  // Show/hide rows based on lock state
+  const updateRows = () => {
+    const isEnabled = lockToggle.checked;
+    lockDurationRow.classList.toggle('hidden', !isEnabled);
+    changePinRow.classList.toggle('hidden', !isEnabled);
+    forgotPinRow.classList.toggle('hidden', !isEnabled);
+  };
+  updateRows();
+
+  lockToggle.addEventListener('change', async () => {
+    const enabled = lockToggle.checked;
+
+    if (enabled) {
+      // Enable lock - need to set PIN first
+      pinMode = 'set';
+      showPinModal('set', async (pin) => {
+        await setPromptLockPin(pin);
+        await setPromptLockEnabled(true);
+        showStatus('status-pin-saved');
+        updateRows();
+      });
+    } else {
+      // Disable lock
+      await setPromptLockEnabled(false);
+      updateRows();
+    }
+  });
+
+  durationSelect.addEventListener('change', async () => {
+    const duration = durationSelect.value as LockDuration;
+    await setPromptLockDuration(duration);
+  });
+
+  changePinBtn?.addEventListener('click', () => {
+    pinMode = 'change';
+    showPinModal('change', async (pin) => {
+      showStatus('status-pin-saved');
+    });
+  });
+
+  forgotPinBtn?.addEventListener('click', async () => {
+    const msg = t('prompt_lock_forgot_confirm');
+    if (confirm(msg)) {
+      await clearPromptLock();
+      lockToggle.checked = false;
+      updateRows();
+    }
+  });
+}
+
+function showPinModal(
+  mode: PinMode,
+  onSave: (pin: string) => Promise<void>,
+): void {
+  const modal = qs<HTMLElement>('#pin-modal');
+  const titleEl = qs<HTMLElement>('#pin-modal-title');
+  const descEl = qs<HTMLElement>('#pin-modal-desc');
+  const currentField = qs<HTMLElement>('#pin-current-field');
+  const newField = qs<HTMLElement>('#pin-new-field');
+  const confirmField = qs<HTMLElement>('#pin-confirm-field');
+  const currentInput = qs<HTMLInputElement>('#pin-current-input');
+  const newInput = qs<HTMLInputElement>('#pin-new-input');
+  const confirmInput = qs<HTMLInputElement>('#pin-confirm-input');
+  const cancelBtn = qs<HTMLButtonElement>('#pin-modal-cancel');
+  const saveBtn = qs<HTMLButtonElement>('#pin-modal-save');
+  const errorEl = qs<HTMLElement>('#pin-error');
+
+  // Reset state
+  modal.classList.remove('hidden');
+  currentInput.value = '';
+  newInput.value = '';
+  confirmInput.value = '';
+  errorEl.classList.add('hidden');
+
+  if (mode === 'set') {
+    titleEl.textContent = t('prompt_lock_set_title');
+    descEl.textContent = t('prompt_lock_set_desc');
+    currentField.classList.add('hidden');
+  } else {
+    titleEl.textContent = t('prompt_lock_change_title');
+    descEl.textContent = t('prompt_lock_change_desc');
+    currentField.classList.remove('hidden');
+  }
+
+  const close = () => {
+    modal.classList.add('hidden');
+  };
+
+  const showError = (msg: string) => {
+    errorEl.textContent = msg;
+    errorEl.classList.remove('hidden');
+  };
+
+  cancelBtn.onclick = close;
+
+  saveBtn.onclick = async () => {
+    const current = currentInput.value;
+    const newPin = newInput.value;
+    const confirm = confirmInput.value;
+
+    // Validate
+    if (mode === 'change') {
+      if (!/^\d{4}$/.test(current)) {
+        showError(t('prompt_lock_invalid_current'));
+        return;
+      }
+      const isValid = await verifyPromptPin(current);
+      if (!isValid) {
+        showError(t('prompt_lock_invalid_current'));
+        return;
+      }
+    }
+
+    if (!/^\d{4}$/.test(newPin)) {
+      showError(t('prompt_lock_pins_match'));
+      return;
+    }
+
+    if (newPin !== confirm) {
+      showError(t('prompt_lock_pins_match'));
+      return;
+    }
+
+    // Save
+    await setPromptLockPin(newPin);
+    close();
+    await onSave(newPin);
+  };
+
+  newInput.focus();
+}
+
 async function init(): Promise<void> {
   const [settings, theme] = await Promise.all([getSettings(), getTheme()]);
 
@@ -197,7 +355,7 @@ async function init(): Promise<void> {
 
   initTabs();
 
-  await Promise.all([initLanguageTab(), initClipboardTab(), initDataTab()]);
+  await Promise.all([initLanguageTab(), initClipboardTab(), initDataTab(), initSecurityTab()]);
 
   createIcons({ icons, attrs: { strokeWidth: 1.5 } });
 }

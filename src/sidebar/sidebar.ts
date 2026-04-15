@@ -9,7 +9,9 @@ import {
   setOnboardingDone,
   getDefaultClipboardTab,
   saveDefaultClipboardTab,
+  getPromptLockSettings,
 } from '../shared/storage';
+import { PROMPT_LOCK_UNLOCKED_AT } from '../shared/constants';
 import { ClipboardManager } from './clipboard-manager';
 import { PROMPT_COLORS } from './prompt-colors';
 import type { PromptColor } from '../shared/storage';
@@ -67,7 +69,7 @@ class SontoSidebar {
       }
     });
 
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener('visibilitychange', async () => {
       if (!document.hidden) {
         void (async () => {
           await this.refreshDomain();
@@ -77,6 +79,12 @@ class SontoSidebar {
             await this.promptsManager.load();
           }
         })();
+      } else {
+        // Sidebar is closing - clear unlock timestamp if lock duration is 'sidebar'
+        const lockSettings = await getPromptLockSettings();
+        if (lockSettings.enabled && lockSettings.duration === 'sidebar') {
+          await chrome.storage.session.remove(PROMPT_LOCK_UNLOCKED_AT);
+        }
       }
     });
 

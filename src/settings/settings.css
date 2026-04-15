@@ -1612,3 +1612,133 @@ body {
   transform: translateX(16px);
 }
 
+/* ═══ PIN MODAL ═════════════════════════════════════════════════════════════ */
+.modal-content {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-hi);
+  border-radius: var(--r-lg);
+  width: min(380px, 90vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 4px;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: var(--c-text-3);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+
+.pin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pin-field:last-child {
+  margin-bottom: 0;
+}
+
+.pin-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-text-2);
+}
+
+.pin-input {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  color: var(--c-text);
+  font-size: 18px;
+  font-family: var(--font-mono);
+  padding: 10px 14px;
+  width: 100%;
+  letter-spacing: 0.5em;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--t) var(--ease);
+}
+
+.pin-input:focus {
+  border-color: var(--c-border-hi);
+}
+
+.pin-error {
+  background: var(--c-error-bg);
+  border: 1px solid var(--c-error-bd);
+  border-radius: var(--r-md);
+  color: var(--c-error);
+  font-size: 12px;
+  padding: 10px 14px;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.setting-input-sm {
+  background: var(--c-elevated);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  color: var(--c-text);
+  font-size: 13px;
+  font-family: var(--font);
+  padding: 6px 10px;
+  width: 80px;
+  outline: none;
+  transition: border-color var(--t) var(--ease);
+}
+
+.setting-input-sm:focus {
+  border-color: var(--c-border-hi);
+}
+
+.setting-value {
+  font-size: 13px;
+  color: var(--c-text-2);
+  font-family: var(--font-mono);
+}
+
+.setting-hint {
+  font-size: 12px;
+  color: var(--c-text-3);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.setting-body-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.setting-body {
+  padding: 16px 20px;
+}
+
