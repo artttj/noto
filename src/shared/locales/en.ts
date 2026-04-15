@@ -46,6 +46,38 @@ const en: Record<string, string> = {
 
   status_saved: 'Saved',
   status_deleted: 'Deleted',
+
+  nav_security: 'Security',
+  security_heading: 'Security',
+  security_desc: 'Protect your prompts with a PIN code.',
+
+  prompt_lock_enabled: 'Lock Prompts with PIN',
+  prompt_lock_enabled_desc: 'Require a PIN to access your prompts',
+  prompt_lock_pin: 'PIN',
+  prompt_lock_change_pin: 'Change PIN...',
+  prompt_lock_duration: 'Lock duration',
+  prompt_lock_duration_sidebar: 'Until sidebar closes',
+  prompt_lock_duration_5min: '5 minutes of inactivity',
+  prompt_lock_duration_15min: '15 minutes of inactivity',
+  prompt_lock_duration_browser: 'Until browser restart',
+  prompt_lock_forgot: 'Forgot PIN',
+  prompt_lock_forgot_confirm: 'This will remove the PIN lock. Are you sure?',
+  prompt_lock_set_title: 'Set PIN',
+  prompt_lock_set_desc: 'Enter a 4-digit PIN to protect your prompts',
+  prompt_lock_change_title: 'Change PIN',
+  prompt_lock_change_desc: 'Enter your current PIN, then a new 4-digit PIN',
+  prompt_lock_current_pin: 'Current PIN',
+  prompt_lock_new_pin: 'New PIN',
+  prompt_lock_confirm_pin: 'Confirm PIN',
+  prompt_lock_pin_set: 'PIN set',
+  prompt_lock_pin_changed: 'PIN changed',
+  prompt_lock_pin_cleared: 'PIN lock cleared',
+  prompt_lock_pins_match: 'PINs do not match',
+  prompt_lock_invalid_current: 'Invalid current PIN',
+
+  pin_pad_title: 'Prompts are locked',
+  pin_pad_subtitle: 'Enter PIN to access your prompts',
+  pin_pad_error: 'Invalid PIN - try again',
 };
 
 export default en;
