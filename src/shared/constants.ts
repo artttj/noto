@@ -13,7 +13,12 @@ export const STORAGE_KEYS = {
   READING_COMPANION_ENABLED: 'sonto_reading_companion_enabled',
   COLLECTIONS: 'sonto_collections',
   MIGRATION_VERSION: 'sonto_migration_version',
+  PROMPT_LOCK_ENABLED: 'sonto_prompt_lock_enabled',
+  PROMPT_LOCK_PIN: 'sonto_prompt_lock_pin',
+  PROMPT_LOCK_DURATION: 'sonto_prompt_lock_duration',
 } as const;
+
+export const PROMPT_LOCK_UNLOCKED_AT = 'sonto_prompt_lock_unlocked_at';
 
 export const DEFAULT_SETTINGS: AppSettings = {
   language: navigator.language.startsWith('de') ? 'de' : 'en',
