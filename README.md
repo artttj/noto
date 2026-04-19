@@ -38,8 +38,8 @@ No accounts. No sync. No tracking. Everything stays on your machine.
 **Manual install:**
 
 ```bash
-git clone https://github.com/artttj/sonto.git
-cd sonto
+git clone https://github.com/artttj/noto.git
+cd noto
 npm install
 npm run build
 ```

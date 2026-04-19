@@ -5,11 +5,11 @@ Agent patterns for working with the Noto Chrome extension codebase.
 ## Project Structure
 
 ```
-sonto/
+noto/
 ├── src/
 │   ├── background/        # Service worker, message routing, item handling
 │   ├── content/           # Content scripts for page interaction
-│   ├── sidebar/           # Side panel UI (browse, clipboard, zen feed)
+│   ├── sidebar/           # Side panel UI (browse, prompts)
 │   ├── settings/          # Settings page
 │   └── shared/            # Shared utilities, storage, types
 ├── dist/                  # Built extension (load in Chrome)
@@ -21,11 +21,11 @@ sonto/
 
 ## Key Concepts
 
-- **Unified Storage**: All items (clips, prompts, zen items) stored in IndexedDB `sonto_db_v2` v3
+- **Unified Storage**: All items (clips, prompts) stored in IndexedDB `sonto_db_v2` v3
 - **Message Router**: Background service worker routes messages between content scripts and sidebar
 - **Shadow DOM**: Content scripts inject UI into shadow DOM for isolation
-- **Zen Feed**: Drip-fed content from 15 sources (HN, Reddit, museums, RSS, etc.)
-- **Clipboard Manager**: Chronological history with tag filtering
+- **Clipboard Manager**: Chronological history with tag filtering and domain-aware related clips
+- **Prompts**: Color-labeled prompt library with optional PIN lock
 
 ## Available Agent Patterns
 
@@ -37,7 +37,7 @@ Use for understanding code structure and finding relevant files.
 Explore the Noto Chrome extension codebase to find:
 - Message routing between background and content scripts
 - IndexedDB schema and storage operations
-- Zen feed source fetchers
+- Clipboard capture and related-clip lookup
 ```
 
 ### Bug Investigation Agent
@@ -70,15 +70,9 @@ Implement [feature] for Noto:
 ### Add New Message Type
 
 1. Add type to `src/shared/messages.ts`
-2. Add handler in `src/background/` 
+2. Add handler in `src/background/`
 3. Register in `src/background/message-router.ts`
 4. Call from content/sidebar using `chrome.runtime.sendMessage()`
-
-### Add New Zen Feed Source
-
-1. Add fetcher to `src/sidebar/zen/zen-fetchers.ts`
-2. Add to `ZEN_SOURCES` array in `src/settings/settings.ts`
-3. Handle content parsing with HTML entity decoding if needed
 
 ### Modify IndexedDB Schema
 
@@ -119,8 +113,9 @@ npm run build            # Build to dist/
 | `src/shared/storage/items.ts` | IndexedDB CRUD operations |
 | `src/shared/messages.ts` | Message type definitions |
 | `src/sidebar/sidebar.ts` | Main sidebar UI controller |
+| `src/sidebar/clipboard-manager.ts` | Clipboard history view |
+| `src/sidebar/prompts-manager.ts` | Prompts view |
 | `src/content/main.ts` | Content script entry point |
-| `src/sidebar/zen/zen-fetchers.ts` | All zen feed sources |
 
 ## Common Gotchas
 
