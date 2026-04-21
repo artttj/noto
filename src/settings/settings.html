@@ -165,34 +165,34 @@
       <!-- DATA -->
       <section id="tab-data" class="tab-panel hidden">
         <div class="panel-header">
-          <h1>Data</h1>
-          <p>Manage your clipboard history.</p>
+          <h1 data-i18n="data_heading">Data</h1>
+          <p data-i18n="data_desc">Manage your clipboard history.</p>
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Data Management</div>
+          <div class="setting-group-header" data-i18n="data_management">Data Management</div>
           <div class="setting-body">
-            <p class="setting-hint">Export your clipboard history to a JSON file or import from a previous export.</p>
+            <p class="setting-hint" data-i18n="data_management_desc">Export your clipboard history to a JSON file or import from a previous export.</p>
             <div class="setting-body-action">
-              <button id="btn-export" class="btn btn-secondary" type="button">Export Data</button>
-              <button id="btn-import" class="btn btn-secondary" type="button">Import Data</button>
+              <button id="btn-export" class="btn btn-secondary" type="button" data-i18n="data_export">Export Data</button>
+              <button id="btn-import" class="btn btn-secondary" type="button" data-i18n="data_import">Import Data</button>
               <input type="file" id="import-file" accept=".json" class="hidden" />
-              <span id="status-export" class="saved-msg hidden">Exported</span>
-              <span id="status-import" class="saved-msg hidden">Imported</span>
+              <span id="status-export" class="saved-msg hidden" data-i18n="status_exported">Exported</span>
+              <span id="status-import" class="saved-msg hidden" data-i18n="status_imported">Imported</span>
             </div>
           </div>
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Danger Zone</div>
+          <div class="setting-group-header" data-i18n="data_danger_zone">Danger Zone</div>
           <div class="setting-body">
             <p class="setting-hint">
-              <span id="snippet-count-data">0</span> entries stored.
-              Permanently deletes all clipboard entries. This cannot be undone.
+              <span id="snippet-count-data">0</span> <span data-i18n="data_entries_stored">entries stored.</span>
+              <span data-i18n="data_delete_warning">Permanently deletes all clipboard entries. This cannot be undone.</span>
             </p>
             <div class="setting-body-action">
-              <button id="btn-delete-all" class="btn btn-danger" type="button">Delete All</button>
-              <span id="status-delete" class="saved-msg hidden">Deleted</span>
+              <button id="btn-delete-all" class="btn btn-danger" type="button" data-i18n="data_delete_all">Delete All</button>
+              <span id="status-delete" class="saved-msg hidden" data-i18n="status_deleted">Deleted</span>
             </div>
           </div>
         </div>
@@ -237,7 +237,7 @@
               <div class="setting-title" data-i18n="prompt_lock_change_pin">Change PIN</div>
               <div class="setting-desc" data-i18n="prompt_lock_change_pin_desc">Requires current PIN to change</div>
             </div>
-            <button id="btn-change-pin" class="btn btn-secondary" type="button">Change PIN</button>
+            <button id="btn-change-pin" class="btn btn-secondary" type="button" data-i18n="prompt_lock_change_pin">Change PIN</button>
           </div>
         </div>
       </section>
@@ -273,7 +273,7 @@
 
         <div class="info-footer-links">
           <a href="https://github.com/artttj/sonto" target="_blank" rel="noopener" class="btn-github">
-            <i data-lucide="github"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.2.69-3.87-1.54-3.87-1.54-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.67 1.24 3.32.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.14 1.18a10.9 10.9 0 0 1 5.72 0c2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.12 0 1.53-.01 2.77-.01 3.15 0 .3.21.66.79.55C20.22 21.38 23.5 17.08 23.5 12 23.5 5.73 18.27.5 12 .5Z"/></svg>
             <span data-i18n="about_github">View on GitHub</span>
           </a>
         </div>
@@ -313,4 +313,3 @@
   <script type="module" src="settings.js"></script>
 </body>
 </html>
-/html>

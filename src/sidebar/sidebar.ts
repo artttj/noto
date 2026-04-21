@@ -28,7 +28,6 @@ function qs<T extends HTMLElement>(sel: string): T {
 class SontoSidebar {
   private language = 'en';
 
-  private readonly themeBtn = qs<HTMLButtonElement>('#btn-theme');
   private readonly settingsBtn = qs<HTMLButtonElement>('#btn-settings');
   private readonly navBrowse = qs<HTMLButtonElement>('#nav-browse');
   private readonly navPrompts = qs<HTMLButtonElement>('#nav-prompts');
@@ -44,7 +43,7 @@ class SontoSidebar {
 
   private readonly clipManager = new ClipboardManager(this.clipListEl);
   private readonly promptsManager = new PromptsManager(this.promptsListEl, this.promptsSearchEl, this.promptsFiltersEl);
-  private readonly themeController = new ThemeController(this.themeBtn);
+  private readonly themeController = new ThemeController();
   private promptModalController!: PromptModalController;
 
   private currentDomain = '';
