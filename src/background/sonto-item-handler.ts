@@ -82,10 +82,12 @@ export class SontoItemHandler {
 
   async addTag(id: string, tag: string): Promise<void> {
     await addTagToItem(id, tag);
+    scheduleBackup();
   }
 
   async removeTag(id: string, tag: string): Promise<void> {
     await removeTagFromItem(id, tag);
+    scheduleBackup();
   }
 
   async getAllTags(): Promise<string[]> {

@@ -48,6 +48,7 @@ export async function checkAndRestore(): Promise<void> {
     const result = await chrome.storage.local.get(STORAGE_KEYS.BACKUP);
     const backup = result[STORAGE_KEYS.BACKUP] as BackupPayload | undefined;
     if (!backup?.items?.length) return;
+    if (backup.v !== BACKUP_VERSION) return;
 
     let restored = 0;
     for (const item of backup.items) {
