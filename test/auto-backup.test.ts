@@ -4,6 +4,7 @@ import {
   performBackup,
   checkAndRestore,
   createBackupAlarm,
+  ALARM_NAME,
 } from '../src/shared/auto-backup';
 import { getAllSontoItems, saveSontoItem, clearAllSontoItems } from '../src/shared/storage/items';
 import type { SontoItem } from '../src/shared/types';
@@ -38,10 +39,9 @@ describe('auto-backup', () => {
       await performBackup();
 
       const stored = await chrome.storage.local.get(STORAGE_KEYS.BACKUP);
-      const backup = stored[STORAGE_KEYS.BACKUP] as { v: number; c: number; items: SontoItem[] };
+      const backup = stored[STORAGE_KEYS.BACKUP] as { v: number; items: SontoItem[] };
 
       expect(backup.v).toBe(1);
-      expect(backup.c).toBe(1);
       expect(backup.items).toHaveLength(1);
       expect(backup.items[0].content).toBe('Hello');
       expect(backup.ts).toBeGreaterThan(0);
@@ -51,9 +51,8 @@ describe('auto-backup', () => {
       await performBackup();
 
       const stored = await chrome.storage.local.get(STORAGE_KEYS.BACKUP);
-      const backup = stored[STORAGE_KEYS.BACKUP] as { v: number; c: number; items: SontoItem[] };
+      const backup = stored[STORAGE_KEYS.BACKUP] as { v: number; items: SontoItem[] };
 
-      expect(backup.c).toBe(0);
       expect(backup.items).toHaveLength(0);
     });
   });
@@ -81,8 +80,8 @@ describe('auto-backup', () => {
       await vi.runAllTimersAsync();
 
       const stored = await chrome.storage.local.get(STORAGE_KEYS.BACKUP);
-      const backup = stored[STORAGE_KEYS.BACKUP] as { c: number };
-      expect(backup.c).toBe(1);
+      const backup = stored[STORAGE_KEYS.BACKUP] as { items: SontoItem[] };
+      expect(backup.items).toHaveLength(1);
     });
 
     it('does not fire backup before debounce window', async () => {
@@ -103,7 +102,7 @@ describe('auto-backup', () => {
       await saveSontoItem(item);
 
       await chrome.storage.local.set({
-        [STORAGE_KEYS.BACKUP]: { v: 1, ts: 1, c: 0, items: [] },
+        [STORAGE_KEYS.BACKUP]: { v: 1, ts: 1, items: [] },
       });
 
       await checkAndRestore();
@@ -122,7 +121,7 @@ describe('auto-backup', () => {
     it('restores items when IndexedDB is empty and backup exists', async () => {
       const item = makeItem({ content: 'Backed up' });
       await chrome.storage.local.set({
-        [STORAGE_KEYS.BACKUP]: { v: 1, ts: Date.now(), c: 1, items: [item] },
+        [STORAGE_KEYS.BACKUP]: { v: 1, ts: Date.now(), items: [item] },
       });
 
       await checkAndRestore();
@@ -136,7 +135,7 @@ describe('auto-backup', () => {
       const invalidItem = { id: 'x', content: '', type: 'invalid', contentType: 'x', source: 'x', origin: '', tags: null, createdAt: 'bad' };
       const validItem = makeItem({ content: 'Valid' });
       await chrome.storage.local.set({
-        [STORAGE_KEYS.BACKUP]: { v: 1, ts: Date.now(), c: 2, items: [invalidItem as unknown as SontoItem, validItem] },
+        [STORAGE_KEYS.BACKUP]: { v: 1, ts: Date.now(), items: [invalidItem as unknown as SontoItem, validItem] },
       });
 
       await checkAndRestore();
@@ -151,7 +150,7 @@ describe('auto-backup', () => {
     it('creates a periodic alarm', async () => {
       await createBackupAlarm();
 
-      const alarm = mockAlarms.get('sonto-backup');
+      const alarm = mockAlarms.get(ALARM_NAME);
       expect(alarm).toBeDefined();
       expect(alarm!.periodInMinutes).toBe(360);
     });

@@ -4,14 +4,13 @@ import { validateSontoItem } from './backup';
 import type { SontoItem } from './types';
 
 const BACKUP_DEBOUNCE_MS = 30_000;
-const ALARM_NAME = 'sonto-backup';
+export const ALARM_NAME = 'sonto-backup';
 const ALARM_PERIOD_MINUTES = 360;
 const BACKUP_VERSION = 1;
 
 interface BackupPayload {
   v: number;
   ts: number;
-  c: number;
   items: SontoItem[];
 }
 
@@ -31,7 +30,6 @@ export async function performBackup(): Promise<void> {
     const payload: BackupPayload = {
       v: BACKUP_VERSION,
       ts: Date.now(),
-      c: items.length,
       items,
     };
     await chrome.storage.local.set({ [STORAGE_KEYS.BACKUP]: payload });
@@ -65,7 +63,7 @@ export async function checkAndRestore(): Promise<void> {
       }
     }
 
-    console.log(`[Noto] Restored ${restored} of ${backup.c} items from backup`);
+    console.log(`[Noto] Restored ${restored} of ${backup.items.length} items from backup`);
   } catch (err) {
     console.error('[Noto] Restore check failed:', err);
   }

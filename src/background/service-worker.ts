@@ -9,7 +9,7 @@ import { clipPageHandler } from './clip-page-handler';
 import { badgeHandler } from './badge-handler';
 import { sontoItemHandler } from './sonto-item-handler';
 import { runMigrationIfNeeded } from './migration';
-import { checkAndRestore, createBackupAlarm, performBackup } from '../shared/auto-backup';
+import { checkAndRestore, createBackupAlarm, performBackup, ALARM_NAME } from '../shared/auto-backup';
 import type { RuntimeMessage } from '../shared/messages';
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -137,7 +137,7 @@ void checkAndRestore();
 void createBackupAlarm();
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'sonto-backup') {
+  if (alarm.name === ALARM_NAME) {
     void performBackup();
   }
 });
