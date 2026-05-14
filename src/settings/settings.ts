@@ -20,8 +20,8 @@ import {
   setPromptLockDuration,
   setPromptLockPin,
   verifyPromptPin,
-  type LockDuration,
 } from '../shared/storage';
+import type { LockDuration } from '../shared/types';
 import {
   getSontoItemCount,
   clearAllSontoItems,

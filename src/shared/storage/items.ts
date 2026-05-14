@@ -179,10 +179,11 @@ export async function getAllSontoItems(filter?: SontoItemFilter): Promise<SontoI
         results = results.filter(item => filter.sources?.includes(item.source));
       }
       if (filter?.tags) {
-        if (filter.tags.length === 1) {
-          results = results.filter(item => item.tags.includes(filter.tags[0]));
+        const ftags = filter.tags;
+        if (ftags.length === 1) {
+          results = results.filter(item => item.tags.includes(ftags[0]));
         } else {
-          results = results.filter(item => filter.tags?.every(tag => item.tags.includes(tag)));
+          results = results.filter(item => ftags.every(tag => item.tags.includes(tag)));
         }
       }
 

@@ -294,13 +294,6 @@ export class PromptsManager {
     createIcons({ icons, attrs: { strokeWidth: 1.5 } });
   }
 
-  private addSeparator(label: string, extraClass?: string): void {
-    const separator = document.createElement('div');
-    separator.className = 'day-separator' + (extraClass ? ' ' + extraClass : '');
-    separator.textContent = label;
-    this.listEl.appendChild(separator);
-  }
-
   private buildCard(prompt: SontoItem): HTMLElement {
     const card = document.createElement('div');
     card.className = 'clip-card clip-type-prompt';

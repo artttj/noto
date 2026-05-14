@@ -76,10 +76,6 @@ export class ClipHandler {
     await Promise.all(items.map(item => sontoItemHandler.delete(item.id)));
   }
 
-  private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  }
-
   private normalizeText(text: string): string {
     if (typeof text !== 'string') return '';
     return text.replace(/\s+/g, ' ').trim().toLowerCase();
