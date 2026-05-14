@@ -45,6 +45,8 @@ describe('Insert Text to Input', () => {
     });
     await delay(800);
 
+    await waitForElement(sidebar, '#prompts-list');
+
     const promptCards = await sidebar.$$('.clip-card.clip-type-prompt');
     expect(promptCards.length).toBeGreaterThanOrEqual(1);
 

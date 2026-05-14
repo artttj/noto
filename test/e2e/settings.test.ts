@@ -7,7 +7,7 @@ import type { Browser } from 'puppeteer';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-describe('Sonto Settings E2E', () => {
+describe('Noto Settings E2E', () => {
   let browser: Browser;
   let extensionId: string;
 
@@ -27,7 +27,7 @@ describe('Sonto Settings E2E', () => {
       await waitForElement(settings, '.settings-layout');
 
       const title = await settings.title();
-      expect(title).toContain('Sonto');
+      expect(title).toContain('Noto');
       expect(title).toContain('Settings');
     });
 
@@ -70,7 +70,6 @@ describe('Sonto Settings E2E', () => {
       const settings = await getSettingsPage(browser, extensionId);
       await waitForElement(settings, '.settings-layout');
 
-      // Click on data tab
       await settings.click('[data-tab="data"]');
       await delay(200);
 
@@ -81,23 +80,10 @@ describe('Sonto Settings E2E', () => {
       expect(importBtn).not.toBeNull();
     });
 
-    it('has feed sources section in feed tab', async () => {
-      const settings = await getSettingsPage(browser, extensionId);
-      await waitForElement(settings, '.settings-layout');
-
-      // Click on feed tab
-      await settings.click('[data-tab="feed"]');
-      await delay(200);
-
-      const sourcesList = await settings.$('#zen-sources-list');
-      expect(sourcesList).not.toBeNull();
-    });
-
     it('has language options in language tab', async () => {
       const settings = await getSettingsPage(browser, extensionId);
       await waitForElement(settings, '.settings-layout');
 
-      // Click on language tab
       await settings.click('[data-tab="language"]');
       await delay(200);
 

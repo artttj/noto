@@ -7,7 +7,7 @@ import type { Browser, Page } from 'puppeteer';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-describe('Sonto Sidebar E2E', () => {
+describe('Noto Sidebar E2E', () => {
   let browser: Browser;
   let extensionId: string;
 
@@ -29,18 +29,10 @@ describe('Sonto Sidebar E2E', () => {
     });
 
     it('loads the sidebar view', async () => {
-      await waitForElement(sidebar, '#view-zen');
       await waitForElement(sidebar, '#view-clipboard');
 
       const title = await sidebar.title();
-      expect(title).toBe('Sonto');
-    });
-
-    it('shows zen feed element', async () => {
-      await waitForElement(sidebar, '#zen-feed');
-
-      const zenFeed = await sidebar.$('#zen-feed');
-      expect(zenFeed).not.toBeNull();
+      expect(title).toBe('Noto');
     });
 
     it('has clipboard view element', async () => {
@@ -56,47 +48,8 @@ describe('Sonto Sidebar E2E', () => {
       const brand = await sidebar.$('.brand');
       expect(brand).not.toBeNull();
 
-      const themeBtn = await sidebar.$('#btn-theme');
-      expect(themeBtn).not.toBeNull();
-
       const settingsBtn = await sidebar.$('#btn-settings');
       expect(settingsBtn).not.toBeNull();
-
-      const feedBtn = await sidebar.$('#btn-feed');
-      expect(feedBtn).not.toBeNull();
-    });
-  });
-
-  describe('Theme toggle', () => {
-    let sidebar: Page;
-
-    beforeEach(async () => {
-      sidebar = await getSidebarPage(browser, extensionId);
-    });
-
-    it('has theme toggle button', async () => {
-      await waitForElement(sidebar, '#btn-theme');
-
-      const themeBtn = await sidebar.$('#btn-theme');
-      expect(themeBtn).not.toBeNull();
-    });
-
-    it('toggles theme when clicked', async () => {
-      await waitForElement(sidebar, '#btn-theme');
-
-      // Check theme is applied to document
-      const initialTheme = await sidebar.evaluate(() => {
-        return document.documentElement.dataset.theme;
-      });
-      expect(initialTheme).toBe('dark');
-
-      await sidebar.click('#btn-theme');
-      await delay(500);
-
-      const newTheme = await sidebar.evaluate(() => {
-        return document.documentElement.dataset.theme;
-      });
-      expect(newTheme).toBe('light');
     });
   });
 
@@ -127,7 +80,7 @@ describe('Sonto Sidebar E2E', () => {
     it('shows empty state when no clips', async () => {
       await waitForElement(sidebar, '#clip-list');
 
-      const clips = await sidebar.$$('#clip-list .clip-item');
+      const clips = await sidebar.$$('#clip-list .clip-card');
       expect(clips.length).toBe(0);
     });
   });
@@ -186,21 +139,6 @@ describe('Sonto Sidebar E2E', () => {
 
       const saveBtn = await sidebar.$('#prompt-save');
       expect(saveBtn).not.toBeNull();
-    });
-  });
-
-  describe('Feed toggle', () => {
-    let sidebar: Page;
-
-    beforeEach(async () => {
-      sidebar = await getSidebarPage(browser, extensionId);
-    });
-
-    it('has feed button that toggles view', async () => {
-      await waitForElement(sidebar, '#btn-feed');
-
-      const feedBtn = await sidebar.$('#btn-feed');
-      expect(feedBtn).not.toBeNull();
     });
   });
 });
