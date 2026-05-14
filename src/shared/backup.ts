@@ -54,7 +54,7 @@ function isValidStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string');
 }
 
-function validateSontoItem(item: unknown): ValidationResult {
+export function validateSontoItem(item: unknown): ValidationResult {
   if (!item || typeof item !== 'object') {
     return { valid: false, error: 'Item must be an object' };
   }
