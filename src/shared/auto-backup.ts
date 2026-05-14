@@ -70,7 +70,11 @@ export async function checkAndRestore(): Promise<void> {
 }
 
 export async function createBackupAlarm(): Promise<void> {
-  await chrome.alarms.create(ALARM_NAME, {
-    periodInMinutes: ALARM_PERIOD_MINUTES,
-  });
+  try {
+    await chrome.alarms.create(ALARM_NAME, {
+      periodInMinutes: ALARM_PERIOD_MINUTES,
+    });
+  } catch (err) {
+    console.error('[Noto] Failed to create backup alarm:', err);
+  }
 }
