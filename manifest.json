@@ -16,7 +16,8 @@
     "sidePanel",
     "contextMenus",
     "clipboardRead",
-    "scripting"
+    "scripting",
+    "alarms"
   ],
   "host_permissions": [
     "*://*/*"
