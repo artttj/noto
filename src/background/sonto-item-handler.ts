@@ -24,6 +24,7 @@ import {
   removeTagFromItem,
   getAllTags,
 } from '../shared/storage/items';
+import { scheduleBackup } from '../shared/auto-backup';
 import type { SontoItem, SontoItemType, SontoContentType, SontoSource } from '../shared/types';
 
 export class SontoItemHandler {
@@ -57,6 +58,7 @@ export class SontoItemHandler {
     };
 
     await saveSontoItem(item);
+    scheduleBackup();
     return item;
   }
 
@@ -70,10 +72,12 @@ export class SontoItemHandler {
 
   async update(id: string, updates: Partial<SontoItem>): Promise<void> {
     await updateSontoItem(id, updates);
+    scheduleBackup();
   }
 
   async delete(id: string): Promise<void> {
     await deleteSontoItem(id);
+    scheduleBackup();
   }
 
   async addTag(id: string, tag: string): Promise<void> {
