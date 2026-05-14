@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   PROMPT_LOCK_ENABLED: 'sonto_prompt_lock_enabled',
   PROMPT_LOCK_PIN: 'sonto_prompt_lock_pin',
   PROMPT_LOCK_DURATION: 'sonto_prompt_lock_duration',
+  BACKUP: 'sonto_items_backup',
 } as const;
 
 export const PROMPT_LOCK_UNLOCKED_AT = 'sonto_prompt_lock_unlocked_at';
