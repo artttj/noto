@@ -118,11 +118,20 @@ chrome.commands.onCommand.addListener((command) => {
   })();
 });
 
+let sidePanelOpen = false;
+
 chrome.action.onClicked.addListener(async (tab) => {
   try {
-    await chrome.sidePanel.open({ windowId: tab.windowId });
+    if (sidePanelOpen) {
+      await chrome.sidePanel.setOptions({ enabled: false });
+      await chrome.sidePanel.setOptions({ enabled: true });
+      sidePanelOpen = false;
+    } else {
+      await chrome.sidePanel.open({ windowId: tab.windowId });
+      sidePanelOpen = true;
+    }
   } catch (e) {
-    console.error('Failed to open side panel:', e);
+    console.error('Failed to toggle side panel:', e);
   }
 });
 
